@@ -1,20 +1,31 @@
 .App {
   text-align: center;
+  background-color: #f1f1f1;
+  min-height: 100vh;
 }
 
 .App-header {
-  background-color: #f1f1f1;
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  color: white;
+  color: rgb(92, 92, 92);
+  font-size: 1.5rem;
 }
 
 .TextField {
   display: flex;
-  min-height: 60vh;
+  min-height: 40vh;
+  min-width: 40vw;
   flex-direction: column;
   justify-content: center;
   gap: 10px;
+  margin: 0 auto;
+}
+
+.ConfirmButton {
+  display: flex;
+  min-height:10vh;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
   margin: 0 auto;
 }
