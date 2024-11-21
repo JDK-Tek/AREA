@@ -1,0 +1,86 @@
+/*
+** EPITECH PROJECT, 2024
+** AREA
+** File description:
+** content
+*/
+
+body {
+    background-color: #f1f1f1;
+}
+
+button:hover {
+    background-color: #1565c0;
+}
+
+#div-title {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 2.5vh;
+    color: rgb(92, 92, 92);
+    font-family: -apple-system, BlinkMacSystemFont,
+    'Segoe UI',
+    'Roboto',
+    'Oxygen',
+    'Ubuntu',
+    'Cantarell',
+    'Fira Sans',
+    'Droid Sans',
+    'Helvetica Neue',
+    sans-serif;
+}
+
+label {
+    margin: 1% 0% 2% 0%;
+}
+
+select {
+    padding: 10px;
+    font-size: 16px;
+    border: 2px solid #1565c0;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+    color: #333;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+select:hover {
+    border-color: #1157a7;
+    background-color: #e8f5e9;
+    cursor: pointer;
+}
+
+select:focus {
+    outline: none;
+    border-color: #0f4d94;
+    background-color: #ffffff;
+}
+
+#div-techno {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 5vh 5vh;
+    margin-top: 20px;
+}
+
+.img-techno {
+    width: 50vh;
+    height: 50vh;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    object-fit: cover;
+    display: block;
+    margin: auto;
+    padding: 20px;
+}
+
+#div-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20px;
+}
