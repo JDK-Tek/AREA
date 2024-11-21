@@ -4,22 +4,16 @@ import { useState, useEffect } from 'react';
 import TextField from '@mui/material/TextField';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
-
 import './App.css';
+import Home from './Home';
 
-function Home() {
-  return (
-    <div>
-    </div>
-  )
-}
 
 function Login() {
   return (
     <div>
       <div className='TextField'>
         <Stack spacing={2} direction="column" className='TextField'>
-          <TextField label="E-mail"/>
+          <TextField label="E-mail" type="email" />
           <TextField label="Password"/>
         </Stack>
       </div>
