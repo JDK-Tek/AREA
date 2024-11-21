@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import BasicMenu from './BasicMenu'
+import './App.css'
 
 // Backend logos
 import djangoLogo from './assets/backend/django.png'
@@ -24,57 +25,52 @@ import reactnativeLogo from './assets/mobile/reactnative.png'
 
 function Home() {
     const [selectedCategory, setSelectedCategory] = useState('Web');
-  
+
     const handleMenuClick = (category) => {
-      setSelectedCategory(category);
+        setSelectedCategory(category);
     };
-  
+
+    const images = {
+        Backend: [
+            { src: djangoLogo, alt: 'Django Logo' },
+            { src: goLogo, alt: 'Go Logo' },
+            { src: nestjsLogo, alt: 'NestJS Logo' }
+        ],
+        Database: [
+            { src: mariadbLogo, alt: 'MariaDB Logo' },
+            { src: mysqlLogo, alt: 'MySQL Logo' },
+            { src: postgresLogo, alt: 'Postgres Logo' },
+            { src: sqliteLogo, alt: 'SQLite Logo' }
+        ],
+        Web: [
+            { src: htmlLogo, alt: 'HTML Logo' },
+            { src: reactjsLogo, alt: 'ReactJS Logo' },
+            { src: vuejsLogo, alt: 'VueJS Logo' }
+        ],
+        Mobile: [
+            { src: flutterLogo, alt: 'Flutter Logo' },
+            { src: kotlinLogo, alt: 'Kotlin Logo' },
+            { src: reactnativeLogo, alt: 'React Native Logo' }
+        ]
+    };
+
     const renderImages = () => {
-      switch (selectedCategory) {
-        case 'Backend':
-          return (
-            <div>
-              <img src={djangoLogo} alt="Django Logo" />
-              <img src={goLogo} alt="Go Logo" />
-              <img src={nestjsLogo} alt="NestJS Logo" />
+        const categoryImages = images[selectedCategory] || [];
+        return (
+            <div class="div-techno">
+                {categoryImages.map((image, index) => (
+                    <img class="img-techno" key={index} src={image.src} alt={image.alt} />
+                ))}
             </div>
-          );
-        case 'Database':
-          return (
-            <div>
-              <img src={mariadbLogo} alt="MariaDB Logo" />
-              <img src={mysqlLogo} alt="MySQL Logo" />
-              <img src={postgresLogo} alt="Postgres Logo" />
-              <img src={sqliteLogo} alt="SQLite Logo" />
-            </div>
-          );
-        case 'Web':
-          return (
-            <div>
-              <img src={htmlLogo} alt="HTML Logo" />
-              <img src={reactjsLogo} alt="ReactJS Logo" />
-              <img src={vuejsLogo} alt="VueJS Logo" />
-            </div>
-          );
-        case 'Mobile':
-          return (
-            <div>
-              <img src={flutterLogo} alt="Flutter Logo" />
-              <img src={kotlinLogo} alt="Kotlin Logo" />
-              <img src={reactnativeLogo} alt="React Native Logo" />
-            </div>
-          );
-        default:
-          return null;
-      }
+        );
     };
-  
+
     return (
-      <div>
-        <BasicMenu onClick={handleMenuClick} />
-        {renderImages()}
-      </div>
+        <div>
+            <BasicMenu onClick={handleMenuClick} />
+            {renderImages()}
+        </div>
     );
-  }
+}
 
 export default Home;
