@@ -29,3 +29,23 @@
   align-items: center;
   margin: 0 auto;
 }
+
+.div-techno {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px 1px;
+  margin-top: 20px;
+}
+
+.img-techno {
+  width: 20vh;
+  height: 20vh;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  object-fit: cover;
+  display: block;
+  margin: auto;
+  padding: 20px;
+}
