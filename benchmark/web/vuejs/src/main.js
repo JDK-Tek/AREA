@@ -3,6 +3,21 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 
+import { createMemoryHistory, createRouter } from 'vue-router'
+
+import HomeView from './components/Home.vue'
+import LoginView from './components/Login.vue'
+
+const routes = [
+  { path: '/', component: LoginView },
+  { path: '/home', component: HomeView },
+]
+
+const router = createRouter({
+  history: createMemoryHistory(),
+  routes,
+})
+
 // Vuetify
 import 'vuetify/styles'
 import { createVuetify } from 'vuetify'
@@ -14,4 +29,4 @@ const vuetify = createVuetify({
   directives,
 })
 
-createApp(App).use(vuetify).mount('#app')
+createApp(App).use(vuetify).use(router).mount('#app')
