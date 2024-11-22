@@ -1,5 +1,16 @@
 # Creation du benchmark mysql
 
+<br>
+
+# Sommaire
+- [**Création d'un schéma SQL**](#1-création-dun-schéma-sql)
+- [**Documentation sur l'installation**](#2-documentation-sur-linstallation)
+- [**Exemples de requêtes SQL**](#3-exemples-de-requêtes-sql)
+- [**Points positifs et négatifs**](#4-analyse-des-points-positifs-et-négatifs)
+
+<br>
+<br>
+
 # 1. Création d’un schéma SQL
 
 ## Schéma de base de données
@@ -21,6 +32,7 @@ cf benchmark.sql
 - [**Installation sur MacOS**](#installation-sur-macos)
 - [**Installation sur Windows**](#installation-sur-windows)
 
+<br>
 
 ### Installation sur Linux
 
@@ -43,6 +55,8 @@ sudo systemctl start mysql
 ```
 sudo mysql_secure_installation
 ```
+
+<br>
 
 ### Installation sur MacOS
 
@@ -77,6 +91,8 @@ mysql -u root -p
 mysql> SOURCE benchmark.sql
 ```
 
+<br>
+
 ### Installation sur Windows
 
 #### Installer un gestionnaire de paquets :
@@ -109,7 +125,9 @@ mysql -u root -p
 mysql> SOURCE benchmark.sql
 ```
 
-# 3. Exemple de requêtes SQL
+<br>
+
+# 3. Exemples de requêtes SQL
 
 ### Insertion de données :
 ```sql
@@ -134,6 +152,8 @@ UPDATE utilisateurs SET email = 'nouveau.email@example.com' WHERE id = 1;
 ```sql
 DELETE FROM commandes WHERE id = 1;
 ```
+
+<br>
 
 # 4. Analyse des points positifs et négatifs
 
