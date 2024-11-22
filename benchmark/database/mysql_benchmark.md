@@ -25,6 +25,7 @@ cf benchmark.sql
 
 - **Contraintes uniques** : champ email dans utilisateurs.
 
+<br>
 # 2. Documentation sur l'installation
 
 ## Sommaire
