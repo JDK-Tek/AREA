@@ -14,7 +14,7 @@
             :key="index"
             :value="index"
             >
-            <v-list-item-title>{{ item.title }}</v-list-item-title>
+            <v-list-item-title @click="$emit('category-selected', item.title)">{{ item.title }}</v-list-item-title>
             </v-list-item>
         </v-list>
     </v-menu>
