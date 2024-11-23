@@ -1,11 +1,9 @@
 <template>
     <div class='Menu'>
-        <Menu/>
+        <Menu @category-selected="changeCategory"/>
     </div>
     <div class="div-techno">
-        <img :src="reactJSLogo" class="img-techno" alt="React"/>
-        <img :src="HTMLLogo" class="img-techno" alt="React"/>
-        <img :src="VueJSLogo" class="img-techno" alt="React"/>
+        <img v-for="image in filteredImages" :key="image" :src="image" class="img-techno" :alt="selectedCategory"/>
     </div>
   </template>
 
@@ -63,20 +61,24 @@
         },
         data() {
             return {
-                reactJSLogo: reactJS,
-                HTMLLogo: HTML,
-                VueJSLogo: VueJS,
-                DjangoLogo: Django,
-                GOLogo: GO,
-                NestJSLogo: NestJS,
-                MariaDBLogo: MariaDB,
-                MySQLLogo: MySQL,
-                PostGresLogo: PostGres,
-                SQLiteLogo: SQLite,
-                FlutterLogo: Flutter,
-                KotlinLogo: Kotlin,
-                ReactNativeLogo: ReactNative
+                selectedCategory: 'frontend',
+                images: {
+                    Web: [reactJS, HTML, VueJS],
+                    Backend: [Django, GO, NestJS],
+                    Database: [MariaDB, MySQL, PostGres, SQLite],
+                    Mobile: [Flutter, Kotlin, ReactNative]
+                }
             };
+        },
+        computed: {
+            filteredImages() {
+            return this.images[this.selectedCategory];
+            }
+        },
+        methods: {
+            changeCategory(category) {
+            this.selectedCategory = category;
+            }
         }
     };
   </script>
