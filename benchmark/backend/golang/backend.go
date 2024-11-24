@@ -72,5 +72,6 @@ func main() {
 	fmt.Println("=> server listens on port ", PORT)
 	router.HandleFunc("/hello/{name}", doSomeHello).Methods("GET")
 	router.HandleFunc("/api/register", routes.DoSomeRegister).Methods("POST")
+	router.HandleFunc("/api/login", routes.DoSomeLogin).Methods("POST")
 	log.Fatal(http.ListenAndServe(":" + portString, router))
 }
