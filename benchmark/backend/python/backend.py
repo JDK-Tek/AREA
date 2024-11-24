@@ -1,13 +1,17 @@
 from flask import Flask, request, jsonify
 from hashlib import sha256
-import json
 from waitress import serve
-import math
 from time import time
+from jwt import PyJWT
+import time
+import json
+import math
 import re
 
 PORT = 1234
 EMAIL_RE = re.compile("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
+SECRET_KEY = "temporary_key_i_will_change_for_the_real_project_inshallah"
+EXPIRATION = 60 * 30 # 30 minutes
 
 app = Flask(__name__)
 
@@ -57,6 +61,16 @@ def hello(username):
     else:
         return "Hello {}! your incidence angle is {:.2f}, computed in  {:.2f}ms".format(username, angle, ms)
 
+def new_token(email):
+    payload = {
+        'email': email,
+        'exp': time.time() + EXPIRATION
+    }
+    return PyJWT().encode(payload=payload, key=SECRET_KEY, algorithm='HS256')
+
+def untoken_your_token(tok):
+    return PyJWT().decode(jwt=tok, key=SECRET_KEY, algorithms=['HS256'])
+
 def get_email_password():
     data = request.get_json() 
     if not data:
@@ -81,8 +95,9 @@ def handle_register():
         return x, y
     print(f"Email: {x}")
     print(f"Password: {y}")
-    # TODO: insert email and hashedpassword in db and reeturn token
-    return jsonify({"message": "Data received successfully"}), 200
+    token = new_token(x)
+    # TODO: insert email and hashedpassword in db
+    return jsonify({"token": token}), 200
 
 @app.route('/api/login', methods=['POST'])
 def handle_login():
@@ -92,7 +107,8 @@ def handle_login():
     print(f"Email: {x}")
     print(f"Password: {y}")
     # TODO: check if it exists in db and get the token
-    return jsonify({"message": "Data received successfully"}), 200
+    token = new_token(x)
+    return jsonify({"token": token}), 200
 
 if __name__ == "__main__":
     print(f"=> server listens on port {PORT}")
