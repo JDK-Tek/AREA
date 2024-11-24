@@ -11,7 +11,7 @@ EMAIL_RE = re.compile("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
 
 app = Flask(__name__)
 
-def goodPassword(password: str):
+def good_password(password: str):
     return re.findall("[0-9]", password) \
         and re.findall("[a-z]", password) \
         and re.findall("[A-Z]", password) \
@@ -40,28 +40,6 @@ def calculate(t0, t1, it):
     end = time()
     return angle, (end - start) * 1000
 
-@app.route('/api/register', methods=['POST'])
-def handle_post_request():
-    data = request.get_json() 
-
-    if not data:
-        return jsonify({"message": "no data given"}), 400
-    if not "password" in data or not "email" in data:
-        return jsonify({"message": "no email or password"}), 400
-    if not EMAIL_RE.match(data["email"]):
-        return jsonify({"message": "invalid email"}), 400
-    if not goodPassword(data["password"]):
-        return jsonify({"message": "invalid password"}), 400
-    if not type(data["password"]) == str:
-        return jsonify({"message": "data is not a string ?"}), 400
-    password: str = data["password"]
-    hashedPassword = sha256(password.encode("utf-8")).hexdigest()
-    email = data["email"]
-    print(f"Email: {email}")
-    print(f"Password: {hashedPassword}")
-    return jsonify({"message": "Data received successfully"}), 200
-
-
 @app.route("/hello/<username>")
 def hello(username):
     try:
@@ -79,6 +57,42 @@ def hello(username):
     else:
         return "Hello {}! your incidence angle is {:.2f}, computed in  {:.2f}ms".format(username, angle, ms)
 
+def get_email_password():
+    data = request.get_json() 
+    if not data:
+        return False, jsonify({"message": "no data given"}), 400
+    if not "password" in data or not "email" in data:
+        return False, jsonify({"message": "no email or password"}), 400
+    if not EMAIL_RE.match(data["email"]):
+        return False, jsonify({"message": "invalid email"}), 400
+    if not good_password(data["password"]):
+        return False, jsonify({"message": "invalid password"}), 400
+    if not type(data["password"]) == str:
+        return False, jsonify({"message": "data is not a string ?"}), 400
+    password: str = data["password"]
+    hashedPassword = sha256(password.encode("utf-8")).hexdigest()
+    email = data["email"]
+    return True, email, hashedPassword
+
+@app.route('/api/register', methods=['POST'])
+def handle_register():
+    success, x, y = get_email_password()
+    if not success:
+        return x, y
+    print(f"Email: {x}")
+    print(f"Password: {y}")
+    # TODO: insert email and hashedpassword in db and reeturn token
+    return jsonify({"message": "Data received successfully"}), 200
+
+@app.route('/api/login', methods=['POST'])
+def handle_login():
+    success, x, y = get_email_password()
+    if not success:
+        return x, y
+    print(f"Email: {x}")
+    print(f"Password: {y}")
+    # TODO: check if it exists in db and get the token
+    return jsonify({"message": "Data received successfully"}), 200
 
 if __name__ == "__main__":
     print(f"=> server listens on port {PORT}")
