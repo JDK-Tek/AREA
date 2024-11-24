@@ -1,17 +1,20 @@
 package routes
 
 import (
-    "regexp"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"net/http"
-	"crypto/sha256"
-	"encoding/json"
-    "encoding/hex"
+	"regexp"
+	"time"
 
+	"github.com/dgrijalva/jwt-go"
 )
 
 const mailRegexStr = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
 const secretKey = "a_temp_secret_i_will_change_to_env_later_inshallah"
+const expiration = 60 * 30
 
 type RegisterRequest struct {
     Email string `json:"email"`
@@ -65,33 +68,59 @@ func getCredentials(req *http.Request) (string, string, error) {
 func DoSomeRegister(w http.ResponseWriter, req *http.Request) {
     var err error
     var mail, password string
+    var secret = []byte(secretKey)
+    var claims jwt.Claims
+    var token *jwt.Token
+    var tokenString string
 
     mail, password, err = getCredentials(req)
     if err != nil {
         http.Error(w, err.Error(), http.StatusBadRequest)
         return
     }
-    fmt.Println("Received registration request:")
+    claims = jwt.MapClaims{
+        "email": mail,
+        "exp": time.Now().Add(time.Second * expiration).Unix(),
+    }
+    token = jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+    tokenString, err = token.SignedString(secret)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
     fmt.Println("Email:", mail)
     fmt.Println("Password:", password)
     // TODO: the db stuff
     w.WriteHeader(http.StatusOK)
-    fmt.Fprintln(w, "Registration successful")
+    fmt.Fprintf(w, "{ \"token\": \"%s\" }\n", tokenString)
 }
 
 func DoSomeLogin(w http.ResponseWriter, req *http.Request) {
     var err error
     var mail, password string
+    var secret = []byte(secretKey)
+    var claims jwt.Claims
+    var token *jwt.Token
+    var tokenString string
 
     mail, password, err = getCredentials(req)
     if err != nil {
         http.Error(w, err.Error(), http.StatusBadRequest)
         return
     }
-    fmt.Println("Received registration request:")
+    claims = jwt.MapClaims{
+        "email": mail,
+        "exp": time.Now().Add(time.Second * expiration).Unix(),
+    }
+    token = jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+    tokenString, err = token.SignedString(secret)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
     fmt.Println("Email:", mail)
     fmt.Println("Password:", password)
-    // TODO: Check the password in db
+    // TODO: the db stuff
     w.WriteHeader(http.StatusOK)
-    fmt.Fprintln(w, "Registration successful")
+    fmt.Fprintf(w, "{ \"token\": \"%s\" }\n", tokenString)
 }
