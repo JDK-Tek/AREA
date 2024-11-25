@@ -1,6 +1,21 @@
 import { Controller, Post, Body, BadRequestException } from '@nestjs/common';
 import { createHash } from 'crypto';
+import * as jwt from 'jsonwebtoken';
 
+const checkForCredentials = (email: string, password: string): string => {
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email))
+        throw new BadRequestException('Invalid email format');
+    
+    if (!/[a-z]/.test(password) || !/[A-Z]/.test(password)
+        || !/[0-9]/.test(password) || !/[@!\\/?:+-_$<>#]/.test(password)
+        || password.length < 8)
+        throw new BadRequestException("Password need to have 8 characters with\
+            at least number, uppercase, lowercase and special characters")
+    
+    const hashedPassword = createHash('sha256').update(password).digest('hex');
+    return hashedPassword;
+}
 
 @Controller('api')
 export class ApiController {
@@ -9,21 +24,21 @@ export class ApiController {
         const { email, password } = body;
         
         if (!email || !password)
-            throw new BadRequestException('an email and password are needed');
+            throw new BadRequestException('An email and password are needed');
         
-        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-        if (!emailRegex.test(email))
-            throw new BadRequestException('Invalid email format');
-        
-        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&\/<>:;])[A-Za-z\d@$!%*?&\/<>:;]{8,}$/
-        if (passwordRegex.test(password))
-            throw new BadRequestException('Password must be at least 8 characters, \
-        contains uppercase and lowercase characters, and a special character.');
-
-        const hashedPassword = createHash('sha256').update(password).digest('hex');
+        const hashedPassword = checkForCredentials(email, password);
 
         console.log('Email:', email);
         console.log('Password:', hashedPassword);
-        return { message: 'Registration successful' };
+
+        const expirationTime = Math.floor(Date.now() / 1000) + 30 * 60;
+        const payload = {
+            email: email,
+            exp: expirationTime,
+        };
+
+        const token = jwt.sign(payload, hashedPassword);
+
+        return {  token: token };
     }
 }
