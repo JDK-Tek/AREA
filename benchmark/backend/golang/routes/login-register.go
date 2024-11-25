@@ -13,7 +13,6 @@ import (
 )
 
 const mailRegexStr = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
-const secretKey = "a_temp_secret_i_will_change_to_env_later_inshallah"
 const expiration = 60 * 30
 
 type RegisterRequest struct {
@@ -33,13 +32,13 @@ func checkForPassword(str string) bool {
     var lower = regexp.MustCompile(`[a-z]`).MatchString(str)
     var upper = regexp.MustCompile(`[A-Z]`).MatchString(str)
     var number = regexp.MustCompile(`[0-9]`).MatchString(str)
-    var special = regexp.MustCompile(`[@$\\/<>*+:?!#\^]`).MatchString(str)
+    var special = regexp.MustCompile(`[@$\\/<>*+-_:?!#\^]`).MatchString(str)
 
     return lower && upper && number && special
 }
 
-func createAToken(email string) (string, error) {
-    var secret = []byte(secretKey)
+func createAToken(email string, password string) (string, error) {
+    var secret = []byte(password)
     var claims jwt.Claims
     var token *jwt.Token
 
@@ -87,7 +86,7 @@ func DoSomeRegister(w http.ResponseWriter, req *http.Request) {
         http.Error(w, err.Error(), http.StatusBadRequest)
         return
     }
-    tokenString, err = createAToken(mail)
+    tokenString, err = createAToken(mail, password)
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
@@ -109,7 +108,7 @@ func DoSomeLogin(w http.ResponseWriter, req *http.Request) {
         http.Error(w, err.Error(), http.StatusBadRequest)
         return
     }
-    tokenString, err = createAToken(mail)
+    tokenString, err = createAToken(mail, password)
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
