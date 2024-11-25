@@ -2,24 +2,6 @@ CREATE DATABASE IF NOT EXISTS benchmark;
 
 USE benchmark;
 
--- Table des utilisateurs
-CREATE TABLE IF NOT EXISTS utilisateurs (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nom VARCHAR(100) NOT NULL,
-    email VARCHAR(150) UNIQUE NOT NULL,
-    date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Table des commandes
-CREATE TABLE IF NOT EXISTS commandes (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    utilisateur_id INT NOT NULL,
-    produit VARCHAR(100) NOT NULL,
-    quantite INT DEFAULT 1,
-    date_commande TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (utilisateur_id) REFERENCES utilisateurs(id) ON DELETE CASCADE
-);
-
 -- Table des catégories
 CREATE TABLE IF NOT EXISTS categories (
     id INT AUTO_INCREMENT PRIMARY KEY,  -- Clé primaire pour chaque catégorie
