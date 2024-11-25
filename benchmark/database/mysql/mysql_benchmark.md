@@ -59,6 +59,16 @@ sudo systemctl start mysql
 sudo mysql_secure_installation
 ```
 
+#### Charger la database :
+```
+mysql -u root -p benchmark < benchmark/database/mysql/benchmark.sql
+```
+
+#### Lancer le serveur :
+```
+mysql -u root -p benchmark
+```
+
 <br>
 
 ### Installation sur MacOS
@@ -84,15 +94,16 @@ brew services start mysql
 mysql_secure_installation
 ```
 
-#### Lancer le serveur :
-```
-mysql -u root -p
-```
-
 #### Charger la database :
 ```
-mysql> SOURCE benchmark.sql
+mysql -u root -p benchmark < benchmark/database/mysql/benchmark.sql
 ```
+
+#### Lancer le serveur :
+```
+mysql -u root -p benchmark
+```
+
 
 <br>
 
@@ -118,14 +129,14 @@ net start mysql
 mysql_secure_installation
 ```
 
-#### Lancer le serveur :
-```
-mysql -u root -p
-```
-
 #### Charger la database :
 ```
-mysql> SOURCE benchmark.sql
+mysql -u root -p benchmark < benchmark/database/mysql/benchmark.sql
+```
+
+#### Lancer le serveur :
+```
+mysql -u root -p benchmark
 ```
 
 <br>
@@ -134,26 +145,29 @@ mysql> SOURCE benchmark.sql
 
 ### Insertion de données :
 ```sql
-INSERT INTO utilisateurs (nom, email) VALUES ('Jean Dupont' ,'jean.dupont@example.com');
-INSERT INTO commandes (utilisateur_id, produit, quantite) VALUES (1, 'Ordinateur', 2);
+INSERT INTO categories (name, description) VALUES ('music', 'music'), ('video', 'video'), ('school', 'school');
 ```
 
 ### Lecture des données :
 ```sql
-SELECT * FROM utilisateurs;
-SELECT commandes.id, utilisateurs.nom, commandes.produit, commandes.quantite
-FROM commandes
-JOIN utilisateurs ON commandes.utilisateur_id = utilisateurs.id;
+SELECT * FROM users;
+
+SELECT users.name, users.surname, services.name AS service_name
+FROM users
+JOIN user_services ON users.id = user_services.user_id
+JOIN services ON user_services.service_id = services.id;
 ```
 
 ### Mise à jour des données :
 ```sql
-UPDATE utilisateurs SET email = 'nouveau.email@example.com' WHERE id = 1;
+UPDATE users SET email = 'nouveau.email@example.com' WHERE id = 1;
 ```
 
 ### Suppression des données :
 ```sql
-DELETE FROM commandes WHERE id = 1;
+DELETE FROM user_services WHERE user_id = 1 AND service_id = 1;
+
+DELETE FROM users WHERE id = 1;
 ```
 
 <br>
