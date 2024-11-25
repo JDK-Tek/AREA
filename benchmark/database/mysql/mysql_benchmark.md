@@ -6,7 +6,7 @@
 - [**Création d'un schéma SQL**](#1-création-dun-schéma-sql)
 - [**Documentation sur l'installation**](#2-documentation-sur-linstallation)
 - [**Exemples de requêtes SQL**](#3-exemples-de-requêtes-sql)
-- [**Exemple de connection**](#4-mini-example-de-connection)
+- [**Exemple de connexion**](#4-mini-example-de-connexion)
 - [**Points positifs et négatifs**](#5-analyse-des-points-positifs-et-négatifs)
 
 <br>
@@ -172,7 +172,7 @@ DELETE FROM users WHERE id = 1;
 
 <br>
 
-# 4. Mini example de connection
+# 4. Mini example de connexion
 
 ### Installer le connecteur MySQL :
 
