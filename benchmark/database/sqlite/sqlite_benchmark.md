@@ -6,7 +6,7 @@
 - [**Création d'un schéma SQL**](#1-création-dun-schéma-sql)
 - [**Documentation sur l'installation**](#2-documentation-sur-linstallation)
 - [**Exemples de requêtes SQL**](#3-exemples-de-requêtes-sql)
-- [**Exemple de connection**](#4-exemple-de-connection)
+- [**Exemple de connexion**](#4-exemple-de-connexion)
 - [**Points positifs et négatifs**](#5-analyse-des-points-positifs-et-négatifs)
 
 <br>
@@ -131,7 +131,7 @@ DELETE FROM users WHERE id = 1;
 
 <br>
 
-# 4. Exemple de connection
+# 4. Exemple de connexion
 
 ### Installer SQLite pour Python:
 ```
