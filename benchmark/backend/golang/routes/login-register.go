@@ -29,7 +29,6 @@ func (e *RegisterError) Error() string {
     return e.message
 }
 
-
 func checkForPassword(str string) bool {
     var lower = regexp.MustCompile(`[a-z]`).MatchString(str)
     var upper = regexp.MustCompile(`[A-Z]`).MatchString(str)
@@ -37,6 +36,19 @@ func checkForPassword(str string) bool {
     var special = regexp.MustCompile(`[@$\\/<>*+:?!#\^]`).MatchString(str)
 
     return lower && upper && number && special
+}
+
+func createAToken(email string) (string, error) {
+    var secret = []byte(secretKey)
+    var claims jwt.Claims
+    var token *jwt.Token
+
+    claims = jwt.MapClaims{
+        "email": email,
+        "exp": time.Now().Add(time.Second * expiration).Unix(),
+    }
+    token = jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+    return token.SignedString(secret)
 }
 
 func getCredentials(req *http.Request) (string, string, error) {
@@ -68,9 +80,6 @@ func getCredentials(req *http.Request) (string, string, error) {
 func DoSomeRegister(w http.ResponseWriter, req *http.Request) {
     var err error
     var mail, password string
-    var secret = []byte(secretKey)
-    var claims jwt.Claims
-    var token *jwt.Token
     var tokenString string
 
     mail, password, err = getCredentials(req)
@@ -78,12 +87,7 @@ func DoSomeRegister(w http.ResponseWriter, req *http.Request) {
         http.Error(w, err.Error(), http.StatusBadRequest)
         return
     }
-    claims = jwt.MapClaims{
-        "email": mail,
-        "exp": time.Now().Add(time.Second * expiration).Unix(),
-    }
-    token = jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-    tokenString, err = token.SignedString(secret)
+    tokenString, err = createAToken(mail)
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
@@ -98,9 +102,6 @@ func DoSomeRegister(w http.ResponseWriter, req *http.Request) {
 func DoSomeLogin(w http.ResponseWriter, req *http.Request) {
     var err error
     var mail, password string
-    var secret = []byte(secretKey)
-    var claims jwt.Claims
-    var token *jwt.Token
     var tokenString string
 
     mail, password, err = getCredentials(req)
@@ -108,12 +109,7 @@ func DoSomeLogin(w http.ResponseWriter, req *http.Request) {
         http.Error(w, err.Error(), http.StatusBadRequest)
         return
     }
-    claims = jwt.MapClaims{
-        "email": mail,
-        "exp": time.Now().Add(time.Second * expiration).Unix(),
-    }
-    token = jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-    tokenString, err = token.SignedString(secret)
+    tokenString, err = createAToken(mail)
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
