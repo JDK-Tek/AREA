@@ -3,7 +3,6 @@ from hashlib import sha256
 from waitress import serve
 from time import time
 from jwt import PyJWT
-import time
 import json
 import math
 import re
@@ -25,6 +24,7 @@ def calculate(t0, t1, it):
     start = time()
     angle: None | float = None
     x = 0
+    print("bar")
     for i in range(0, it):
         x += i
         if (t1[2] == t0[2]) \
@@ -47,15 +47,15 @@ def calculate(t0, t1, it):
 @app.route("/hello/<username>")
 def hello(username):
     try:
+        x = json.loads(request.args.get("t0"))
+        y = json.loads(request.args.get("t1"))
         angle, ms = calculate(
-            json.loads(request.args.get("t0")),
-            json.loads(request.args.get("t1")),
+            x,
+            y,
             1_000_000
         )
-    except json.JSONDecodeError:
-        return "couldnt parse array", 400
-    except TypeError:
-        return "couldnt load json", 400
+    except (json.JSONDecodeError, TypeError) as e:
+        return str(e), 400
     if angle is None:
         return "Hello {}! your ball wont reach, computed in {:.2f}ms".format(username, ms)
     else:
