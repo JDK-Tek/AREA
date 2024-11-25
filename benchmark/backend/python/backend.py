@@ -9,7 +9,7 @@ import re
 
 PORT = 1234
 EMAIL_RE = re.compile("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
-SECRET_KEY = "temporary_key_i_will_change_for_the_real_project_inshallah"
+# SECRET_KEY = "temporary_key_i_will_change_for_the_real_project_inshallah"
 EXPIRATION = 60 * 30 # 30 minutes
 
 app = Flask(__name__)
@@ -61,15 +61,15 @@ def hello(username):
     else:
         return "Hello {}! your incidence angle is {:.2f}, computed in  {:.2f}ms".format(username, angle, ms)
 
-def new_token(email):
+def new_token(email, password):
     payload = {
         'email': email,
         'exp': time.time() + EXPIRATION
     }
-    return PyJWT().encode(payload=payload, key=SECRET_KEY, algorithm='HS256')
+    return PyJWT().encode(payload=payload, key=password, algorithm='HS256')
 
-def untoken_your_token(tok):
-    return PyJWT().decode(jwt=tok, key=SECRET_KEY, algorithms=['HS256'])
+def untoken_your_token(tok, password):
+    return PyJWT().decode(jwt=tok, key=password, algorithms=['HS256'])
 
 def get_email_password():
     data = request.get_json() 
@@ -95,7 +95,7 @@ def handle_register():
         return x, y
     print(f"Email: {x}")
     print(f"Password: {y}")
-    token = new_token(x)
+    token = new_token(x, y)
     # TODO: insert email and hashedpassword in db
     return jsonify({"token": token}), 200
 
