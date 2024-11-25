@@ -6,7 +6,8 @@
 - [**Création d'un schéma SQL**](#1-création-dun-schéma-sql)
 - [**Documentation sur l'installation**](#2-documentation-sur-linstallation)
 - [**Exemples de requêtes SQL**](#3-exemples-de-requêtes-sql)
-- [**Points positifs et négatifs**](#4-analyse-des-points-positifs-et-négatifs)
+- [**Exemple de connection**](#4-mini-example-de-connection)
+- [**Points positifs et négatifs**](#5-analyse-des-points-positifs-et-négatifs)
 
 <br>
 <br>
@@ -157,7 +158,38 @@ DELETE FROM commandes WHERE id = 1;
 
 <br>
 
-# 4. Analyse des points positifs et négatifs
+# 4. Mini example de connection
+
+### Installer le connecteur MySQL :
+
+```
+pip install mysql-connector-python
+```
+
+### Exemple de script :
+
+```py
+import mysql.connector
+
+# Connexion à la base de données
+conn = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="votre_mot_de_passe",
+    database="GestionCommandes"
+)
+
+cursor = conn.cursor()
+
+# Exécution d'une requête
+cursor.execute("SELECT * FROM utilisateurs")
+for row in cursor.fetchall():
+    print(row)
+
+conn.close()
+```
+
+# 5. Analyse des points positifs et négatifs
 
 ### Points positifs ✅ :
 - **Facilité d’utilisation** : MySQL est bien documenté et bénéficie d’une large communauté.
@@ -175,3 +207,5 @@ DELETE FROM commandes WHERE id = 1;
 - **Coûts supplémentaires** : Les fonctionnalités avancées peuvent nécessiter des licences (MySQL Enterprise).
 
 - **Complexité pour les très grands volumes de données** : Performances moindres dans certains cas.
+
+<br>
