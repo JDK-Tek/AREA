@@ -1,154 +1,197 @@
-# Creation du benchmark mysql
+# Creation of MySQL Benchmark
 
 <br>
 
-# Sommaire
-- [**Création d'un schéma SQL**](#1-création-dun-schéma-sql)
-- [**Documentation sur l'installation**](#2-documentation-sur-linstallation)
-- [**Exemples de requêtes SQL**](#3-exemples-de-requêtes-sql)
-- [**Exemple de connexion**](#4-mini-example-de-connexion)
-- [**Points positifs et négatifs**](#5-analyse-des-points-positifs-et-négatifs)
+# Table of Contents
+- [**Schema Creation**](#1-schema-creation)
+- [**Installation Documentation**](#2-installation-documentation)
+- [**SQL Query Examples**](#3-sql-query-examples)
+- [**Connection Example**](#4-connection-example)
+- [**Pros and Cons**](#5-analysis-of-positive-and-negative-points)
 
 <br>
 <br>
 
-# 1. Création d’un schéma SQL
+# 1. Schema Creation
 
-## Schéma de base de données
+## Database Schema
 
-cf benchmark.sql
+See `benchmark.sql`.
 
-## Résumé des contraintes appliquées dans cette base de données :
+## Summary of constraints applied in this database:
 
-- **Clés primaires** : id dans chaque table.
+- **Primary Keys**: `id` in each table.
 
-- **Clé étrangère** : utilisateur_id dans commandes, reliée à id dans utilisateurs.
+- **Foreign Key**: `user_id` in `orders`, linked to `id` in `users`.
 
-- **Contraintes uniques** : champ email dans utilisateurs.
-
-<br>
-
-# 2. Documentation sur l'installation
-
-## Sommaire
-- [**Installation sur Linux**](#installation-sur-linux)
-- [**Installation sur MacOS**](#installation-sur-macos)
-- [**Installation sur Windows**](#installation-sur-windows)
+- **Unique Constraints**: `email` field in `users`.
 
 <br>
 
-### Installation sur Linux
+# 2. Installation Documentation
 
-#### Mise à jour système :
-```
+## Table of Contents
+- [**Installation on Linux**](#installation-on-linux)
+- [**Installation on MacOS**](#installation-on-macos)
+- [**Installation on Windows**](#installation-on-windows)
+
+<br>
+
+### Installation on Linux
+
+#### Update the system:
+```bash
 sudo apt update && sudo apt upgrade
 ```
 
-#### Installer MySQL :
-```
+#### Install MySQL:
+```bash
 sudo apt install mysql-server
 ```
 
-#### Démarrer le service :
-```
+#### Start the service:
+```bash
 sudo systemctl start mysql
 ```
 
-#### Sécuriser l’installation :
+#### Secure the installation:
+```bash
+mysql_secure_installation --no-defaults
 ```
-sudo mysql_secure_installation
+```plaintext
+Would you like to setup VALIDATE PASSWORD component? y
+Please enter 0 = LOW, 1 = MEDIUM, 2 = STRONG: 0
+New password: **********
+Re-enter password: **********
+
+Do you wish to continue with the password provided? y
+Remove anonymous users? y
+Disallow root login remotely? n
+Remove test database and access to it? y
+Reload privilege tables now? y
 ```
 
-#### Charger la database :
-```
-mysql -u root -p benchmark < benchmark/database/mysql/benchmark.sql
+#### Load the database:
+```bash
+mysql -u root -p < benchmark/database/mysql/benchmark.sql
+Enter password: **********
 ```
 
-#### Lancer le serveur :
-```
+#### Start the server:
+```bash
 mysql -u root -p benchmark
+Enter password: **********
 ```
+
 
 <br>
 
-### Installation sur MacOS
+### Installation on MacOS
 
-#### Mise à jour système :
-```
+#### Update the system:
+```bash
 Auto update
 ```
 
-#### Installer MySQL :
-```
+#### Install MySQL:
+```bash
 brew install mysql
 brew install mysql@8.4
 ```
 
-#### Démarrer le service :
-```
+#### Start the service:
+```bash
 brew services start mysql
 ```
 
-#### Sécuriser l’installation :
+#### Secure the installation:
+```bash
+mysql_secure_installation --no-defaults
 ```
-mysql_secure_installation
+```plaintext
+Would you like to setup VALIDATE PASSWORD component? y
+Please enter 0 = LOW, 1 = MEDIUM, 2 = STRONG: 0
+New password: **********
+Re-enter password: **********
+
+Do you wish to continue with the password provided? y
+Remove anonymous users? y
+Disallow root login remotely? n
+Remove test database and access to it? y
+Reload privilege tables now? y
 ```
 
-#### Charger la database :
-```
-mysql -u root -p benchmark < benchmark/database/mysql/benchmark.sql
+#### Load the database:
+```bash
+mysql -u root -p < benchmark/database/mysql/benchmark.sql
+Enter password: **********
 ```
 
-#### Lancer le serveur :
-```
+#### Start the server:
+```bash
 mysql -u root -p benchmark
+Enter password: **********
 ```
 
 
 <br>
 
-### Installation sur Windows
+### Installation on Windows
 
-#### Installer un gestionnaire de paquets :
-```
+#### Install a package manager:
+```powershell
 Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
 ```
 
-#### Installer MySQL :
-```
+#### Install MySQL:
+```powershell
 choco install mysql
 ```
 
-#### Démarrer le service :
-```
+#### Start the service:
+```powershell
 net start mysql
 ```
 
-#### Sécuriser l’installation :
+#### Secure the installation:
+```bash
+mysql_secure_installation --no-defaults
 ```
-mysql_secure_installation
+```plaintext
+Would you like to setup VALIDATE PASSWORD component? y
+Please enter 0 = LOW, 1 = MEDIUM, 2 = STRONG: 0
+New password: **********
+Re-enter password: **********
+
+Do you wish to continue with the password provided? y
+Remove anonymous users? y
+Disallow root login remotely? n
+Remove test database and access to it? y
+Reload privilege tables now? y
 ```
 
-#### Charger la database :
-```
-mysql -u root -p benchmark < benchmark/database/mysql/benchmark.sql
+#### Load the database:
+```bash
+mysql -u root -p < benchmark/database/mysql/benchmark.sql
+Enter password: **********
 ```
 
-#### Lancer le serveur :
-```
+#### Start the server:
+```bash
 mysql -u root -p benchmark
+Enter password: **********
 ```
 
 <br>
 
-# 3. Exemples de requêtes SQL
+# 3. SQL Query Examples
 
-### Insertion de données :
+### Data Insertion:
 ```sql
 INSERT INTO categories (name, description) VALUES ('music', 'music'), ('video', 'video'), ('school', 'school');
 ```
 
-### Lecture des données :
+### Data Retrieval:
 ```sql
 SELECT * FROM users;
 
@@ -158,12 +201,12 @@ JOIN user_services ON users.id = user_services.user_id
 JOIN services ON user_services.service_id = services.id;
 ```
 
-### Mise à jour des données :
+### Data Update:
 ```sql
-UPDATE users SET email = 'nouveau.email@example.com' WHERE id = 1;
+UPDATE users SET email = 'new.email@example.com' WHERE id = 1;
 ```
 
-### Suppression des données :
+### Data Deletion:
 ```sql
 DELETE FROM user_services WHERE user_id = 1 AND service_id = 1;
 
@@ -172,54 +215,53 @@ DELETE FROM users WHERE id = 1;
 
 <br>
 
-# 4. Mini example de connexion
+# 4. Connection Example
 
-### Installer le connecteur MySQL :
+### Install the MySQL connector:
 
-```
+```bash
 pip install mysql-connector-python
 ```
 
-### Exemple de script :
+### Example Script:
 
-```py
+```python
 import mysql.connector
 
-# Connexion à la base de données
+# Connecting to the database
 conn = mysql.connector.connect(
     host="localhost",
+    port="3306",
     user="root",
-    password="votre_mot_de_passe",
-    database="GestionCommandes"
+    password="**********",
+    database="benchmark"
 )
 
 cursor = conn.cursor()
 
-# Exécution d'une requête
-cursor.execute("SELECT * FROM utilisateurs")
+# Execute a query
+cursor.execute("SELECT * FROM users")
 for row in cursor.fetchall():
     print(row)
 
 conn.close()
 ```
 
-# 5. Analyse des points positifs et négatifs
+# 5. Analysis of positive and negative points
 
-### Points positifs ✅ :
-- **Facilité d’utilisation** : MySQL est bien documenté et bénéficie d’une large communauté.
+### Positive Points ✅:
+- **Ease of Use**: MySQL is well-documented and has a large community.
 
-- **Performance** : Bonne gestion des bases de données relationnelles de taille moyenne à grande.
+- **Performance**: Handles medium to large-scale relational databases efficiently.
 
-- **Portabilité** : Fonctionne sur de nombreuses plateformes.
+- **Portability**: Works across multiple platforms.
 
-- **Gratuit** : Open source pour les besoins de base.
+- **Free**: Open-source for basic needs.
 
-### Points négatifs ❌ :
+### Negative Points ❌:
 
-- **Limites fonctionnelles** : Comparé à d'autres SGBD (ex. PostgreSQL), certaines fonctionnalités avancées sont moins développées.
+- **Functional Limitations**: Compared to other DBMS (e.g., PostgreSQL), some advanced features are less developed.
 
-- **Coûts supplémentaires** : Les fonctionnalités avancées peuvent nécessiter des licences (MySQL Enterprise).
+- **Additional Costs**: Advanced features may require licenses (MySQL Enterprise).
 
-- **Complexité pour les très grands volumes de données** : Performances moindres dans certains cas.
-
-<br>
+- **Complexity for Very Large Data Volumes**: May face performance challenges in certain cases.
