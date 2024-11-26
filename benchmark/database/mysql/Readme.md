@@ -7,7 +7,7 @@
 - [**Installation Documentation**](#2-installation-documentation)
 - [**SQL Query Examples**](#3-sql-query-examples)
 - [**Connection Example**](#4-connection-example)
-- [**Pros and Cons**](#5-analysis-of-positive-and-negative-points)
+- [**Positive and Negative Points**](#5-analysis-of-positive-and-negative-points)
 
 <br>
 <br>
