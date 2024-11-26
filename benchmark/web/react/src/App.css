@@ -1,0 +1,51 @@
+.App {
+  text-align: center;
+  background-color: #f1f1f1;
+  min-height: 100vh;
+}
+
+.App-header {
+  display: flex;
+  flex-direction: column;
+  color: rgb(92, 92, 92);
+  font-size: 1.3rem;
+}
+
+.TextField {
+  display: flex;
+  min-height: 30vh;
+  min-width: auto;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  margin: 0 auto;
+}
+
+.ConfirmButton {
+  display: flex;
+  min-height: 10vh;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto;
+}
+
+.div-techno {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px 1px;
+  margin-top: 20px;
+}
+
+.img-techno {
+  width: 20vh;
+  height: 20vh;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  object-fit: cover;
+  display: block;
+  margin: auto;
+  padding: 20px;
+}
