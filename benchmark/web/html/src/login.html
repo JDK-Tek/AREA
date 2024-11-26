@@ -4,6 +4,7 @@
 ---- File description:
 ---- login
 --->
+
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -22,28 +23,10 @@
         <form onsubmit="validateForm(event)">
             <input id="txtbox-email" type="email" placeholder="E-mail">
             <input id="txtbox-password" type="password" name="password" placeholder="Password">
-            <button type="submit">CONFIRM</button>
+            <button id="valid-button" type="submit">CONFIRM</button>
+            <label id="response"></label>
         </form>
 
-        <script>
-            function validateForm(event) {
-                event.preventDefault();
-
-                var email = document.getElementById('txtbox-email').value;
-                var password = document.getElementById('txtbox-password').value;
-
-                if (email != "" && password != "")
-                    window.location.href = 'content.html';
-            }
-
-            var startTime = performance.now();
-
-            window.onload = function() {
-                var endTime = performance.now();
-                var loadTime = (endTime - startTime);
-
-                document.getElementById('load-time').textContent = 'Temps de chargement: ' + loadTime.toFixed(2) + ' ms';
-            };
-        </script>
+        <script src="../scripts/login.js"></script>
     </body>
 </html>
