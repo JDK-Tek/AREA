@@ -1,15 +1,9 @@
-CREATE DATABASE IF NOT EXISTS benchmark;
-
-USE benchmark;
-
--- Table des catégories
 CREATE TABLE IF NOT EXISTS categories (
     id INT AUTO_INCREMENT PRIMARY KEY,  -- Clé primaire pour chaque catégorie
     name VARCHAR(100) NOT NULL,
     description TEXT NOT NULL
 );
 
--- Table des services
 CREATE TABLE IF NOT EXISTS services (
     id INT AUTO_INCREMENT PRIMARY KEY,  -- Clé primaire pour chaque service
     name VARCHAR(100) NOT NULL,
@@ -19,7 +13,6 @@ CREATE TABLE IF NOT EXISTS services (
     FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
 );
 
--- Table des utilisateurs
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,  -- Clé primaire pour chaque utilisateur
     name VARCHAR(100) NOT NULL,
@@ -29,7 +22,6 @@ CREATE TABLE IF NOT EXISTS users (
     password VARCHAR(255) NOT NULL
 );
 
--- Table de liaison utilisateurs-services
 CREATE TABLE IF NOT EXISTS user_services (
     user_id INT,  -- Clé étrangère vers les utilisateurs
     service_id INT,  -- Clé étrangère vers les services
@@ -38,30 +30,26 @@ CREATE TABLE IF NOT EXISTS user_services (
     FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE
 );
 
--- Insertion des catégories
-INSERT IGNORE INTO categories (name, description) VALUES 
+INSERT OR IGNORE INTO categories (name, description) VALUES 
 ('music', 'music'),
 ('video', 'video'),
 ('school', 'school');
 
--- Insertion des services
-INSERT IGNORE INTO services (name, description, url, category_id) VALUES 
+INSERT OR IGNORE INTO services (name, description, url, category_id) VALUES 
 ('spotify', 'music streaming', 'https://www.spotify.com', 1),
 ('netflix', 'video streaming', 'https://www.netflix.com', 2),
 ('epitech', 'school', 'https://www.epitech.eu', 3),
 ('youtube', 'video streaming', 'https://www.youtube.com', 2),
 ('twitch', 'video streaming', 'https://www.twitch.com', 2);
 
--- Insertion des utilisateurs
-INSERT IGNORE INTO users (name, surname, age, email, password) VALUES 
+INSERT OR IGNORE INTO users (name, surname, age, email, password) VALUES 
 ('esteban', 'marques', 11, 'esteban.marques@epitech.eu', '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8'),
 ('john', 'de kettelbutter', 20, 'john.de-kettelbutter@epitech.eu', '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8'),
 ('paul', 'parisot', 3, 'paul.parisot@epitech.eu', '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8'),
 ('elise', 'pipet', 21, 'elise.pipet@epitech.eu', '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8'),
 ('gregoire', 'lan tim', 22, 'gregpire.lan-tim@epitech.eu', '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8');
 
--- Insertion des relations utilisateurs-services
-INSERT IGNORE INTO user_services (user_id, service_id) VALUES
+INSERT OR IGNORE INTO user_services (user_id, service_id) VALUES
 (1, 1), (1, 2),
 (2, 3), (2, 4),
 (3, 5),
