@@ -1,0 +1,32 @@
+<!--
+---- EPITECH PROJECT, 2024
+---- AREA
+---- File description:
+---- login
+--->
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="../styles/login.css">
+        <title>AREA</title>
+    </head>
+    <body>
+        <div id="div-title">
+            <label id="title">Benchmark AREA - HTML</label>
+            <label id="subtitle">Elise PIPET - Grégoire LAN TIM - PAUL Parisot - Esteban MARQUES - John DE KETTELBUTTER</label>
+            <div id="load-time"></div>
+        </div>
+
+        <form onsubmit="validateForm(event)">
+            <input id="txtbox-email" type="email" placeholder="E-mail">
+            <input id="txtbox-password" type="password" name="password" placeholder="Password">
+            <button id="valid-button" type="submit">CONFIRM</button>
+            <label id="response"></label>
+        </form>
+
+        <script src="../scripts/login.js"></script>
+    </body>
+</html>
