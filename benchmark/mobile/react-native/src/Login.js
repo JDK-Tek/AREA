@@ -23,18 +23,20 @@ export default function Login({ setIsLogged, setEmail }) {
 
   const handleLogin = () => {
     if (loginEmail === '' || password === '') {
+      console.log('Error', 'Please fill all the fields');
       Alert.alert('Error', 'Please fill all the fields');
       return;
     }
 
     if (!/\S+@\S+\.\S+/.test(loginEmail)) {
+      console.log('Error', 'Invalid email');
       Alert.alert('Error', 'Invalid email');
       return;
     }
 
     setIsLogged(true);
     setEmail(loginEmail);
-    Alert.alert('Success', 'You are logged in');
+    console.log('Success', 'You have successfully logged in');
   };
 
   return (
