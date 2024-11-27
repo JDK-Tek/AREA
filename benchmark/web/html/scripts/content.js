@@ -11,67 +11,67 @@ const technoList = [
     {
         "name": "React Js",
         "type": "web",
-        "img": '../../assets/web/reactjs.png'
+        "img": '../assets/web/reactjs.png'
     },
     {
         "name": "HTML",
         "type": "web",
-        "img": '../../assets/web/html.png'
+        "img": '../assets/web/html.png'
     },
     {
         "name": "VueJs",
         "type": "web",
-        "img": '../../assets/web/vuejs.png'
+        "img": '../assets/web/vuejs.png'
     },
     {
         "name": "Flutter",
         "type": "mobile",
-        "img": '../../assets/mobile/flutter.png'
+        "img": '../assets/mobile/flutter.png'
     },
     {
         "name": "React Native",
         "type": "mobile",
-        "img": '../../assets/mobile/reactnative.png'
+        "img": '../assets/mobile/reactnative.png'
     },
     {
         "name": "Kotline",
         "type": "mobile",
-        "img": '../../assets/mobile/kotline.png'
+        "img": '../assets/mobile/kotline.png'
     },
     {
         "name": "Django",
         "type": "backend",
-        "img": '../../assets/backend/django.png'
+        "img": '../assets/backend/django.png'
     },
     {
         "name": "Go",
         "type": "backend",
-        "img": '../../assets/backend/go.png'
+        "img": '../assets/backend/go.png'
     },
     {
         "name": "NestJs",
         "type": "backend",
-        "img": '../../assets/backend/nestjs.jpg'
+        "img": '../assets/backend/nestjs.jpg'
     },
     {
         "name": "MariaDB",
         "type": "database",
-        "img": '../../assets/database/mariadb.jpeg'
+        "img": '../assets/database/mariadb.jpeg'
     },
     {
         "name": "MySQL",
         "type": "database",
-        "img": '../../assets/database/mysql.png'
+        "img": '../assets/database/mysql.png'
     },
     {
         "name": "PostgreSQL",
         "type": "database",
-        "img": '../../assets/database/postgres.png'
+        "img": '../assets/database/postgres.png'
     },
     {
         "name": "SQLite",
         "type": "database",
-        "img": '../../assets/database/sqlite.png'
+        "img": '../assets/database/sqlite.png'
     }
 ];
 
