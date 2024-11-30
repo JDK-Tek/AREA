@@ -5,7 +5,6 @@
 -- create user area_user with encrypted password 'password';
 -- grant select, insert, update, delete on all tables in schema public to area_user;
 
--- Create the users table if it does not already exist
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     email TEXT NOT NULL,

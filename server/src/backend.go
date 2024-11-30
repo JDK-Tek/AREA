@@ -16,9 +16,8 @@ import (
 	_ "github.com/lib/pq"
 
 	"area-backend/routes"
+	"area-backend/area"
 )
-
-const PORT int = 1234
 
 func calculate(t0 []float64, t1 []float64, it int) (success bool, res float64, ms float64) {
 	var start = time.Now()
@@ -69,60 +68,13 @@ func doSomeHello(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func testDatabase() {
-	var err = godotenv.Load("/usr/mount.d/.env")
-	var dbPassword, dbUser string
-	var db *sql.DB
-	var rows *sql.Rows
-	var connectStr string
-	var id int
-	var email string
-	var password string
-	
-	if err != nil {
-		log.Fatal("no .env")
-	}
-	if dbPassword = os.Getenv("DB_PASSWORD"); dbPassword == "" {
-		log.Fatal("DB_PASSWORD not found")
-	}
-	if dbUser = os.Getenv("DB_USER"); dbUser == "" {
-		log.Fatal("DB_USER not found")
-	}
-	connectStr = fmt.Sprintf(
-		"postgresql://%s:%s@database:5432/area_database?sslmode=disable",
-		dbUser,
-		dbPassword,
-	)
-	db, err = sql.Open("postgres", connectStr)
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-	defer db.Close()
-	err = db.Ping()
-	if err != nil {
-		log.Fatal("ping:", err)
-	}
-	rows, err = db.Query("SELECT * FROM users;")
-	if err != nil {
-		log.Fatal("query:", err)
-	}
-	defer rows.Close()
-	for rows.Next() {
-		err := rows.Scan(&id, &email, &password)
-		if err != nil {
-			log.Fatal("scan:", err)
-		}
-		fmt.Printf("id: %d, email: %s, password: %s\n", id, email, password)
-	}
-	if err := rows.Err(); err != nil {
-		log.Fatal("rows:", err)
-	}
-}
-
-func miniProxy(db *sql.DB, f func(http.ResponseWriter, *http.Request, *sql.DB)) func(http.ResponseWriter, *http.Request) {
-	return func(r http.ResponseWriter, w *http.Request) {
-		f(r, w, db)
+func newProxy(a *area.Area, f func(area.AreaRequest)) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		f(area.AreaRequest{
+			Area: a,
+			Writter: w,
+			Request: r,
+		})
 	}
 }
 
@@ -130,10 +82,10 @@ func main() {
 	var router = mux.NewRouter()
 	var err error
 	var dbPassword, dbUser string
-	var db *sql.DB
 	var connectStr string
 	var portString string
-	
+	var a area.Area
+
 	if err = godotenv.Load("/usr/mount.d/.env"); err != nil {
 		log.Fatal("no .env")
 	}
@@ -146,6 +98,9 @@ func main() {
 	if portString = os.Getenv("BACKEND_PORT"); portString == "" {
 		log.Fatal("BACKEND_PORT not found")
 	}
+	if a.Key = os.Getenv("BACKEND_KEY"); portString == "" {
+		log.Fatal("BACKEND_KEY not found")
+	}
 	if _, err = strconv.Atoi(portString); err != nil {
 		log.Fatal("atoi:", err)
 	}
@@ -154,16 +109,16 @@ func main() {
 		dbUser,
 		dbPassword,
 	)
-	if db, err = sql.Open("postgres", connectStr); err != nil {
+	if a.Database, err = sql.Open("postgres", connectStr); err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
-	if err = db.Ping(); err != nil {
+	defer a.Database.Close()
+	if err = a.Database.Ping(); err != nil {
 		log.Fatal("ping:", err)
 	}
 	fmt.Println("=> server listens on port ", portString)
 	router.HandleFunc("/hello/{name}", doSomeHello).Methods("GET")
-	router.HandleFunc("/api/login", miniProxy(db, routes.DoSomeLogin)).Methods("POST")
-	router.HandleFunc("/api/register", miniProxy(db, routes.DoSomeRegister)).Methods("POST")
+	router.HandleFunc("/api/login", newProxy(&a, routes.DoSomeLogin)).Methods("POST")
+	router.HandleFunc("/api/register", newProxy(&a, routes.DoSomeRegister)).Methods("POST")
 	log.Fatal(http.ListenAndServe(":" + portString, router))
 }

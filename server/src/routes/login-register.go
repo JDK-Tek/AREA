@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+    "area-backend/area"
 )
 
 const mailRegexStr = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
@@ -38,8 +39,8 @@ func checkForPassword(str string) bool {
     return lower && upper && number && special
 }
 
-func createAToken(email string, password string) (string, error) {
-    var secret = []byte(password)
+func createAToken(email string, password string, secret string) (string, error) {
+    var secretBytes = []byte(secret)
     var claims jwt.Claims
     var token *jwt.Token
 
@@ -48,7 +49,7 @@ func createAToken(email string, password string) (string, error) {
         "exp": time.Now().Add(time.Second * expiration).Unix(),
     }
     token = jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-    return token.SignedString(secret)
+    return token.SignedString(secretBytes)
 }
 
 func getCredentials(req *http.Request) (string, string, error) {
@@ -77,68 +78,70 @@ func getCredentials(req *http.Request) (string, string, error) {
     return data.Email, hashedString, nil
 }
 
-func DoSomeRegister(w http.ResponseWriter, req *http.Request, db *sql.DB) {
+func DoSomeRegister(a area.AreaRequest) {
     var err error
     var mail, password string
     var tokenString string
     var userid = -1
 
-    mail, password, err = getCredentials(req)
+    mail, password, err = getCredentials(a.Request)
     if err != nil {
-        http.Error(w, err.Error(), http.StatusBadRequest)
+        a.Error(err, http.StatusBadRequest)
         return
     }
     fmt.Println("Email:", mail)
     fmt.Println("Password:", password)
-    err = db.QueryRow("SELECT id FROM users WHERE email = $1", mail).Scan(&userid)
+    err = a.Area.Database.QueryRow("SELECT id FROM users WHERE email = $1", mail).Scan(&userid)
     if err != nil && err != sql.ErrNoRows {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
+        a.Error(err, http.StatusInternalServerError)
         return
     }
     if userid != -1 {
-        http.Error(w, "user already exists", http.StatusBadRequest)
+        a.ErrorStr("user already exists", http.StatusBadRequest)
         return
     }
-    tokenString, err = createAToken(mail, password)
+    tokenString, err = createAToken(mail, password, a.Area.Key)
     if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
+        a.Error(err, http.StatusInternalServerError)
         return
     }
-    _, err = db.Exec("INSERT INTO users (email, password) VALUES ($1, $2)", mail, password)
+    _, err = a.Area.Database.Exec("INSERT INTO users (email, password) VALUES ($1, $2)", mail, password)
     if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
+        a.Error(err, http.StatusInternalServerError)
         return
     }
-    w.WriteHeader(http.StatusOK)
-    fmt.Fprintf(w, "{ \"token\": \"%s\" }\n", tokenString)
+    a.Reply(map[string]any{
+        "token": tokenString,
+    }, http.StatusOK)
 }
 
-func DoSomeLogin(w http.ResponseWriter, req *http.Request, db *sql.DB) {
+func DoSomeLogin(a area.AreaRequest) {
     var err error
     var mail, password, realPassword string
     var tokenString string
 
-    mail, password, err = getCredentials(req)
+    mail, password, err = getCredentials(a.Request)
     if err != nil {
-        http.Error(w, err.Error(), http.StatusBadRequest)
+        a.Error(err, http.StatusInternalServerError)
         return
     }
     fmt.Println("Email:", mail)
     fmt.Println("Password:", password)
-    err = db.QueryRow("SELECT password FROM users WHERE email = $1", mail).Scan(&realPassword)
+    err = a.Area.Database.QueryRow("SELECT password FROM users WHERE email = $1", mail).Scan(&realPassword)
     if err != nil {
-        http.Error(w, "invalid user/password", http.StatusBadRequest)
+        a.ErrorStr("invalid email/password", http.StatusBadRequest)
         return
     }
     if realPassword != password {
-        http.Error(w, "invalid user/password", http.StatusBadRequest)
+        a.ErrorStr("invalid email/password", http.StatusBadRequest)
         return
     }
-    tokenString, err = createAToken(mail, password)
+    tokenString, err = createAToken(mail, password, a.Area.Key)
     if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
+        a.Error(err, http.StatusInternalServerError)
         return
     }
-    w.WriteHeader(http.StatusOK)
-    fmt.Fprintf(w, "{ \"token\": \"%s\" }\n", tokenString)
+    a.Reply(map[string]any{
+        "token": tokenString,
+    }, http.StatusOK)
 }
