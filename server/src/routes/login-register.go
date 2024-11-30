@@ -2,6 +2,7 @@ package routes
 
 import (
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -76,14 +77,26 @@ func getCredentials(req *http.Request) (string, string, error) {
     return data.Email, hashedString, nil
 }
 
-func DoSomeRegister(w http.ResponseWriter, req *http.Request) {
+func DoSomeRegister(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     var err error
     var mail, password string
     var tokenString string
+    var userid = -1
 
     mail, password, err = getCredentials(req)
     if err != nil {
         http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
+    fmt.Println("Email:", mail)
+    fmt.Println("Password:", password)
+    err = db.QueryRow("SELECT id FROM users WHERE email = $1", mail).Scan(&userid)
+    if err != nil && err != sql.ErrNoRows {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    if userid != -1 {
+        http.Error(w, "user already exists", http.StatusBadRequest)
         return
     }
     tokenString, err = createAToken(mail, password)
@@ -91,14 +104,16 @@ func DoSomeRegister(w http.ResponseWriter, req *http.Request) {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
     }
-    fmt.Println("Email:", mail)
-    fmt.Println("Password:", password)
-    // TODO: the db stuff
+    _, err = db.Exec("INSERT INTO users (email, password) VALUES ($1, $2)", mail, password)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
     w.WriteHeader(http.StatusOK)
     fmt.Fprintf(w, "{ \"token\": \"%s\" }\n", tokenString)
 }
 
-func DoSomeLogin(w http.ResponseWriter, req *http.Request) {
+func DoSomeLogin(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     var err error
     var mail, password string
     var tokenString string
