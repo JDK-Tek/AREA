@@ -1,0 +1,24 @@
+services:
+
+  back:
+    env_file:
+      - .env
+    build:
+      context: ./src
+    ports:
+      - ${BACKEND_PORT}:${BACKEND_PORT}
+    # links:
+    #   - database:
+
+  database:
+    env_file:
+      - .env
+    image: postgres
+    ports:
+      - "${DB_PORT}:5432"
+    environment:
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    container_name: area-database
+    volumes:
+      - ./database:/usr/database
+    # command: psql -U postgres < /usr/database/setup.sql

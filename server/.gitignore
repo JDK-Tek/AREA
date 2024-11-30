@@ -1,0 +1,8 @@
+# environnement
+.env
+
+# binaries
+src/backend
+
+# trash files
+*.out
