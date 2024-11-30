@@ -113,8 +113,11 @@ func main() {
 		log.Fatal(err)
 	}
 	defer a.Database.Close()
-	if err = a.Database.Ping(); err != nil {
-		log.Fatal("ping:", err)
+	err = a.Database.Ping()
+	for err != nil {
+		fmt.Println("ping:", err)
+		time.Sleep(time.Second)
+		err = a.Database.Ping()
 	}
 	fmt.Println("=> server listens on port ", portString)
 	router.HandleFunc("/hello/{name}", doSomeHello).Methods("GET")
