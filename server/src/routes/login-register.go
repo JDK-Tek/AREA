@@ -115,7 +115,7 @@ func DoSomeRegister(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 
 func DoSomeLogin(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     var err error
-    var mail, password string
+    var mail, password, realPassword string
     var tokenString string
 
     mail, password, err = getCredentials(req)
@@ -123,14 +123,22 @@ func DoSomeLogin(w http.ResponseWriter, req *http.Request, db *sql.DB) {
         http.Error(w, err.Error(), http.StatusBadRequest)
         return
     }
+    fmt.Println("Email:", mail)
+    fmt.Println("Password:", password)
+    err = db.QueryRow("SELECT password FROM users WHERE email = $1", mail).Scan(&realPassword)
+    if err != nil {
+        http.Error(w, "invalid user/password", http.StatusBadRequest)
+        return
+    }
+    if realPassword != password {
+        http.Error(w, "invalid user/password", http.StatusBadRequest)
+        return
+    }
     tokenString, err = createAToken(mail, password)
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
     }
-    fmt.Println("Email:", mail)
-    fmt.Println("Password:", password)
-    // TODO: the db stuff
     w.WriteHeader(http.StatusOK)
     fmt.Fprintf(w, "{ \"token\": \"%s\" }\n", tokenString)
 }
