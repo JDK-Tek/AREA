@@ -69,6 +69,18 @@ docker exec -it postgres psql -U postgres
 
 ## my app
 
+create a .env with your informations in the `server/` directory
+```py
+# backend
+BACKEND_PORT=...
+
+# database
+DB_PORT=...
+DB_PASSWORD=...
+DB_USER=...
+DB_NAME=...
+```
+
 build the dockerz
 ```sh
 docker compose build
