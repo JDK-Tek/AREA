@@ -1,15 +1,17 @@
 package main
 
 import (
-	"encoding/json"
-	"database/sql"
 	"fmt"
 	"log"
 	"math"
 	"net/http"
 	"strconv"
 	"time"
+	"os"
+	"encoding/json"
+	"database/sql"
 
+	"github.com/joho/godotenv"
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
 
@@ -68,13 +70,30 @@ func doSomeHello(w http.ResponseWriter, req *http.Request) {
 }
 
 func testDatabase() {
-	var connectStr = "postgresql://postgres:clery123@database:5432/area_database?sslmode=disable"
-	var db, err = sql.Open("postgres", connectStr)
+	var err = godotenv.Load("/usr/mount.d/.env")
+	var dbPassword, dbUser string
+	var db *sql.DB
 	var rows *sql.Rows
+	var connectStr string
 	var id int
 	var email string
 	var password string
-
+	
+	if err != nil {
+		log.Fatal("no .env")
+	}
+	if dbPassword = os.Getenv("DB_PASSWORD"); dbPassword == "" {
+		log.Fatal("DB_PASSWORD not found")
+	}
+	if dbUser = os.Getenv("DB_USER"); dbUser == "" {
+		log.Fatal("DB_USER not found")
+	}
+	connectStr = fmt.Sprintf(
+		"postgresql://%s:%s@database:5432/area_database?sslmode=disable",
+		dbUser,
+		dbPassword,
+	)
+	db, err = sql.Open("postgres", connectStr)
 	if err != nil {
 		log.Fatal(err)
 		return
