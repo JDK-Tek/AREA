@@ -1,24 +1,31 @@
 services:
-
-  back:
+  backend:
     env_file:
       - .env
     build:
       context: ./src
     ports:
       - ${BACKEND_PORT}:${BACKEND_PORT}
-    # links:
-    #   - database:
+    depends_on:
+      - database
+    environment:
+      - DB_HOST=database
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=area_database
+    container_name: area-backend
 
   database:
     env_file:
       - .env
     image: postgres
+    container_name: area-database
     ports:
       - "${DB_PORT}:5432"
     environment:
       - POSTGRES_PASSWORD=${DB_PASSWORD}
-    container_name: area-database
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=area_database
     volumes:
-      - ./database:/usr/database
-    # command: psql -U postgres < /usr/database/setup.sql
+      - ./database/setup.sql:/docker-entrypoint-initdb.d/setup.sql

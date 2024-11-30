@@ -1,8 +1,7 @@
 FROM golang:1.22
-
-COPY . /usr/app
 WORKDIR /usr/app
-RUN go get
-RUN go build backend.go
-
+COPY go.mod go.sum ./
+RUN go mod tidy
+COPY . .
+RUN go build -o backend backend.go
 CMD ./backend
