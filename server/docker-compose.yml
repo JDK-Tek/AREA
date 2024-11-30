@@ -2,6 +2,8 @@ services:
   backend:
     env_file:
       - .env
+    volumes:
+      - ./.env:/usr/mount.d/.env
     build:
       context: ./src
     ports:

@@ -67,16 +67,45 @@ func doSomeHello(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func testDatabase() {
+	var connectStr = "postgresql://postgres:clery123@database:5432/area_database?sslmode=disable"
+	var db, err = sql.Open("postgres", connectStr)
+	var rows *sql.Rows
+	var id int
+	var email string
+	var password string
+
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+	defer db.Close()
+	err = db.Ping()
+	if err != nil {
+		log.Fatal("ping:", err)
+	}
+	rows, err = db.Query("SELECT * FROM users;")
+	if err != nil {
+		log.Fatal("query:", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		err := rows.Scan(&id, &email, &password)
+		if err != nil {
+			log.Fatal("scan:", err)
+		}
+		fmt.Printf("id: %d, email: %s, password: %s\n", id, email, password)
+	}
+	if err := rows.Err(); err != nil {
+		log.Fatal("rows:", err)
+	}
+}
+
 func main() {
 	var portString = strconv.Itoa(PORT)
 	var router = mux.NewRouter()
-	var connectStr = "postgresql://postgres:clery123@database:5432/area"
-	var _, err = sql.Open("postgres", connectStr)
 
-	if err != nil {
-		fmt.Println(err.Error())
-		return
-	}
+	testDatabase()
 	fmt.Println("=> server listens on port ", PORT)
 	router.HandleFunc("/hello/{name}", doSomeHello).Methods("GET")
 	router.HandleFunc("/api/register", routes.DoSomeRegister).Methods("POST")
