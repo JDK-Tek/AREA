@@ -67,3 +67,32 @@ use psql console on container
 docker exec -it postgres psql -U postgres
 ```
 
+## my app
+
+build the dockerz
+```sh
+docker compose build
+```
+
+start the dockerz
+```sh
+docker compose up
+```
+
+check for thee database docker
+```sh
+docker exec -it area-database psql -U postgres
+```
+```
+postgres=# \c area_database 
+You are now connected to database "area_database" as user "postgres".
+area_database=# select * from users;
+ id | email | password 
+----+-------+----------
+  1 | hello | foo
+(1 row)
+
+area_database=# 
+```
+
+the backend should display the stuff
