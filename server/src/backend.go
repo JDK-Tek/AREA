@@ -13,7 +13,8 @@ import (
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
 
-	"area-backend/routes"
+	"area-backend/routes/auth"
+	"area-backend/routes/arearoute"
 	"area-backend/area"
 )
 
@@ -69,7 +70,8 @@ func main() {
 		err = a.Database.Ping()
 	}
 	fmt.Println("=> server listens on port ", portString)
-	router.HandleFunc("/api/login", newProxy(&a, routes.DoSomeLogin)).Methods("POST")
-	router.HandleFunc("/api/register", newProxy(&a, routes.DoSomeRegister)).Methods("POST")
+	router.HandleFunc("/api/login", newProxy(&a, auth.DoSomeLogin)).Methods("POST")
+	router.HandleFunc("/api/register", newProxy(&a, auth.DoSomeRegister)).Methods("POST")
+	router.HandleFunc("/api/area", newProxy(&a, arearoute.NewArea)).Methods("POST")
 	log.Fatal(http.ListenAndServe(":" + portString, router))
 }
