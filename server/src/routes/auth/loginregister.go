@@ -1,4 +1,4 @@
-package routes
+package auth
 
 import (
 	"crypto/sha256"
@@ -8,14 +8,11 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
-	"time"
 
-	"github.com/dgrijalva/jwt-go"
     "area-backend/area"
 )
 
 const mailRegexStr = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
-const expiration = 60 * 30
 
 type RegisterRequest struct {
     Email string `json:"email"`
@@ -37,19 +34,6 @@ func checkForPassword(str string) bool {
     var special = regexp.MustCompile(`[@$\\/<>*+-_:?!#\^]`).MatchString(str)
 
     return lower && upper && number && special
-}
-
-func createAToken(email string, password string, secret string) (string, error) {
-    var secretBytes = []byte(secret)
-    var claims jwt.Claims
-    var token *jwt.Token
-
-    claims = jwt.MapClaims{
-        "email": email,
-        "exp": time.Now().Add(time.Second * expiration).Unix(),
-    }
-    token = jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-    return token.SignedString(secretBytes)
 }
 
 func getCredentials(req *http.Request) (string, string, error) {
@@ -100,7 +84,7 @@ func DoSomeRegister(a area.AreaRequest) {
         a.ErrorStr("user already exists", http.StatusBadRequest)
         return
     }
-    tokenString, err = createAToken(mail, password, a.Area.Key)
+    tokenString, err = a.Area.NewToken(mail)
     if err != nil {
         a.Error(err, http.StatusInternalServerError)
         return
@@ -136,7 +120,7 @@ func DoSomeLogin(a area.AreaRequest) {
         a.ErrorStr("invalid email/password", http.StatusBadRequest)
         return
     }
-    tokenString, err = createAToken(mail, password, a.Area.Key)
+    tokenString, err = a.Area.NewToken(mail)
     if err != nil {
         a.Error(err, http.StatusInternalServerError)
         return

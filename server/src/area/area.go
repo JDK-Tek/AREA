@@ -2,14 +2,53 @@ package area
 
 import (
 	"database/sql"
-	"net/http"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"strings"
+	"time"
+
+	"github.com/dgrijalva/jwt-go"
 )
+
+const expiration = 60 * 30
 
 type Area struct {
 	Database *sql.DB
 	Key string
+}
+
+func (it *Area) NewToken(email string) (string, error) {
+    var secretBytes = []byte(it.Key)
+    var claims jwt.Claims
+    var token *jwt.Token
+
+    claims = jwt.MapClaims{
+        "email": email,
+        "exp": time.Now().Add(time.Second * expiration).Unix(),
+    }
+    token = jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+    return token.SignedString(secretBytes)
+}
+
+func (it *Area) Token2Email(str string) (string, error) {
+	var token, err = jwt.Parse(str, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("bad method")
+		}
+		return []byte(it.Key), nil
+	})
+	var ok bool
+	var claims jwt.MapClaims
+
+	if err != nil {
+		return "", err
+	}
+	if claims, ok = token.Claims.(jwt.MapClaims); ok && token.Valid {
+		email := claims["email"].(string)
+		return email, nil
+	}
+	return "", fmt.Errorf("invalid token or expired")
 }
 
 type AreaRequest struct {
@@ -47,4 +86,14 @@ func (it *AreaRequest) Reply(object any, code int) {
 		return
 	}
     fmt.Fprintln(it.Writter, string(data))
+}
+
+func (it *AreaRequest) AssertToken() (string, error) {
+	var str = it.Request.Header.Get("Authorization")
+
+	if str == "" || !strings.HasPrefix(str, "Bearer ") {
+		return "", fmt.Errorf("no authorization/bad init (no bearer maybe ?)")
+	}
+	str = strings.TrimPrefix(str, "Bearer ")
+	return it.Area.Token2Email(str)
 }
