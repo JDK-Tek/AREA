@@ -5,8 +5,8 @@
 ** Applet
 */
 
-import Icon from "./../assets/icon.png"
-import formatNumber from "../utils/FormatNumber";
+import Icon from "./../../assets/icon.png"
+import formatNumber from "./../../utils/FormatNumber";
 
 export default function Applet({ applet }) {
 
