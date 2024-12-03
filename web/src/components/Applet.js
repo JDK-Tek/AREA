@@ -11,7 +11,10 @@ import formatNumber from "../utils/FormatNumber";
 export default function Applet({ applet }) {
 
     return (
-        <div className={`relative w-[250px] h-[275px] ${applet.color} text-white rounded-3xl shadow-md p-4`}>
+        <div
+            className={`relative w-[250px] h-[275px] ${applet.color} text-white rounded-3xl shadow-md p-4`}
+            onClick={() => window.location.href = applet.link}
+        >
             <div className="flex space-x-1">
                 {applet.services.map((service, index) => (
                     <img

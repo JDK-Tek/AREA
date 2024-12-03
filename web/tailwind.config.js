@@ -9,12 +9,16 @@ module.exports = {
           },
           colors: {
             spotify: {
-                100: "#19943a",
-                200: "#2aa84f",
+                100: "#05b348",
+                200: "#00ca4e",
             },
             weatherunderground: {
                 100: "#28292e",
                 200: "#3a3b40",
+            },
+            instagram: {
+                100: "#f1005b",
+                200: "#ff1970",
             }
           }
       },
