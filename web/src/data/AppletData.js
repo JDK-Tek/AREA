@@ -14,6 +14,9 @@ import Notification from "./../assets/notification.webp"
 import Instagram from "./../assets/instagram.webp"
 import X from "./../assets/x.webp"
 
+import Nasa from "./../assets/nasa.webp"
+import Android from "./../assets/android.webp"
+
 const AppletData = [
     {
         title: "Create playlist of your favorite series in one click",
@@ -48,6 +51,22 @@ const AppletData = [
         ]
     },
     {
+        title: "Update your Android wallpaper with NASA's image of the day",
+        users : 3488329,
+        color: "bg-nasa-100 hover:bg-nasa-200",
+        link: "https://www.nasa.gov/",
+        services : [
+            {
+                name: "Nasa",
+                logo: Nasa
+            },
+            {
+                name: "Android",
+                logo: Android
+            }
+        ]
+    },
+    {
         title: "Tweet your Instagrams as native photos on Twitter",
         users : 603723,
         color: "bg-instagram-100 hover:bg-instagram-200",
@@ -62,7 +81,7 @@ const AppletData = [
                 logo: X
             }
         ]
-    },
+    }
 ];
 
 export default AppletData;
