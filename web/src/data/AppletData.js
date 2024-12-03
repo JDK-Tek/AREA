@@ -7,8 +7,12 @@
 
 import Netflix from "./../assets/netflix.png"
 import Spotify from "./../assets/spotify.png"
+
 import WeatherUnderground from "./../assets/weather-underground.webp"
 import Notification from "./../assets/notification.webp"
+
+import Instagram from "./../assets/instagram.webp"
+import X from "./../assets/x.webp"
 
 const AppletData = [
     {
@@ -29,9 +33,9 @@ const AppletData = [
     },
     {
         title: "Get the weather forecast every day at 7:00 AM",
-        users : 100000,
+        users : 88432,
         color: "bg-weatherunderground-100 hover:bg-weatherunderground-200",
-        link: "https://weatherunderground.com",
+        link: "https://www.wunderground.com/",
         services : [
             {
                 name: "Weather Underground",
@@ -40,6 +44,22 @@ const AppletData = [
             {
                 name: "Notification",
                 logo: Notification
+            }
+        ]
+    },
+    {
+        title: "Tweet your Instagrams as native photos on Twitter",
+        users : 603723,
+        color: "bg-instagram-100 hover:bg-instagram-200",
+        link: "https://instagram.com",
+        services : [
+            {
+                name: "Instagram",
+                logo: Instagram
+            },
+            {
+                name: "X",
+                logo: X
             }
         ]
     },
