@@ -12,7 +12,7 @@ export default function Applet({ applet }) {
 
     return (
         <div
-            className={`relative w-[300px] h-[325px] ${applet.color} text-white rounded-3xl shadow-md p-4`}
+            className={`cursor-pointer relative w-[300px] h-[325px] ${applet.color} text-white rounded-3xl shadow-md p-4`}
             onClick={() => window.location.href = applet.link}
         >
             <div className="flex space-x-1">
