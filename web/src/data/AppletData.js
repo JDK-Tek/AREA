@@ -52,7 +52,7 @@ const AppletData = [
     },
     {
         title: "Update your Android wallpaper with NASA's image of the day",
-        users : 3488329,
+        users : 348839,
         color: "bg-nasa-100 hover:bg-nasa-200",
         link: "https://www.nasa.gov/",
         services : [
