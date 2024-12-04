@@ -7,16 +7,16 @@
 
 const formatting = [
     {
-        value: 1000,
-        extension: 'k'
+        value: 1000000000,
+        extension: 'b'
     },
     {
         value: 1000000,
         extension: 'm'
     },
     {
-        value: 1000000000,
-        extension: 'b'
+        value: 1000,
+        extension: 'k'
     }
 ];
 
