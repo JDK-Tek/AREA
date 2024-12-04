@@ -6,14 +6,16 @@
 */
 
 import Home from "./routes/home/Home";
+import Login from "./routes/login/Login";
 
 
 function App() {
 
   return (
-    <div className="App">
+    <div>
       
-      <Home />
+      {/* <Home /> */}
+      <Login />
 
     </div>
   );
