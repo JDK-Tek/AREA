@@ -11,6 +11,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/handlers"
 	_ "github.com/lib/pq"
 
 	"area-backend/routes/auth"
@@ -73,5 +74,5 @@ func main() {
 	router.HandleFunc("/api/login", newProxy(&a, auth.DoSomeLogin)).Methods("POST")
 	router.HandleFunc("/api/register", newProxy(&a, auth.DoSomeRegister)).Methods("POST")
 	router.HandleFunc("/api/area", newProxy(&a, arearoute.NewArea)).Methods("POST")
-	log.Fatal(http.ListenAndServe(":" + portString, router))
+	log.Fatal(http.ListenAndServe(":" + portString, handlers.CORS()(router)))
 }
