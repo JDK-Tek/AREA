@@ -1,29 +1,55 @@
 package main
 
 import (
-	"fmt"
-	"net/http"
-	"log"
-	"os"
-	"encoding/json"
 	"bytes"
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"strconv"
+
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 )
 
 const API_SEND = "https://discord.com/api/channels/"
 
+type Objects struct {
+	Channel int `json:"channel"`
+	Message string `json:"message"`
+}
+
+type Content struct {
+	Dishes Objects `json:"dishes"`
+}
+
 func doSomeSend(w http.ResponseWriter, req *http.Request) {
-	channel := req.URL.Query().Get("channel")
+	var content Content
+
+	decoder := json.NewDecoder(req.Body)
+	err := decoder.Decode(&content)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+		return
+	}
 	token := os.Getenv("DISCORD_TOKEN")
+	if token == "" {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "{ \"error\": \"token is missing\" }\n")
+		return
+	}
 	data := make(map[string]string)
-	data["content"] = req.URL.Query().Get("message")
+	data["content"] = content.Dishes.Message
 	dataBytes, err := json.Marshal(data)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
 		return
 	}
+	channel := strconv.Itoa(content.Dishes.Channel)
+	fmt.Println(channel, data["content"])
 	rep, err := http.NewRequest("POST", API_SEND+channel+"/messages", bytes.NewBuffer(dataBytes))
 	if err != nil {
 		w.WriteHeader(http.StatusBadGateway)
@@ -47,6 +73,6 @@ func main() {
 	fmt.Println("discord microservice container is running !")
 	router := mux.NewRouter()
 	godotenv.Load("/usr/mound.d/.env")
-	router.HandleFunc("/send", doSomeSend).Methods("GET")
+	router.HandleFunc("/send", doSomeSend).Methods("POST")
 	log.Fatal(http.ListenAndServe(":80", router))
 }
