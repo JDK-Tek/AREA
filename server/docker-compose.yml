@@ -31,3 +31,35 @@ services:
       - POSTGRES_DB=${DB_NAME}
     volumes:
       - ./database/setup.sql:/docker-entrypoint-initdb.d/setup.sql
+    
+  service-discord:
+    container_name: area-service-discord
+    build:
+      context: ./services/discord
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.discord.rule=PathPrefix(`/service/discord/`)"
+      - "traefik.http.services.discord.loadbalancer.server.port=80"
+      - "traefik.http.routers.discord.middlewares=stripprefix-service-discord"
+      - "traefik.http.middlewares.stripprefix-service-discord.stripprefix.prefixes=/service/discord"
+    networks:
+      - web
+
+  traefik:
+    image: traefik:v2.1
+    container_name: traefik
+    command:
+      # - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:${TRAEFIK_PORT}"
+    ports:
+      - "${TRAEFIK_PORT}:${TRAEFIK_PORT}"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    networks:
+      - web
+
+networks:
+  web:
+    external: false
+
