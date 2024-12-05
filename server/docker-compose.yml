@@ -49,9 +49,9 @@ services:
     networks:
       - web
 
-  area-traefik:
-    image: traefik:v3.2
-    container_name: traefik
+  reverse-proxy:
+    image: traefik:v2.10
+    container_name: area-traefik
     command:
       # - "--api.insecure=true"
       - "--providers.docker=true"
