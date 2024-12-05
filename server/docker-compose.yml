@@ -33,6 +33,10 @@ services:
       - ./database/setup.sql:/docker-entrypoint-initdb.d/setup.sql
     
   service-discord:
+    env_file:
+      - ./services/discord/.env
+    volumes:
+      - ./services/discord/.env:/usr/mount.d/.env
     container_name: area-service-discord
     build:
       context: ./services/discord
