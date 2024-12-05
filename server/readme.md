@@ -1,4 +1,43 @@
-# how to setup the db stuff
+## Launch my application
+
+>[!NOTE]
+> When i refer to `docker compose` command, you may want to use
+> `docker-compose` on some versions of docker.
+
+first, make sure you have `docker` & `docker compose` (or `docker-compose`)
+
+then, make sure to have a `.env` file in this repository, that contains:
+```py
+# backend
+BACKEND_PORT=...
+BACKEND_KEY=...
+
+# database
+DB_PORT=...
+DB_PASSWORD=...
+DB_USER=...
+DB_NAME=...
+```
+
+now you can run my app, from here, you can run:
+```sh
+docker compose up --build
+```
+
+this should run the app.
+
+## Debugging
+
+if you wanna debug the database, here is the command to connect to the docker:
+```sh
+docker exec -it area-database psql -U postgres -d area_database
+```
+
+you will be connected to the database, please see bellow to make postgres
+commands
+
+
+## How to get in touch with Postgres
 
 1. connect to db
 ```
@@ -48,63 +87,3 @@ if you want to change the password
 ```sql
 ALTER USER area_user WITH PASSWORD 'newpassword';
 ```
-
-
-## docker
-
-pull image
-```sh
-docker pull postgres
-```
-
-run postregsql on docker
-```sh
-docker run --name postgres -e POSTGRES_PASSWORD=mysecretpassword -d postgres
-```
-
-use psql console on container
-```sh
-docker exec -it postgres psql -U postgres
-```
-
-## my app
-
-create a .env with your informations in the `server/` directory
-```py
-# backend
-BACKEND_PORT=...
-
-# database
-DB_PORT=...
-DB_PASSWORD=...
-DB_USER=...
-DB_NAME=...
-```
-
-build the dockerz
-```sh
-docker compose build
-```
-
-start the dockerz
-```sh
-docker compose up
-```
-
-check for thee database docker
-```sh
-docker exec -it area-database psql -U postgres
-```
-```
-postgres=# \c area_database 
-You are now connected to database "area_database" as user "postgres".
-area_database=# select * from users;
- id | email | password 
-----+-------+----------
-  1 | hello | foo
-(1 row)
-
-area_database=# 
-```
-
-the backend should display the stuff
