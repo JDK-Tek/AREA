@@ -49,8 +49,8 @@ services:
     networks:
       - web
 
-  traefik:
-    image: traefik:v2.1
+  area-traefik:
+    image: traefik:v3.2
     container_name: traefik
     command:
       # - "--api.insecure=true"
