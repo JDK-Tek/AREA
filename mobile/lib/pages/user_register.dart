@@ -86,7 +86,9 @@ class _UserRegister extends State<UserRegister> {
         str = content['token']?.toString();
         if (str != null) {
           _token = str;
-          context.go("/");
+          if (mounted) {
+            context.go("/");
+          }
         } else {
           _errorMessage("Enter a valid email and password !");
         }
