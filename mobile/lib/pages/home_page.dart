@@ -41,7 +41,8 @@ class HeaderSection extends StatelessWidget {
     double screenWidth = MediaQuery.of(context).size.width;
 
     return Container(
-      // alignment: Alignment.center,
+      padding: const EdgeInsets.all(0.0),
+      margin: const EdgeInsets.all(0.0),
       height: screenWidth < screenHeight
           ? screenHeight * 0.30
           : screenHeight * 0.80,
@@ -54,8 +55,38 @@ class HeaderSection extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          Column(
+            children: [
+              Align(
+                alignment: Alignment.topRight,
+                child: ElevatedButton(
+                onPressed: () {
+                  context.go("/login");
+                },
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.all(0.0),
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                child: Text(
+                  "Login",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.nunito(
+                    fontWeight: FontWeight.w900,
+                    fontSize: screenWidth < screenHeight
+                        ? screenWidth * 0.049
+                        : screenWidth * 0.025,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+              )
+            ],
+          ),
           SizedBox(
             height: screenWidth < screenHeight
                 ? screenHeight * 0.095
