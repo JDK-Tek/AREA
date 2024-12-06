@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:footer/footer_view.dart';
-import 'package:mobile/footerarea.dart';
+import 'package:mobile/tools/footerarea.dart';
 
 List<Color> predefinedColors = [
   const Color(0xff410cab),

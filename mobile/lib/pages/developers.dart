@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:footer/footer_view.dart';
-import 'package:mobile/footerarea.dart';
-import 'package:mobile/home_page.dart';
+import 'package:mobile/tools/footerarea.dart';
+import 'package:mobile/pages/home_page.dart';
 
 
 
