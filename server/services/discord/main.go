@@ -8,12 +8,14 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"net/url"
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 )
 
 const API_SEND = "https://discord.com/api/channels/"
+const PERMISSIONS = 8 // 2080
 
 type Objects struct {
 	Channel int `json:"channel"`
@@ -22,6 +24,25 @@ type Objects struct {
 
 type Content struct {
 	Dishes Objects `json:"dishes"`
+}
+
+func getOAUTHLink(w http.ResponseWriter, req *http.Request) {
+	str := "https://discord.com/oauth2/authorize?"
+	redirect := req.URL.Query().Get("redirect")
+	if redirect == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "{ \"error\": \"missing\" }\n")
+		return
+	}
+	x := url.QueryEscape(redirect)
+	str += "client_id=" + os.Getenv("DISCORD_ID")
+	str += "&permissions=" + strconv.Itoa(PERMISSIONS)
+	str += "&response_type=code"
+	str += "&redirect_uri=" + x
+	str += "&integration_type=0"
+	str += "&scope=identify%20email%20bot%20guilds"
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintln(w, str)
 }
 
 func doSomeSend(w http.ResponseWriter, req *http.Request) {
@@ -74,5 +95,6 @@ func main() {
 	router := mux.NewRouter()
 	godotenv.Load("/usr/mound.d/.env")
 	router.HandleFunc("/send", doSomeSend).Methods("POST")
+	router.HandleFunc("/oauth", getOAUTHLink).Methods("GET")
 	log.Fatal(http.ListenAndServe(":80", router))
 }
