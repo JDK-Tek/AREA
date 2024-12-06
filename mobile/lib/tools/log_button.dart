@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/pages/login_page.dart';
 import 'package:go_router/go_router.dart';
 
 class RegisterButton extends StatefulWidget {

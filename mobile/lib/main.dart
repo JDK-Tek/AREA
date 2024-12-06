@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:mobile/pages/home_page.dart';
 import 'package:mobile/pages/login_page.dart';
 import 'package:mobile/pages/register_page.dart';
-import 'package:mobile/pages/user_register.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/pages/developers.dart';
 
@@ -14,7 +13,7 @@ class MyApp extends StatelessWidget {
   MyApp({super.key});
 
   final GoRouter _router = GoRouter(
-    initialLocation: '/login',
+    initialLocation: '/',
     routes: [
       GoRoute(
         path: '/',
