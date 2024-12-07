@@ -63,7 +63,7 @@ export default function LoginBox () {
                 <a href="/register" className="font-bold text-white dark:text-white hover:underline"> Register here!</a>
             </div>
             <Button text="Login" />  
-            <Button text="Connect with Google" />  
+            <Button text="Connect with Discord" />  
         </div>
     )
 }
