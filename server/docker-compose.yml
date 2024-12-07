@@ -51,12 +51,6 @@ services:
       - "traefik.http.services.discord.loadbalancer.server.port=80"
       - "traefik.http.routers.discord.middlewares=stripprefix-service-discord"
       - "traefik.http.middlewares.stripprefix-service-discord.stripprefix.prefixes=/service/discord"
-    environment:
-      - DB_HOST=database
-      - DB_PORT=${DATABASE_PORT}
-      - DB_USER=${DATABASE_USER}
-      - DB_PASSWORD=${DATABASE_PASSWORD}
-      - DB_NAME=${DATABASE_NAME}
     networks:
       - web
     
@@ -72,6 +66,12 @@ services:
       - "traefik.http.services.time.loadbalancer.server.port=80"
       - "traefik.http.routers.time.middlewares=stripprefix-service-time"
       - "traefik.http.middlewares.stripprefix-service-time.stripprefix.prefixes=/service/time"
+    environment:
+      - DB_HOST=database
+      - DB_PORT=${DATABASE_PORT}
+      - DB_USER=${DATABASE_USER}
+      - DB_PASSWORD=${DATABASE_PASSWORD}
+      - DB_NAME=${DATABASE_NAME}
     networks:
       - web
 
