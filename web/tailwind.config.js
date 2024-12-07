@@ -9,8 +9,9 @@ module.exports = {
           },
           colors: {
             chartpurple: {
-                100: "#5e17eb",
-                200: "#410cab"
+                100: "#5f18eb",
+                200: "#410cab",
+                300: "#11032e"
             },
             chartgray: {
                 100: "#a6a6a6",
