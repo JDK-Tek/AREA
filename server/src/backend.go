@@ -18,10 +18,15 @@ import (
 	_ "github.com/lib/pq"
 
 	"area-backend/area"
+<<<<<<< HEAD
 	"area-backend/routes/applet"
 	"area-backend/routes/arearoute"
 	"area-backend/routes/auth"
 	"area-backend/routes/service"
+=======
+	"area-backend/routes/arearoute"
+	"area-backend/routes/auth"
+>>>>>>> f8aa256 (feat(#65) implement orchestrator)
 )
 
 func newProxy(a *area.Area, f func(area.AreaRequest)) func(http.ResponseWriter, *http.Request) {
@@ -98,6 +103,65 @@ func onUpdate(a area.AreaRequest) {
 		return
 	}
 	a.Reply(string(body), http.StatusOK)
+}
+
+type UpdateRequest struct {
+	BridgeID int `json:"bridge"`
+}
+
+type UserMessage struct {
+	Spices json.RawMessage `json:"spices"`
+}
+
+func onUpdate(a area.AreaRequest) {
+	var message UserMessage
+	var ureq UpdateRequest
+	var reactid int
+
+	url := "http://reverse-proxy:42002/service/discord/send"
+	err := json.NewDecoder(a.Request.Body).Decode(&ureq)
+	if err != nil {
+		a.Error(err, http.StatusBadRequest)
+		return
+	}
+	err = a.Area.Database.QueryRow("select reaction from bridge where id = $1", ureq.BridgeID).Scan(&reactid)
+	if err != nil {
+		a.Error(err, http.StatusBadRequest)
+		return
+	}
+	err = a.Area.Database.QueryRow("select spices from reactions where id = $1", reactid).Scan(&message.Spices)
+	if err != nil {
+		a.Error(err, http.StatusInternalServerError)
+		return
+	}
+	obj, err := json.Marshal(message)
+	if err != nil {
+		a.Error(err, http.StatusInternalServerError)
+		return
+	}
+	fmt.Println(string(message.Spices))
+	// spices = []byte(`{ "spices": { "channel": 1304486924299272194, "message": "bite" } }`)
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(obj))
+	if err != nil {
+		a.Error(err, http.StatusBadGateway)
+		return
+	}
+	fmt.Println("world")
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	client := http.Client{}
+	rep, err := client.Do(req)
+	if err != nil {
+		a.Error(err, http.StatusBadGateway)
+		return
+	}
+	defer rep.Body.Close()
+	body, err := ioutil.ReadAll(rep.Body)
+	if err != nil {
+		a.Error(err, http.StatusBadGateway)
+		return
+	}
+	fmt.Println("Response body:", string(body))
 }
 
 func main() {

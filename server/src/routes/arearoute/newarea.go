@@ -1,12 +1,12 @@
 package arearoute
 
 import (
-	"area-backend/area"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"area-backend/area"
 )
 
 type AreaObject struct {
