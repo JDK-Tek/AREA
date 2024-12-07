@@ -11,7 +11,7 @@ import Logo from './../../../assets/fullLogo.png';
 
 export default function HeaderBar({ routes }) {
     return (
-        <div className="flex justify-between items-center p-3">
+        <div className="flex justify-between items-center p-3 relative z-10">
             <div>
                 <img src={Logo} alt="logo" className="h-[50px]"/>
             </div>
@@ -27,7 +27,7 @@ export default function HeaderBar({ routes }) {
                     text={"Get started"}
                     redirect={false}
                     onClick={() => window.location.href = "/register"}
-                    styleClolor={"bg-white text-chartgray-200 hover:bg-gray-200"}
+                    styleClolor={"bg-white text-chartgray-300 hover:bg-gray-200"}
                 />
             </div>
         </div>
