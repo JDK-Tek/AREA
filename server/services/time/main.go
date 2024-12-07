@@ -41,9 +41,32 @@ func makeAnError(w http.ResponseWriter, err error, status int) {
 	fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
 }
 
-func getTimeNow(w http.ResponseWriter, req *http.Request) (c Content, n int64, err error) {
+func getTimeNow() (n int64, err error) {
 	var r Response
 
+	rep, err := http.Get(API)
+	if err != nil {
+		return
+	}
+	defer rep.Body.Close()
+	body, err := ioutil.ReadAll(rep.Body)
+	if err != nil {
+		return
+	}
+	err = json.Unmarshal(body, &r)
+	if err != nil {
+		return
+	}
+	n = r.Timestamp
+	return
+}
+
+func getTimeAndContent(w http.ResponseWriter, req *http.Request) (c Content, n int64, err error) {
+	n, err = getTimeNow()
+	if err != nil {
+		makeAnError(w, err, http.StatusBadGateway)
+		return
+	}
 	c.BridgeId = -1
 	c.Spices.HowMuch = -1
 	decoder := json.NewDecoder(req.Body)
@@ -52,28 +75,11 @@ func getTimeNow(w http.ResponseWriter, req *http.Request) (c Content, n int64, e
 		makeAnError(w, err, http.StatusBadRequest)
 		return
 	}
-	rep, err := http.Get(API)
-	if err != nil {
-		makeAnError(w, err, http.StatusBadGateway)
-		return
-	}
-	defer rep.Body.Close()
-	body, err := ioutil.ReadAll(rep.Body)
-	if err != nil {
-		makeAnError(w, err, http.StatusBadGateway)
-		return
-	}
-	err = json.Unmarshal(body, &r)
-	if err != nil {
-		makeAnError(w, err, http.StatusBadGateway)
-		return
-	}
 	if c.BridgeId == -1 || c.Spices.HowMuch == -1 {
 		err = errors.New("invalid parsing")
 		makeAnError(w, err, http.StatusBadRequest)
 		return
 	}
-	n = r.Timestamp
 	return
 }
 
@@ -91,7 +97,7 @@ func spices2Seconds(spices Spices) int64 {
 func timeIn(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	var maybeid int
 
-	content, ms, err := getTimeNow(w, req)
+	content, ms, err := getTimeAndContent(w, req)
 	if err != nil {
 		return
 	}
@@ -106,7 +112,6 @@ func timeIn(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	secs += spices2Seconds(content.Spices)
 	timestamp := time.Unix(secs, nsecs)
 	_, err = db.Exec("insert into micro_time (bridgeid, triggers) values ($1, $2)", content.BridgeId, timestamp)
-	fmt.Println("hello man !")
 	if err != nil {
 		makeAnError(w, err, http.StatusInternalServerError)
 		return
@@ -158,12 +163,55 @@ func miniProxy(f func(http.ResponseWriter, *http.Request, *sql.DB), c *sql.DB) f
 	}
 }
 
+func masterThread(db *sql.DB) {
+	for {
+		var bridges []int
+		var n int
+
+		time.Sleep(time.Second)
+		ms, err := getTimeNow()
+		if err != nil {
+			fmt.Println("(x_x) <( here is what happend:", err.Error(), ")")
+			continue
+		}
+		secs := ms / 1000
+		nsecs := (ms % 1000) * 1e6
+		timestamp := time.Unix(secs, nsecs)
+		querry := "select bridgeid from micro_time where triggers < $1"
+		rows, err := db.Query(querry, timestamp)
+		if err != nil {
+			fmt.Println("(x_x) <( here is what happend:", err.Error(), ")")
+			continue
+		}
+		for rows.Next() {
+			if err := rows.Scan(&n); err != nil {
+				rows.Close()
+				continue
+			}
+			bridges = append(bridges, n)
+		}
+		rows.Close()
+		if err := rows.Err(); err != nil {
+			continue
+		}
+		for _, v := range bridges {
+			fmt.Println("need to trigger", v)
+		}
+		_, err = db.Exec("delete from micro_time where triggers < $1", timestamp)
+		if err != nil {
+			fmt.Println("(x_x) <( here is what happend:", err.Error(), ")")
+			continue
+		}
+	}
+}
+
 func main() {
 	db, err := connectToDatabase()
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(84)
 	}
+	go masterThread(db)
 	fmt.Println("time microservice container is running !")
 	router := mux.NewRouter()
 	router.HandleFunc("/in", miniProxy(timeIn, db)).Methods("POST")
