@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/tools/screen_scale.dart';
-import 'package:mobile/pages/login_page.dart';
-import 'package:mobile/pages/user_register.dart';
+import 'package:area/tools/screen_scale.dart';
+import 'package:area/pages/login_page.dart';
+import 'package:area/pages/user_register.dart';
 
 class RegisterPage extends StatefulWidget {
   RegisterPage({super.key});

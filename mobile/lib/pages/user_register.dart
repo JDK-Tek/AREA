@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/tools/space.dart';
-import 'package:mobile/pages/login_page.dart';
+import 'package:area/tools/space.dart';
+import 'package:area/pages/login_page.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';

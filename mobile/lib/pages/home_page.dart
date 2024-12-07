@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:footer/footer_view.dart';
-import 'package:mobile/tools/footerarea.dart';
+import 'package:area/tools/footerarea.dart';
 
 List<Color> predefinedColors = [
   const Color(0xff410cab),
@@ -21,10 +21,14 @@ class HomePage extends StatelessWidget {
       backgroundColor: Colors.white,
       body: FooterView(
         footer: const Footerarea().build(context),
-        children: const [
+        children: [
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [HeaderSection(), AppletSection()],
+            children: [
+              const HeaderSection(),
+              AppletSection(),
+              const ServiceSection()
+            ],
           ),
         ],
       ),
@@ -54,18 +58,35 @@ class HeaderSection extends StatelessWidget {
         ),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Column(
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Align(
-                alignment: Alignment.topRight,
-                child: ElevatedButton(
+              ElevatedButton(
+                onPressed: () {
+                  context.go('/');
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                child: Image.asset(
+                  'assets/fullLogo.png',
+                  height: screenHeight * 0.08,
+                  width: screenWidth < screenHeight
+                        ? screenWidth * 0.2 : screenWidth * 0.1,
+                  fit: BoxFit.contain,
+                ),
+              ),
+              ElevatedButton(
                 onPressed: () {
                   context.go("/login");
                 },
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.all(0.0),
+                  padding: const EdgeInsets.all(8),
                   backgroundColor: Colors.white,
                   foregroundColor: Colors.black,
                   shape: RoundedRectangleBorder(
@@ -84,7 +105,6 @@ class HeaderSection extends StatelessWidget {
                   ),
                 ),
               ),
-              )
             ],
           ),
           SizedBox(
@@ -110,7 +130,7 @@ class HeaderSection extends StatelessWidget {
             style: GoogleFonts.nunito(
               color: const Color(0xff5f18eb),
               fontSize: screenWidth < screenHeight
-                  ? screenWidth * 0.035
+                  ? screenWidth * 0.04
                   : screenWidth * 0.03,
               fontWeight: FontWeight.bold,
             ),
@@ -152,13 +172,6 @@ class HeaderSection extends StatelessWidget {
               ),
             ),
           ),
-          // Align(
-          //   alignment: Alignment.bottomCenter,
-          //   child: Image.asset(
-          //     "assets/deco.png",
-          //     fit: BoxFit.fitWidth,
-          //   ),
-          // )
         ],
       ),
     );
@@ -260,13 +273,27 @@ class Applet extends StatelessWidget {
 }
 
 class AppletSection extends StatelessWidget {
-  const AppletSection({super.key});
+  AppletSection({super.key});
+
+  final List<Applet> applets = [
+    Applet(
+      nameService: "Discord",
+      nameAREA: "Every 10sec receive message on Discord",
+      icon1: Icons.discord,
+      icon2: Icons.timer,
+      color: const Color(0xff7289da),
+      press: () {
+        print("Applet ${"Every 10sec receive message on Discord"} clicked");
+      },
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Container(
+      alignment: Alignment.center,
       decoration: const BoxDecoration(
-        color: Color.fromARGB(255, 255, 255, 255),
+        color: Colors.white,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -279,68 +306,142 @@ class AppletSection extends StatelessWidget {
               style: GoogleFonts.nunito(
                 fontSize: 16.8,
                 fontWeight: FontWeight.w900,
-                color: const Color.fromARGB(255, 0, 0, 0),
+                color: Colors.black,
               ),
             ),
           ),
           Wrap(
-            spacing: 5.0,
+            spacing: 10.0,
             alignment: WrapAlignment.center,
-            children: [
-              Applet(
-                icon1: Icons.audiotrack,
-                icon2: Icons.favorite,
-                nameAREA: "Exemple",
-                nameService: "Google",
-                press: () {
-                  print("mon code");
-                },
-                color: const Color(0xff05b348),
-              ),
-              Applet(
-                icon1: Icons.audiotrack,
-                icon2: Icons.favorite,
-                nameAREA: "Exemple",
-                nameService: "Google",
-                press: () {
-                  print("mon code");
-                },
-                color: const Color(0xff222222),
-              ),
-              Applet(
-                icon1: Icons.audiotrack,
-                icon2: Icons.favorite,
-                nameAREA: "Exemple",
-                nameService: "Google",
-                press: () {
-                  print("mon code");
-                },
-                color: const Color(0xff341d4f),
-              ),
-              Applet(
-                icon1: Icons.audiotrack,
-                icon2: Icons.favorite,
-                nameAREA: "Exemple",
-                nameService: "Google",
-                press: () {
-                  print("mon code");
-                },
-                color: const Color(0xffff1970),
-              ),
-            ],
+            children: applets
+                .map((applet) => _buildAppletCard(context, applet))
+                .toList(),
           ),
-          Container(
-            alignment: const Alignment(0, 0),
-            margin: const EdgeInsets.only(top: 20),
-            child: Text(
-              "or choose from 900+ services",
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAppletCard(BuildContext context, Applet applet) {
+    return applet;
+  }
+}
+
+class Service extends StatelessWidget {
+  final String serviceName;
+  final IconData icon;
+  final VoidCallback onPress;
+  final Color color;
+
+  const Service({
+    super.key,
+    required this.serviceName,
+    required this.icon,
+    required this.onPress,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    double screenHeight = MediaQuery.of(context).size.height;
+    double screenWidth = MediaQuery.of(context).size.width;
+
+    return Container(
+      width:
+          screenWidth < screenHeight ? screenWidth * 0.25 : screenWidth * 0.2,
+      height:
+          screenWidth < screenHeight ? screenHeight * 0.15 : screenWidth * 0.15,
+      margin: const EdgeInsets.only(top: 20),
+      child: ElevatedButton(
+        onPressed: onPress,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color,
+          padding: const EdgeInsets.all(10),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              color: Colors.white,
+              size: screenWidth < screenHeight
+                  ? screenWidth * 0.08
+                  : screenWidth * 0.05,
+            ),
+            SizedBox(height: screenWidth < screenHeight ? 10 : 5),
+            Text(
+              serviceName,
               textAlign: TextAlign.center,
               style: GoogleFonts.nunito(
-                fontSize: 16.8,
-                fontWeight: FontWeight.w900,
-                color: const Color(0xff410cab),
+                fontSize: screenWidth < screenHeight
+                    ? screenWidth * 0.04
+                    : screenWidth * 0.025,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ServiceSection extends StatelessWidget {
+  const ServiceSection({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final List<Map<String, dynamic>> services = [
+      {
+        'name': 'Discord',
+        'icon': Icons.discord,
+        'color': Colors.blueAccent,
+      },
+      {
+        'name': 'Weather',
+        'icon': Icons.cloud,
+        'color': Colors.lightBlue,
+      },
+      {
+        'name': 'Time',
+        'icon': Icons.timer,
+        'color': Colors.green,
+      },
+    ];
+
+    return Container(
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      child: Column(
+        children: [
+          Text(
+            "Services Available",
+            style: GoogleFonts.nunito(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Wrap(
+            spacing: 10.0,
+            alignment: WrapAlignment.center,
+            children: services
+                .map(
+                  (service) => Service(
+                    serviceName: service['name'],
+                    icon: service['icon'],
+                    color: service['color'],
+                    onPress: () {
+                      print("Service ${service['name']} pressed");
+                    },
+                  ),
+                )
+                .toList(),
           ),
         ],
       ),

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/pages/home_page.dart';
-import 'package:mobile/pages/login_page.dart';
-import 'package:mobile/pages/register_page.dart';
+import 'package:area/pages/home_page.dart';
+import 'package:area/pages/login_page.dart';
+import 'package:area/pages/register_page.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mobile/pages/developers.dart';
+import 'package:area/pages/developers.dart';
 
 void main() {
   runApp(MyApp());

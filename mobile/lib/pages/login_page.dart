@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/tools/screen_scale.dart';
-import 'package:mobile/tools/user_ouput.dart';
+import 'package:area/tools/screen_scale.dart';
+import 'package:area/tools/user_ouput.dart';
 import 'dart:async';
 
 class UserBox extends StatefulWidget {
