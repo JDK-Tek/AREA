@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	// "bytes"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -163,7 +163,15 @@ func miniProxy(f func(http.ResponseWriter, *http.Request, *sql.DB), c *sql.DB) f
 	}
 }
 
+type Message struct {
+	Bridge int `json:"bridge"`
+}
+
 func masterThread(db *sql.DB) {
+	var msg Message
+
+	client := http.Client{}
+	url := "http://backend:42000/api/orchestrator"
 	for {
 		var bridges []int
 		var n int
@@ -195,7 +203,22 @@ func masterThread(db *sql.DB) {
 			continue
 		}
 		for _, v := range bridges {
-			fmt.Println("need to trigger", v)
+			msg.Bridge = v
+			obj, err := json.Marshal(msg)
+			if err != nil {
+				continue
+			}
+			req, err := http.NewRequest("PUT", url, bytes.NewBuffer(obj))
+			fmt.Println("object is", string(obj))
+			if err != nil {
+				continue
+			}
+			rep, err := client.Do(req)
+			if err != nil {
+				continue
+			}
+			rep.Body.Close()
+			fmt.Println("finish triggering", v)
 		}
 		_, err = db.Exec("delete from micro_time where triggers < $1", timestamp)
 		if err != nil {
