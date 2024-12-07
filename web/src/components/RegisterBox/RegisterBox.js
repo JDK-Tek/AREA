@@ -5,6 +5,10 @@
 ** RegisterBox
 */
 
+import { LoginTextField } from "../LoginBox/LoginBox"
+import { LoginTextFieldsBox } from "../LoginBox/LoginBox"
+import { Button } from "../LoginBox/LoginBox"
+
 function RegisterTexts() {
     return (
         <div className="text-center">
@@ -14,39 +18,6 @@ function RegisterTexts() {
             <p className="text-violet-600 font-bold text-xl sm:text-2xl md:text-3xl">
                 Welcome to AREA !
             </p>
-        </div>
-    )
-}
-
-function LoginTextField ( {text, id} ) {
-    return (
-        <div className="pt-5 justify-center flex">
-            <input type={id} id={id} className="bg-gray-500 border border-gray-700 text-white 
-                                          text-lg sm:text-xl md:text-2xl 
-                                          w-11/12 sm:w-4/5 md:w-3/4 lg:w-2/3 
-                                          rounded-full focus:ring-blue-500 focus:border-blue-500 block p-3 sm:p-4" 
-                   placeholder={text} required />
-        </div>
-    )
-}
-
-function LoginTextFieldsBox( {text1, text2} ) {
-    return (
-        <div className="pt-10">
-            <LoginTextField text={text1} id="email" />
-            <LoginTextField text={text2} id="password"/>
-        </div>
-    )
-}
-
-function Button( {text} ) {
-    return(
-        <div className="flex justify-center pt-10">
-            <button className="bg-white hover:bg-gray-300 text-black 
-                              text-base sm:text-lg md:text-xl lg:text-2xl 
-                              font-bold py-2 sm:py-3 px-8 sm:px-10 rounded-full">
-                {text}
-            </button>
         </div>
     )
 }
