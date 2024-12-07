@@ -5,6 +5,10 @@
 ** App
 */
 
+import React from 'react';
+
+import { Routes, Route } from 'react-router-dom';
+
 import Home from "./routes/home/Home";
 import Login from "./routes/login/Login";
 import Register from "./routes/register/Register";
@@ -13,11 +17,11 @@ function App() {
 
   return (
     <div>
-      
-      {/* <Home /> */}
-      <Login />
-      {/* <Register /> */}
-
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+      </Routes>
     </div>
   );
 }
