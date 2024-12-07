@@ -2,9 +2,11 @@ package arearoute
 
 import (
 	"area-backend/area"
+	"bytes"
 	"encoding/json"
-	"net/http"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 )
 
 type AreaObject struct {
@@ -16,6 +18,11 @@ type AreaObject struct {
 type Bridge struct {
 	Action AreaObject `json:"action"`
 	Reaction AreaObject `json:"reaction"`
+}
+
+type ToSend struct {
+	Spices json.RawMessage `json:"spices"`
+	Bridge int `json:"bridge"`
 }
 
 func createActionReaction(a area.AreaRequest, bridge Bridge) int {
@@ -77,6 +84,7 @@ func createActionReaction(a area.AreaRequest, bridge Bridge) int {
 func NewArea(a area.AreaRequest) {
 	var email, err = a.AssertToken()
 	var bridge Bridge
+	var tosend ToSend
 
 	if err != nil {
 		a.Error(err, http.StatusBadRequest)
@@ -87,9 +95,37 @@ func NewArea(a area.AreaRequest) {
 		a.Error(err, http.StatusBadRequest)
 		return
 	}
-	n := createActionReaction(a, bridge)
-	if n == -1 {
+	tosend.Bridge = createActionReaction(a, bridge)
+	if tosend.Bridge == -1 {
 		return
 	}
-	fmt.Fprintf(a.Writter, "Your email is %s, bridge of action is %d", email, n)
+	tosend.Spices = bridge.Action.Spices
+	url := fmt.Sprintf("http://reverse-proxy:42002/service/%s/%s",
+		bridge.Action.Service,
+		bridge.Action.Name)
+	obj, err := json.Marshal(tosend)
+	if err != nil {
+		a.Error(err, http.StatusInternalServerError)
+		return
+	}
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(obj))
+	if err != nil {
+		a.Error(err, http.StatusInternalServerError)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	client := http.Client{}
+	rep, err := client.Do(req)
+	if err != nil {
+		a.Error(err, http.StatusBadGateway)
+		return
+	}
+	defer rep.Body.Close()
+	body, err := ioutil.ReadAll(rep.Body)
+	if err != nil {
+		a.Error(err, http.StatusInternalServerError)
+		return
+	}
+	fmt.Fprintf(a.Writter, "Your email is %s, Awnser is %s", email, string(body))
 }
