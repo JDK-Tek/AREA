@@ -1,7 +1,7 @@
 package main
 
 import (
-	// "database/sql"
+	"database/sql"
 	// "bytes"
 	"encoding/json"
 	"fmt"
@@ -9,11 +9,12 @@ import (
 	"log"
 	"net/http"
 	// "net/url"
-	// "os"
+	"os"
 	// "strconv"
 	// "time"
 
 	"github.com/gorilla/mux"
+	_ "github.com/lib/pq"
 )
 
 const API = "https://tools.aimylogic.com/api/now?tz=Europe/Paris"
@@ -36,7 +37,7 @@ func makeAnError(w http.ResponseWriter, err error, status int) {
 	fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
 }
 
-func timeIn(w http.ResponseWriter, req *http.Request) {
+func timeIn(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	var userContent Content
 	var timeRep Response
 
@@ -66,9 +67,52 @@ func timeIn(w http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(w, "hello %v", timeRep.Timestamp)
 }
 
+func connectToDatabase() (*sql.DB, error) {
+	dbPassword := os.Getenv("DB_PASSWORD")
+	if dbPassword == "" {
+		log.Fatal("DB_PASSWORD not found")
+	}
+	dbUser := os.Getenv("DB_USER")
+	if dbUser == "" {
+		log.Fatal("DB_USER not found")
+	}
+	dbHost := os.Getenv("DB_HOST")
+	if dbHost == "" {
+		log.Fatal("DB_HOST not found")
+	}
+	dbName := os.Getenv("DB_NAME")
+	if dbName == "" {
+		log.Fatal("DB_NAME not found")
+	}
+	dbPort := os.Getenv("DB_PORT")
+	if dbPort == "" {
+		log.Fatal("DB_PORT not found")
+	}
+	connectStr := fmt.Sprintf(
+		"postgresql://%s:%s@%s:%s/%s?sslmode=disable",
+		dbUser,
+		dbPassword,
+		dbHost,
+		dbPort,
+		dbName,
+	)
+	return sql.Open("postgres", connectStr)
+}
+
+func miniProxy(f func(http.ResponseWriter, *http.Request, *sql.DB), c *sql.DB) func(http.ResponseWriter, *http.Request) {
+	return func(a http.ResponseWriter, b *http.Request) {
+		f(a, b, c)
+	}
+}
+
 func main() {
-	router := mux.NewRouter()
-	router.HandleFunc("/in", timeIn).Methods("POST")
-	log.Fatal(http.ListenAndServe(":80", router))
+	db, err := connectToDatabase()
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(84)
+	}
 	fmt.Println("time microservice container is running !")
+	router := mux.NewRouter()
+	router.HandleFunc("/in", miniProxy(timeIn, db)).Methods("POST")
+	log.Fatal(http.ListenAndServe(":80", router))
 }
