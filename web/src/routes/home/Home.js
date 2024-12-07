@@ -5,7 +5,7 @@
 ** Home
 */
 
-import Header from "./header/Header";
+import Header from "./../../components/Header/Header";
 import Content from "./Content";
 import Footer from "./Footer";
 
