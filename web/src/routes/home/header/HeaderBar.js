@@ -5,9 +5,9 @@
 ** HeaderBar
 */
 
-import Button from "../../components/Button";
+import Button from "../../../components/Button";
 
-import Logo from './../../assets/fullLogo.png';
+import Logo from './../../../assets/fullLogo.png';
 
 export default function HeaderBar({ routes }) {
     return (
