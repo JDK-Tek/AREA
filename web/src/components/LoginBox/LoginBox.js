@@ -18,7 +18,7 @@ function LoginTexts() {
     )
 }
 
-function LoginTextField ( {text, id} ) {
+export function LoginTextField ( {text, id} ) {
     return (
         <div className="pt-5 justify-center flex">
             <input type={id} id={id} className="bg-gray-500 border border-gray-700 text-white 
@@ -30,7 +30,7 @@ function LoginTextField ( {text, id} ) {
     )
 }
 
-function LoginTextFieldsBox( {text1, text2} ) {
+export function LoginTextFieldsBox( {text1, text2} ) {
     return (
         <div className="pt-10">
             <LoginTextField text={text1} id="email" />
@@ -39,7 +39,7 @@ function LoginTextFieldsBox( {text1, text2} ) {
     )
 }
 
-function Button( {text} ) {
+export function Button( {text} ) {
     return(
         <div className="flex justify-center pt-10">
             <button className="bg-white hover:bg-gray-300 text-black 
