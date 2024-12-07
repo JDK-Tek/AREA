@@ -72,8 +72,9 @@ func onUpdate(a area.AreaRequest) {
 		a.Error(err, http.StatusInternalServerError)
 		return
 	}
-	fmt.Println(string(message.Spices))
+	fmt.Println(string(obj))
 	url := fmt.Sprintf("http://reverse-proxy:42002/service/%s/%s", service, name)
+	fmt.Println(service, name)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(obj))
 	if err != nil {
 		a.Error(err, http.StatusBadGateway)
@@ -94,7 +95,7 @@ func onUpdate(a area.AreaRequest) {
 		a.Error(err, http.StatusBadGateway)
 		return
 	}
-	fmt.Println("Response body:", string(body))
+	a.Reply(string(body), http.StatusOK)
 }
 
 func main() {

@@ -23,17 +23,17 @@ func createActionReaction(a area.AreaRequest, bridge Bridge) int {
 	querry := `select id from actions where service = $1
 		and name = $2 and spices = $3`
 	err := a.Area.Database.QueryRow(querry,
-			bridge.Action.Name,
-			bridge.Action.Service,
-			bridge.Action.Spices,
+		bridge.Action.Service,
+		bridge.Action.Name,
+		bridge.Action.Spices,
 		).Scan(&actionid)
 	if err != nil {
 		querry = `insert into actions (service, name, spices)
 		values ($1, $2, $3) returning id`
 		err = a.Area.Database.QueryRow(querry,
-				bridge.Action.Name,
-				bridge.Action.Service,
-				bridge.Action.Spices,
+			bridge.Action.Service,
+			bridge.Action.Name,
+			bridge.Action.Spices,
 			).Scan(&actionid)
 	}
 	if err != nil {
@@ -43,17 +43,17 @@ func createActionReaction(a area.AreaRequest, bridge Bridge) int {
 	querry = `select id from reactions where service = $1
 	and name = $2 and spices = $3`
 	err = a.Area.Database.QueryRow(querry,
-			bridge.Reaction.Name,
-			bridge.Reaction.Service,
-			bridge.Reaction.Spices,
+		bridge.Reaction.Service,
+		bridge.Reaction.Name,
+		bridge.Reaction.Spices,
 		).Scan(&reactionid)
 	if err != nil {
 		querry = `insert into reactions (service, name, spices)
 		values ($1, $2, $3) returning id`
 		err = a.Area.Database.QueryRow(querry,
-				bridge.Reaction.Name,
-				bridge.Reaction.Service,
-				bridge.Reaction.Spices,
+			bridge.Reaction.Service,
+			bridge.Reaction.Name,
+			bridge.Reaction.Spices,
 			).Scan(&reactionid)
 	}
 	if err != nil {
