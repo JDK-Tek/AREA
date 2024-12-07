@@ -12,6 +12,7 @@ import { Routes, Route } from 'react-router-dom';
 import Home from "./routes/home/Home";
 import Login from "./routes/login/Login";
 import Register from "./routes/register/Register";
+import NotFound from "./routes/notfound/NotFound";
 
 function App() {
 
@@ -21,6 +22,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </div>
   );
