@@ -64,7 +64,7 @@ function FooterLink()
 export default function Footer() {
 
     return (
-        <div className="bg-chartgray-200 p-14">
+        <div className="bg-chartgray-300 p-14">
             <img className="w-[150px]" src={Logo} alt="Logo"/>
             <div className="mt-5 p-5">
                 <div className="flex flex-wrap gap-7">
