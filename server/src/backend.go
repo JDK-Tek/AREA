@@ -44,8 +44,8 @@ func onUpdate(a area.AreaRequest) {
 	var message UserMessage
 	var ureq UpdateRequest
 	var reactid int
+	var service, name string
 
-	url := "http://reverse-proxy:42002/service/discord/send"
 	err := json.NewDecoder(a.Request.Body).Decode(&ureq)
 	if err != nil {
 		a.Error(err, http.StatusBadRequest)
@@ -56,7 +56,9 @@ func onUpdate(a area.AreaRequest) {
 		a.Error(err, http.StatusBadRequest)
 		return
 	}
-	err = a.Area.Database.QueryRow("select spices from reactions where id = $1", reactid).Scan(&message.Spices)
+	err = a.Area.Database.
+		QueryRow("select service, name, spices from reactions where id = $1", reactid).
+		Scan(&service, &name, &message.Spices)
 	if err != nil {
 		a.Error(err, http.StatusInternalServerError)
 		return
@@ -67,7 +69,7 @@ func onUpdate(a area.AreaRequest) {
 		return
 	}
 	fmt.Println(string(message.Spices))
-	// spices = []byte(`{ "spices": { "channel": 1304486924299272194, "message": "bite" } }`)
+	url := fmt.Sprintf("http://reverse-proxy:42002/service/%s/%s", service, name)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(obj))
 	if err != nil {
 		a.Error(err, http.StatusBadGateway)
