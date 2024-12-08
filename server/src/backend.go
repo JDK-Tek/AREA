@@ -25,13 +25,17 @@ import (
 )
 
 func newProxy(a *area.Area, f func(area.AreaRequest)) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		f(area.AreaRequest{
-			Area:    a,
-			Writter: w,
-			Request: r,
-		})
-	}
+    return func(w http.ResponseWriter, r *http.Request) {
+        w.Header().Set("Access-Control-Allow-Origin", "*")
+        w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE")
+        w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+        f(area.AreaRequest{
+            Area: a,
+            Writter: w,
+            Request: r,
+        })
+    }
 }
 
 type UpdateRequest struct {
@@ -97,12 +101,11 @@ func onUpdate(a area.AreaRequest) {
 }
 
 func main() {
-	var router = mux.NewRouter()
-	var err error
-	var dbPassword, dbUser string
-	var connectStr string
-	var portString string
-	var a area.Area
+    var err error
+    var dbPassword, dbUser string
+    var connectStr string
+    var portString string
+    var a area.Area
 
 	if err = godotenv.Load("/usr/mount.d/.env"); err != nil {
 		log.Fatal("no .env")
@@ -137,7 +140,15 @@ func main() {
 		time.Sleep(time.Second)
 		err = a.Database.Ping()
 	}
-	fmt.Println("=> server listens on port ", portString)
+
+	corsMiddleware := handlers.CORS(
+        handlers.AllowedOrigins([]string{"http://localhost:3000"}),
+        handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE"}),
+        handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
+    )
+
+	router := mux.NewRouter()
+
 	router.HandleFunc("/api/login", newProxy(&a, auth.DoSomeLogin)).Methods("POST")
 	router.HandleFunc("/api/register", newProxy(&a, auth.DoSomeRegister)).Methods("POST")
 	router.HandleFunc("/api/area", newProxy(&a, arearoute.NewArea)).Methods("POST")
@@ -145,5 +156,7 @@ func main() {
 	router.HandleFunc("/api/service/{id}", newProxy(&a, service.GetServiceApplets)).Methods("GET")
 	router.HandleFunc("/api/applets", newProxy(&a, applet.GetApplets)).Methods("GET")
 	router.HandleFunc("/api/orchestrator", newProxy(&a, onUpdate)).Methods("PUT")
-	log.Fatal(http.ListenAndServe(":"+portString, handlers.CORS()(router)))
+
+	fmt.Println("=> server listens on port ", portString)
+	log.Fatal(http.ListenAndServe(":"+portString, corsMiddleware(router)))
 }
