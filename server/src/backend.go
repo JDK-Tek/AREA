@@ -175,70 +175,6 @@ func codeCallback(a area.AreaRequest) {
 	}, http.StatusOK)
 }
 
-
-func main() {
-	var router = mux.NewRouter()
-	var err error
-	var dbPassword, dbUser string
-	var connectStr string
-	var portString string
-	var a area.Area
-
-type UserMessage struct {
-	Spices json.RawMessage `json:"spices"`
-}
-
-func onUpdate(a area.AreaRequest) {
-	var message UserMessage
-	var ureq UpdateRequest
-	var reactid int
-
-	url := "http://reverse-proxy:42002/service/discord/send"
-	err := json.NewDecoder(a.Request.Body).Decode(&ureq)
-	if err != nil {
-		a.Error(err, http.StatusBadRequest)
-		return
-	}
-	err = a.Area.Database.QueryRow("select reaction from bridge where id = $1", ureq.BridgeID).Scan(&reactid)
-	if err != nil {
-		a.Error(err, http.StatusBadRequest)
-		return
-	}
-	err = a.Area.Database.QueryRow("select spices from reactions where id = $1", reactid).Scan(&message.Spices)
-	if err != nil {
-		a.Error(err, http.StatusInternalServerError)
-		return
-	}
-	obj, err := json.Marshal(message)
-	if err != nil {
-		a.Error(err, http.StatusInternalServerError)
-		return
-	}
-	fmt.Println(string(message.Spices))
-	// spices = []byte(`{ "spices": { "channel": 1304486924299272194, "message": "bite" } }`)
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(obj))
-	if err != nil {
-		a.Error(err, http.StatusBadGateway)
-		return
-	}
-	fmt.Println("world")
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
-	client := http.Client{}
-	rep, err := client.Do(req)
-	if err != nil {
-		a.Error(err, http.StatusBadGateway)
-		return
-	}
-	defer rep.Body.Close()
-	body, err := ioutil.ReadAll(rep.Body)
-	if err != nil {
-		a.Error(err, http.StatusBadGateway)
-		return
-	}
-	fmt.Println("Response body:", string(body))
-}
-
 func main() {
     router := mux.NewRouter()
     var err error
@@ -295,6 +231,8 @@ func main() {
 	router.HandleFunc("/api/oauth/{service}", newProxy(&a, oauthSetter)).Methods("POST")
 	router.HandleFunc("/api/applets", newProxy(&a, applet.GetApplets)).Methods("GET")
 	router.HandleFunc("/api/orchestrator", newProxy(&a, onUpdate)).Methods("PUT")
+	router.HandleFunc("/caca", newProxy(&a, codeCallback)).Methods("GET")
+    
     fmt.Println("=> server listens on port ", portString)
     log.Fatal(http.ListenAndServe(":"+portString, corsMiddleware(router)))
 }
