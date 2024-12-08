@@ -27,11 +27,12 @@ function RegisterTexts() {
 
 export default function RegisterBox () {
 
+    const backendUrl = process.env.REACT_APP_BACKEND_URL
+
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
 
     const handleChange = (e) => {
-        console.log(e.target.id)
         if (e.target.id === "email") {
             setEmail(e.target.value)
         }
@@ -42,7 +43,7 @@ export default function RegisterBox () {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        axios.post("http://localhost:42000/api/register", {
+        axios.post(`${backendUrl}/api/register`, {
             email: email,
             password: password
         }, {
