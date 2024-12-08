@@ -18,15 +18,10 @@ import (
 	_ "github.com/lib/pq"
 
 	"area-backend/area"
-<<<<<<< HEAD
 	"area-backend/routes/applet"
 	"area-backend/routes/arearoute"
 	"area-backend/routes/auth"
 	"area-backend/routes/service"
-=======
-	"area-backend/routes/arearoute"
-	"area-backend/routes/auth"
->>>>>>> f8aa256 (feat(#65) implement orchestrator)
 )
 
 func newProxy(a *area.Area, f func(area.AreaRequest)) func(http.ResponseWriter, *http.Request) {
@@ -218,7 +213,6 @@ func main() {
 	router.HandleFunc("/api/service/{id}", newProxy(&a, service.GetServiceApplets)).Methods("GET")
 	router.HandleFunc("/api/applets", newProxy(&a, applet.GetApplets)).Methods("GET")
 	router.HandleFunc("/api/orchestrator", newProxy(&a, onUpdate)).Methods("PUT")
-    
     fmt.Println("=> server listens on port ", portString)
     log.Fatal(http.ListenAndServe(":"+portString, corsMiddleware(router)))
 }
