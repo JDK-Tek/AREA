@@ -56,6 +56,8 @@ export function Button( {text, handleClick} ) {
 
 export default function LoginBox () {
 
+    const backendUrl = process.env.REACT_APP_BACKEND_URL
+
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
 
@@ -70,7 +72,7 @@ export default function LoginBox () {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        axios.post("http://localhost:42000/api/login", {
+        axios.post(`${backendUrl}/api/login`, {
             email: email,
             password: password
         }, {
