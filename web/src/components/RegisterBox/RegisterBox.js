@@ -16,7 +16,7 @@ function RegisterTexts() {
     return (
         <div className="text-center">
             <p className="text-white text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-spartan font-bold">
-                Register
+                REGISTER
             </p>
             <p className="text-violet-600 font-bold text-xl sm:text-2xl md:text-3xl">
                 Welcome to AREA !
