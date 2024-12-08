@@ -323,7 +323,16 @@ class AppletSection extends StatelessWidget {
   }
 
   Widget _buildAppletCard(BuildContext context, Applet applet) {
-    return applet;
+    return Applet(
+      nameService: applet.nameService,
+      nameAREA: applet.nameAREA,
+      icon1: applet.icon1,
+      icon2: applet.icon2,
+      color: applet.color,
+      press: () {
+        context.go("/area");
+      },
+    );
   }
 }
 

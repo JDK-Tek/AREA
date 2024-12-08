@@ -4,6 +4,7 @@ import 'package:area/pages/login_page.dart';
 import 'package:area/pages/register_page.dart';
 import 'package:go_router/go_router.dart';
 import 'package:area/pages/developers.dart';
+import 'package:area/pages/area.dart';
 
 void main() {
   runApp(MyApp());
@@ -18,6 +19,10 @@ class MyApp extends StatelessWidget {
       GoRoute(
         path: '/',
         builder: (context, state) => const HomePage(),
+      ),
+      GoRoute(
+        path: '/area',
+        builder: (context, state) => const CreateAutomationPage(),
       ),
       GoRoute(
         path: '/login',
