@@ -11,11 +11,8 @@ import (
 	"os"
 	"strconv"
 	"time"
-<<<<<<< HEAD
 	"html"
 	"net/url"
-=======
->>>>>>> fa3f3e5 (feat(#65) implement orchestrator)
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -23,15 +20,10 @@ import (
 	_ "github.com/lib/pq"
 
 	"area-backend/area"
-<<<<<<< HEAD
 	"area-backend/routes/applet"
 	"area-backend/routes/arearoute"
 	"area-backend/routes/auth"
 	"area-backend/routes/service"
-=======
-	"area-backend/routes/arearoute"
-	"area-backend/routes/auth"
->>>>>>> fa3f3e5 (feat(#65) implement orchestrator)
 )
 
 func newProxy(a *area.Area, f func(area.AreaRequest)) func(http.ResponseWriter, *http.Request) {
