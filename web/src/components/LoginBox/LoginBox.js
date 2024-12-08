@@ -18,33 +18,33 @@ function LoginTexts() {
     )
 }
 
-export function LoginTextField ( {text, id} ) {
+export function LoginTextField ( {text, id, handleChangeField} ) {
     return (
         <div className="pt-5 justify-center flex">
             <input type={id} id={id} className="bg-gray-500 border border-gray-700 text-white 
                                           text-lg sm:text-xl md:text-2xl 
                                           w-11/12 sm:w-4/5 md:w-3/4 lg:w-2/3 
                                           rounded-full focus:ring-blue-500 focus:border-blue-500 block p-3 sm:p-4" 
-                   placeholder={text} required />
+                   placeholder={text} required onChange={handleChangeField}/>
         </div>
     )
 }
 
-export function LoginTextFieldsBox( {text1, text2} ) {
+export function LoginTextFieldsBox( {text1, text2, handleChangeField} ) {
     return (
         <div className="pt-10">
-            <LoginTextField text={text1} id="email" />
-            <LoginTextField text={text2} id="password"/>
+            <LoginTextField text={text1} id="email" handleChangeField={handleChangeField}/>
+            <LoginTextField text={text2} id="password" handleChangeField={handleChangeField}/>
         </div>
     )
 }
 
-export function Button( {text} ) {
+export function Button( {text, handleClick} ) {
     return(
         <div className="flex justify-center pt-10">
             <button className="bg-white hover:bg-gray-300 text-black 
                               text-base sm:text-lg md:text-xl lg:text-2xl 
-                              font-bold py-2 sm:py-3 px-8 sm:px-10 rounded-full">
+                              font-bold py-2 sm:py-3 px-8 sm:px-10 rounded-full" onClick={handleClick}>
                 {text}
             </button>
         </div>
