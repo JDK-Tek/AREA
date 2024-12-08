@@ -6,6 +6,7 @@
 */
 
 import React, { useState } from "react"
+import axios from "axios"
 
 import { LoginTextField } from "../LoginBox/LoginBox"
 import { LoginTextFieldsBox } from "../LoginBox/LoginBox"
@@ -33,43 +34,31 @@ export default function RegisterBox () {
         console.log(e.target.id)
         if (e.target.id === "email") {
             setEmail(e.target.value)
-            console.log(email)
         }
         if (e.target.id === "password") {
             setPassword(e.target.value)
-            console.log(password)
         }
     }
 
-        const handleSubmit = (e) => {
+    const handleSubmit = (e) => {
         e.preventDefault();
-        console.log(email);
-        console.log(password);
-        fetch("http://localhost:42000/api/register", {
-            method: "POST",
+        axios.post("http://localhost:42000/api/register", {
+            email: email,
+            password: password
+        }, {
             headers: {
-                "No-Access-Control-Allow-Origin": "*",
                 "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                email: email,
-                password: password
-            })
+            }
         })
         .then((response) => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then((data) => {
-            console.log('Success:', data);
+            console.log('Success:', response.data);
             window.location.href = "/login";
         })
         .catch((error) => {
             console.error('Error:', error);
         });
     }
+
     return (
         <div className="bg-gradient-to-b from-zinc-700 to-gray-800 flex flex-col justify-center 
                         w-3/4 sm:w-3/4 md:w-2/3 lg:w-1/2 xl:w-2/3 
