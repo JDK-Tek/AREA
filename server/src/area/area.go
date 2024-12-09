@@ -32,7 +32,7 @@ func (it *Area) NewToken(id int) (string, error) {
     return token.SignedString(secretBytes)
 }
 
-func (it *Area) Token2Email(str string) (string, error) {
+func (it *Area) Token2Email(str string) (int, error) {
 	var token, err = jwt.Parse(str, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("bad method")
@@ -43,13 +43,13 @@ func (it *Area) Token2Email(str string) (string, error) {
 	var claims jwt.MapClaims
 
 	if err != nil {
-		return "", err
+		return -1, err
 	}
 	if claims, ok = token.Claims.(jwt.MapClaims); ok && token.Valid {
-		email := claims["email"].(string)
-		return email, nil
+		id := claims["id"].(int)
+		return id, nil
 	}
-	return "", fmt.Errorf("invalid token or expired")
+	return -1, fmt.Errorf("invalid token or expired")
 }
 
 type AreaRequest struct {
@@ -89,11 +89,11 @@ func (it *AreaRequest) Reply(object any, code int) {
     fmt.Fprintln(it.Writter, string(data))
 }
 
-func (it *AreaRequest) AssertToken() (string, error) {
+func (it *AreaRequest) AssertToken() (int, error) {
 	var str = it.Request.Header.Get("Authorization")
 
 	if str == "" || !strings.HasPrefix(str, "Bearer ") {
-		return "", fmt.Errorf("no authorization/bad init (no bearer maybe ?)")
+		return -1, fmt.Errorf("no authorization/bad init (no bearer maybe ?)")
 	}
 	str = strings.TrimPrefix(str, "Bearer ")
 	return it.Area.Token2Email(str)

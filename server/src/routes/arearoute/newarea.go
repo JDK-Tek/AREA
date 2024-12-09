@@ -82,7 +82,7 @@ func createActionReaction(a area.AreaRequest, bridge Bridge) int {
 }
 
 func NewArea(a area.AreaRequest) {
-	var email, err = a.AssertToken()
+	var id, err = a.AssertToken()
 	var bridge Bridge
 	var tosend ToSend
 
@@ -127,5 +127,5 @@ func NewArea(a area.AreaRequest) {
 		a.Error(err, http.StatusInternalServerError)
 		return
 	}
-	fmt.Fprintf(a.Writter, "Your email is %s, Awnser is %s", email, string(body))
+	fmt.Fprintf(a.Writter, "Your email is %d, Awnser is %s", id, string(body))
 }
