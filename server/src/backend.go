@@ -76,11 +76,10 @@ func main() {
     }
 
     corsMiddleware := handlers.CORS(
-        handlers.AllowedOrigins([]string{"http://localhost:3000"}),
+        handlers.AllowedOrigins([]string{"*"}),
         handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE"}),
         handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
     )
-    
     
     router.HandleFunc("/api/login", newProxy(&a, auth.DoSomeLogin)).Methods("POST")
     router.HandleFunc("/api/register", newProxy(&a, auth.DoSomeRegister)).Methods("POST")
