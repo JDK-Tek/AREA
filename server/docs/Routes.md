@@ -85,6 +85,32 @@
 }
 ```
 
+## `GET` oauth getter
+> http://localhost:42000/api/oauth/[service]
+
+Get the oauth for a service.
+
+## Query Params
+| Key | Value |
+|-----|-------|
+| redirect | <link> |
+
+It returns the link for you to do the OAUTH.
+
+## `POST` oauth setter
+> http://localhost:42000/api/oauth/[service]
+
+Set the oauth result (token, code to get token...)
+
+### Body
+```json
+{
+    "code": "<code>"
+}
+```
+
+It returns a session token if it succeed, or anything if its an error.
+
 ---
 
 >[!NOTE]
