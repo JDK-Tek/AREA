@@ -9,7 +9,7 @@ DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS actions;
 DROP TABLE IF EXISTS reactions;
 DROP TABLE IF EXISTS bridge;
-
+drop table if exists token;
 
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
@@ -41,6 +41,12 @@ CREATE TABLE IF NOT EXISTS bridge (
     -- foreign key (reaction) references reactions(id) on delete cascade
 );
 
+create table if not exists token (
+    id serial primary key,
+    service varchar(255) not null,
+    token text not null,
+    userid int not null
+);
 
 
 -- EXEMPLES FOR MVP
