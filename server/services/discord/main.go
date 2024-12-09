@@ -9,10 +9,12 @@ import (
 	"os"
 	"strconv"
 	"net/url"
-	"io/ioutil"
+	"database/sql"
+	// "io/ioutil"
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 )
 
 const API_SEND = "https://discord.com/api/channels/"
@@ -52,12 +54,17 @@ type Result struct {
 	Code string `json:"code"`
 }
 
-func setOAUTHToken(w http.ResponseWriter, req *http.Request) {
-	var clientid = os.Getenv("DISCORD_ID")
-	var clientsecret = os.Getenv("DISCORD_SECRET")
-	var data = url.Values{}
-	var res Result
+type TokenResult struct {
+	Token string `json:"access_token"`
+}
 
+func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
+	var res Result
+	var tok TokenResult
+	
+	clientid := os.Getenv("DISCORD_ID")
+	clientsecret := os.Getenv("DISCORD_SECRET")
+	data := url.Values{}
 	err := json.NewDecoder(req.Body).Decode(&res)
 	if err != nil {
 		fmt.Fprintln(w, "decode", err.Error())
@@ -68,19 +75,19 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request) {
 	data.Set("grant_type", "authorization_code")
 	data.Set("code", res.Code)
 	data.Set("redirect_uri", "https://area-jeepg.vercel.app/connected")
-	fmt.Println("id & secret are ", clientid, clientid)
 	rep, err := http.PostForm(API_OAUTH, data);
 	if err != nil {
 		fmt.Fprintln(w, "postform", err.Error())
 		return
 	}
-	datajson, err := ioutil.ReadAll(rep.Body)
+	err = json.NewDecoder(rep.Body).Decode(&tok)
 	if err != nil {
-		fmt.Fprintln(w, "iotilread", err.Error())
+		fmt.Fprintln(w, "decode", err.Error())
 		return
 	}
-	fmt.Println("yo")
-	fmt.Fprintln(w, string(datajson))
+
+	// fmt.Println("yo")
+	// fmt.Fprintln(w, string(datajson))
 }
 
 func doSomeSend(w http.ResponseWriter, req *http.Request) {
@@ -128,12 +135,51 @@ func doSomeSend(w http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(w, "{ \"status\": \"%s\" }\n", res.Status)
 }
 
+func connectToDatabase() (*sql.DB, error) {
+	dbPassword := os.Getenv("DB_PASSWORD")
+	if dbPassword == "" {
+		log.Fatal("DB_PASSWORD not found")
+	}
+	dbUser := os.Getenv("DB_USER")
+	if dbUser == "" {
+		log.Fatal("DB_USER not found")
+	}
+	dbHost := os.Getenv("DB_HOST")
+	if dbHost == "" {
+		log.Fatal("DB_HOST not found")
+	}
+	dbName := os.Getenv("DB_NAME")
+	if dbName == "" {
+		log.Fatal("DB_NAME not found")
+	}
+	dbPort := os.Getenv("DB_PORT")
+	if dbPort == "" {
+		log.Fatal("DB_PORT not found")
+	}
+	connectStr := fmt.Sprintf(
+		"postgresql://%s:%s@database:5432/area_database?sslmode=disable",
+		dbUser,
+		dbPassword,
+	)
+	return sql.Open("postgres", connectStr)
+}
+
+func miniproxy(f func(http.ResponseWriter, *http.Request, *sql.DB), c *sql.DB) func(http.ResponseWriter, *http.Request) {
+	return func(a http.ResponseWriter, b *http.Request) {
+		f(a, b, c)
+	}
+}
+
 func main() {
+	db, err := connectToDatabase()
+	if err != nil {
+		os.Exit(84)
+	}
 	fmt.Println("discord microservice container is running !")
 	router := mux.NewRouter()
 	godotenv.Load("/usr/mound.d/.env")
 	router.HandleFunc("/send", doSomeSend).Methods("POST")
 	router.HandleFunc("/oauth", getOAUTHLink).Methods("GET")
-	router.HandleFunc("/oauth", setOAUTHToken).Methods("POST")
+	router.HandleFunc("/oauth", miniproxy(setOAUTHToken, db)).Methods("POST")
 	log.Fatal(http.ListenAndServe(":80", router))
 }
