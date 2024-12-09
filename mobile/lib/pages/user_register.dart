@@ -4,6 +4,8 @@ import 'package:area/pages/login_page.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:area/tools/userstate.dart';
+import 'package:provider/provider.dart';
 
 class UserRegister extends StatefulWidget {
   UserRegister(
@@ -87,6 +89,7 @@ class _UserRegister extends State<UserRegister> {
         if (str != null) {
           _token = str;
           if (mounted) {
+            Provider.of<UserState>(context, listen: false).setToken(_token!);
             context.go("/");
           }
         } else {

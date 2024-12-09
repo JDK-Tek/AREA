@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:area/tools/screen_scale.dart';
+import 'package:go_router/go_router.dart';
 import 'package:area/tools/user_ouput.dart';
 import 'dart:async';
 
@@ -60,8 +61,8 @@ class ShockWavePainter extends CustomPainter {
 
     for (int i = 0; i < waveCount; i++) {
       // Calcul du rayon des cercles
-      final double radius = (animationValue * size.width) +
-          (i * size.width / waveCount);
+      final double radius =
+          (animationValue * size.width) + (i * size.width / waveCount);
       canvas.drawCircle(center, radius, wavePaint);
     }
   }
@@ -154,7 +155,6 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
   }
 }
 
-
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -165,25 +165,36 @@ class LoginPage extends StatefulWidget {
 class _LoginPage extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return SafeArea(
+        child: Scaffold(
       backgroundColor: const Color(0xffe1e4ed),
-      appBar: AppBar(
-        toolbarHeight: screenScale(context, 0.05).height,
-        backgroundColor: const Color(0xfffefffe),
-        title: const Text("Login Page"),
-      ),
-      body: const SingleChildScrollView(
+      body: SingleChildScrollView(
         child: Stack(
           children: [
-            AnimatedBackground(),
-            UserOuput(
+            const AnimatedBackground(),
+            const UserOuput(
                 title: "login",
                 icon: Icons.email,
                 obscureText: true,
-                u: "api/tmp")
+                u: "api/tmp"),
+            Align(
+              alignment: Alignment.topLeft,
+              child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color.fromARGB(0, 0, 0, 0),
+                    foregroundColor: const Color.fromARGB(0, 0, 0, 0),
+                    shadowColor: const Color.fromARGB(0, 0, 0, 0),
+                  ),
+                  onPressed: () {
+                    context.go("/applets");
+                  },
+                  child: Icon(Icons.arrow_back,
+                      color: Colors.white,
+                      size: screenScale(context, 0.05).height)),
+            ),
           ],
         ),
       ),
-    );
+    ));
   }
 }

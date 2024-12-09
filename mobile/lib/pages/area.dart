@@ -1,9 +1,9 @@
 import 'package:area/pages/home_page.dart';
-import 'package:area/tools/footerarea.dart';
 import 'package:flutter/material.dart';
 import 'package:area/tools/timer.dart';
 import 'package:area/tools/discord.dart';
-import 'package:footer/footer_view.dart';
+import 'package:go_router/go_router.dart';
+import 'package:flutter/cupertino.dart';
 
 class CreateAutomationPage extends StatefulWidget {
   const CreateAutomationPage({super.key});
@@ -98,22 +98,53 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
     );
   }
 
+  int currentPageIndex = 1;
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
+    final List<String> dest = [
+      "/applets",
+      "/create",
+      "/services",
+      "/developers"
+    ];
 
     return SafeArea(
       child: Scaffold(
-        body: FooterView(footer: const Footerarea().build(context), children: [
+        bottomNavigationBar: NavigationBar(
+        backgroundColor: Colors.black,
+        indicatorColor: Colors.grey,
+        selectedIndex: 1,
+        onDestinationSelected: (int index) {
+          setState(() {
+            currentPageIndex = index;
+            context.go(dest[index]);
+          });
+        },
+        destinations: const [
+          NavigationDestination(
+              icon: Icon(Icons.folder, color: Colors.white), label: 'Applets'),
+          NavigationDestination(
+              icon: Icon(Icons.add_circle_outline, color: Colors.white),
+              label: 'Create'),
+          NavigationDestination(
+              icon: Icon(Icons.cloud, color: Colors.white), label: 'Services'),
+          NavigationDestination(
+              icon: Icon(CupertinoIcons.ellipsis, color: Colors.white),
+              label: 'Developers'),
+        ],
+      ),
+        body: SingleChildScrollView( child:
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const HeaderSection(),
-              const Text("Choose a Reaction",
+              const MiniHeaderSection(),
+              const Text("Choose a Action",
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
               SizedBox(
-                height: screenHeight * 0.35,
+                height: screenWidth < screenHeight ? screenHeight * 0.35 : screenHeight * 0.35,
+                width: screenWidth < screenHeight ? screenWidth * 0.9 : screenWidth * 0.35,
                 child: GridView.builder(
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
@@ -143,11 +174,12 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
                     });
                   },
                 ),
-              SizedBox(height: screenHeight * 0.02),
-              const Text("Choose an Action",
+              SizedBox(height: screenWidth < screenHeight ? screenHeight * 0.15 : screenHeight * 0.25),
+              const Text("Choose an Reaction",
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
               SizedBox(
-                height: screenHeight * 0.35,
+                height: screenWidth < screenHeight ? screenHeight * 0.35 : screenHeight * 0.35,
+                width: screenWidth < screenHeight ? screenWidth * 0.9 : screenWidth * 0.35,
                 child: GridView.builder(
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
@@ -202,7 +234,7 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
               SizedBox(height: screenHeight * 0.02),
             ],
           ),
-        ]),
+        ),
       ),
     );
   }
