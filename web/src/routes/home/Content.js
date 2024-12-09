@@ -11,8 +11,6 @@ import Button from "../../components/Button";
 import AppletKit from "./../../components/Applet/AppletKit";
 import ServiceKit from "./../../components/Service/ServiceKit";
 
-import AppletData from "./../../data/AppletData";
-
 async function fetchData(url) {
     const request = {
         method: "GET"
@@ -31,8 +29,7 @@ async function fetchData(url) {
     }
 }
 
-export default function Content({ data }) {
-    const [error, setError] = useState(null);
+export default function Content({ setError }) {
     const [services, setServices] = useState([]);
     const [applets, setApplets] = useState([]);
 
@@ -52,7 +49,6 @@ export default function Content({ data }) {
     
     return (
         <div className="pb-14">
-            <label className="text-1xl font-bold text-red-900">{error}</label>
             <AppletKit
                 title={"Get started with any Applet"}
                 applets={applets}
