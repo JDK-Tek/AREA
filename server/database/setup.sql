@@ -13,8 +13,9 @@ drop table if exists token;
 
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
-    email TEXT NOT NULL,
-    password TEXT NOT NULL
+    email TEXT default null,
+    password TEXT default NULL,
+    tokenid int default null
 );
 
 CREATE TABLE IF NOT EXISTS actions (
@@ -41,11 +42,14 @@ CREATE TABLE IF NOT EXISTS bridge (
     -- foreign key (reaction) references reactions(id) on delete cascade
 );
 
-create table if not exists token (
+create table if not exists tokens (
     id serial primary key,
     service varchar(255) not null,
     token text not null,
-    userid int not null
+    -- tokenid text not null,
+    -- userid int default null
+    userid text not null,
+    owner int default null
 );
 
 

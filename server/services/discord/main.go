@@ -10,17 +10,22 @@ import (
 	"strconv"
 	"net/url"
 	"database/sql"
+	"time"
 	// "io/ioutil"
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
+	"github.com/dgrijalva/jwt-go"
 	_ "github.com/lib/pq"
 )
 
 const API_SEND = "https://discord.com/api/channels/"
 const API_OAUTH = "https://discord.com/api/oauth2/token"
+const API_USER = "https://discord.com/api/v10/users/@me"
 
 const PERMISSIONS = 8 // 2080
+
+const EXPIRATION = 60 * 30
 
 type Objects struct {
 	Channel int `json:"channel"`
@@ -58,10 +63,18 @@ type TokenResult struct {
 	Token string `json:"access_token"`
 }
 
+type UserResult struct {
+	ID string `json:"id"`
+}
+
 func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	var res Result
 	var tok TokenResult
+	var user UserResult
+	var tokid int
+	var owner = -1
 	
+	// make the request to discord api
 	clientid := os.Getenv("DISCORD_ID")
 	clientsecret := os.Getenv("DISCORD_SECRET")
 	data := url.Values{}
@@ -80,14 +93,67 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		fmt.Fprintln(w, "postform", err.Error())
 		return
 	}
+	defer rep.Body.Close()
 	err = json.NewDecoder(rep.Body).Decode(&tok)
 	if err != nil {
 		fmt.Fprintln(w, "decode", err.Error())
 		return
 	}
 
-	// fmt.Println("yo")
-	// fmt.Fprintln(w, string(datajson))
+	// make the request for the user
+	req, err = http.NewRequest("GET", API_USER, nil)
+	if err != nil {
+		fmt.Fprintln(w, "request error", err.Error())
+		return
+	}
+	req.Header.Set("Authorization", "Bearer " + tok.Token)
+	client := &http.Client{}
+	rep, err = client.Do(req)
+	if err != nil {
+		fmt.Fprintln(w, "client do", err.Error())
+		return
+	}
+	defer rep.Body.Close()
+	err = json.NewDecoder(rep.Body).Decode(&user)
+	if err != nil {
+		fmt.Fprintln(w, "decode", err.Error())
+		return
+	}
+
+	// seelect the user id shit
+	err = db.QueryRow("select id, owner from users where userid = $1", user.ID).Scan(&tokid, &owner)
+	if err != nil {
+		err = db.QueryRow("insert into tokens (service, token, userid) values ($1, $2, $3) returning id",
+			"discord",
+			tok.Token,
+			user.ID,
+		).Scan(&tokid)
+		if err != nil {
+			fmt.Fprintln(w, "db insert", err.Error())
+			return
+		}
+		err = db.QueryRow("insert into users (tokenid) values ($1) returning id", tokid).Scan(&owner)
+		if err != nil {
+			fmt.Fprintln(w, "db insert", err.Error())
+			return
+		}
+		db.Exec("update tokens set owner = $1 where id = $2", owner, tokid)
+	}
+
+	// create the token
+	secretBytes := []byte(os.Getenv("BACKEND_KEY"))
+    claims := jwt.MapClaims{
+        "id": owner,
+        "exp": time.Now().Add(time.Second * EXPIRATION).Unix(),
+		"tokenid": -1,
+    }
+    token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+    tokenStr, err := token.SignedString(secretBytes)
+	if err != nil {
+		fmt.Fprintln(w, "sign", err.Error())
+		return
+	}
+	fmt.Fprintf(w, `{"token": "%s"}\n`, tokenStr)
 }
 
 func doSomeSend(w http.ResponseWriter, req *http.Request) {
@@ -177,7 +243,7 @@ func main() {
 	}
 	fmt.Println("discord microservice container is running !")
 	router := mux.NewRouter()
-	godotenv.Load("/usr/mound.d/.env")
+	godotenv.Load("/usr/mound.d/.env", "/usr/mound.d/.env1")
 	router.HandleFunc("/send", doSomeSend).Methods("POST")
 	router.HandleFunc("/oauth", getOAUTHLink).Methods("GET")
 	router.HandleFunc("/oauth", miniproxy(setOAUTHToken, db)).Methods("POST")
