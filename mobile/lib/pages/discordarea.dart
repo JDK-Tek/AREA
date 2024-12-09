@@ -36,7 +36,7 @@ class DiscordAreaPageState extends State<DiscordAreaPage> {
       "action": {
         "service": "time",
         "name": "in",
-        "spices": {"howmuch": 2, "unit": "minutes"}
+        "spices": {"howmuch": 10, "unit": "secondes"}
       },
       "reaction": {
         "service": "discord",
