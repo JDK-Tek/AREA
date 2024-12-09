@@ -121,7 +121,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	}
 
 	// seelect the user id shit
-	err = db.QueryRow("select id, owner from users where userid = $1", user.ID).Scan(&tokid, &owner)
+	err = db.QueryRow("select id, owner from tokens where userid = $1", user.ID).Scan(&tokid, &owner)
 	if err != nil {
 		err = db.QueryRow("insert into tokens (service, token, userid) values ($1, $2, $3) returning id",
 			"discord",
