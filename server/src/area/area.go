@@ -18,14 +18,15 @@ type Area struct {
 	Key string
 }
 
-func (it *Area) NewToken(email string) (string, error) {
+func (it *Area) NewToken(id int) (string, error) {
     var secretBytes = []byte(it.Key)
     var claims jwt.Claims
     var token *jwt.Token
 
     claims = jwt.MapClaims{
-        "email": email,
+        "id": id,
         "exp": time.Now().Add(time.Second * expiration).Unix(),
+		"tokenid": -1,
     }
     token = jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
     return token.SignedString(secretBytes)
