@@ -11,6 +11,8 @@ import (
 	"os"
 	"strconv"
 	"time"
+	"html"
+	"net/url"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -74,15 +76,12 @@ func onUpdate(a area.AreaRequest) {
 		a.Error(err, http.StatusInternalServerError)
 		return
 	}
-	fmt.Println(string(obj))
 	url := fmt.Sprintf("http://reverse-proxy:42002/service/%s/%s", service, name)
-	fmt.Println(service, name)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(obj))
 	if err != nil {
 		a.Error(err, http.StatusBadGateway)
 		return
 	}
-	fmt.Println("world")
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 	client := http.Client{}
@@ -100,9 +99,90 @@ func onUpdate(a area.AreaRequest) {
 	a.Reply(string(body), http.StatusOK)
 }
 
-type UpdateRequest struct {
-	BridgeID int `json:"bridge"`
+func oauthGetter(a area.AreaRequest) {
+	vars := mux.Vars(a.Request)
+    service := vars["service"]
+	redirect := a.Request.URL.Query().Get("redirect")
+	url := fmt.Sprintf(
+		"http://reverse-proxy:42002/service/%s/oauth?redirect=%s",
+		service,
+		url.QueryEscape(redirect),
+	)
+	fmt.Println(url)
+	rep, err := http.Get(url)
+	if err != nil {
+		a.Error(err, rep.StatusCode)
+		return
+	}
+	defer rep.Body.Close()
+	if rep.StatusCode != http.StatusOK {
+		a.Reply(map[string]string{
+			"status": http.StatusText(rep.StatusCode),
+		}, rep.StatusCode)
+		return
+	}
+	data, err := ioutil.ReadAll(rep.Body)
+    if err != nil {
+        a.Error(err, http.StatusBadGateway)
+    }
+	str := html.UnescapeString(string(data))
+	fmt.Println(str)
+	a.Writter.WriteHeader(rep.StatusCode)
+	fmt.Fprintln(a.Writter, str)
 }
+
+func oauthSetter(a area.AreaRequest) {
+	vars := mux.Vars(a.Request)
+    service := vars["service"]
+	// querry := a.Request.URL.RawQuery
+	url := fmt.Sprintf(
+		// "http://reverse-proxy:42002/service/%s/oauth?%s",
+		"http://reverse-proxy:42002/service/%s/oauth",
+		service,
+		// querry,
+	)
+	req, err := http.NewRequest("POST", url, a.Request.Body)
+	if err != nil {
+		a.Error(err, http.StatusBadGateway)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	client := http.Client{}
+	rep, err := client.Do(req)
+	if err != nil {
+		a.Error(err, http.StatusBadGateway)
+		return
+	}
+	defer rep.Body.Close()
+	body, err := ioutil.ReadAll(rep.Body)
+	if err != nil {
+		a.Error(err, http.StatusBadGateway)
+		return
+	}
+	a.Reply(string(body), http.StatusOK)
+}
+
+func codeCallback(a area.AreaRequest) {
+	var code = a.Request.URL.Query().Get("code")
+
+	if code == "" {
+		a.ErrorStr("no code :(", http.StatusBadRequest)
+		return
+	}
+	a.Reply(map[string]string{
+		"message": "ok",
+	}, http.StatusOK)
+}
+
+
+func main() {
+	var router = mux.NewRouter()
+	var err error
+	var dbPassword, dbUser string
+	var connectStr string
+	var portString string
+	var a area.Area
 
 type UserMessage struct {
 	Spices json.RawMessage `json:"spices"`
@@ -211,6 +291,8 @@ func main() {
 	router.HandleFunc("/api/area", newProxy(&a, arearoute.NewArea)).Methods("POST")
 	router.HandleFunc("/api/services", newProxy(&a, service.GetServices)).Methods("GET")
 	router.HandleFunc("/api/service/{id}", newProxy(&a, service.GetServiceApplets)).Methods("GET")
+	router.HandleFunc("/api/oauth/{service}", newProxy(&a, oauthGetter)).Methods("GET")
+	router.HandleFunc("/api/oauth/{service}", newProxy(&a, oauthSetter)).Methods("POST")
 	router.HandleFunc("/api/applets", newProxy(&a, applet.GetApplets)).Methods("GET")
 	router.HandleFunc("/api/orchestrator", newProxy(&a, onUpdate)).Methods("PUT")
     fmt.Println("=> server listens on port ", portString)
