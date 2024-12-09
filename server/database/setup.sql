@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS bridge (
 create table if not exists tokens (
     id serial primary key,
     service varchar(255) not null,
+<<<<<<< HEAD
     token text not null,
     -- tokenid text not null,
     -- userid int default null
@@ -96,3 +97,25 @@ VALUES
     ('Update your Android wallpaper with NASA''s image of the day', 'https://www.nasa.gov/', 348839, 8, 7),
     ('Tweet your Instagrams as native photos on Twitter', 'https://instagram.com', 603723, 4, 5);
 
+=======
+    name varchar(255) not null,
+    spices jsonb
+);
+
+create table if not exists reactions (
+    id serial primary key,
+    service varchar(255) not null,
+    name varchar(255) not null,
+    spices jsonb
+);
+
+create table if not exists bridge (
+    id serial primary key,
+    userid int,
+    action int,
+    reaction int --,
+    -- foreign key (userid) references users(id) on delete cascade,
+    -- foreign key (action) references actions(id) on delete cascade,
+    -- foreign key (reaction) references reactions(id) on delete cascade
+);
+>>>>>>> fa3f3e5 (feat(#65) implement orchestrator)
