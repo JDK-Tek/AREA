@@ -84,12 +84,15 @@ func DoSomeRegister(a area.AreaRequest) {
         a.ErrorStr("user already exists", http.StatusBadRequest)
         return
     }
-    tokenString, err = a.Area.NewToken(mail)
+    err = a.Area.Database.
+        QueryRow("INSERT INTO users (email, password) VALUES ($1, $2) returning id", mail, password).
+        Scan(&userid)
     if err != nil {
         a.Error(err, http.StatusInternalServerError)
         return
     }
-    _, err = a.Area.Database.Exec("INSERT INTO users (email, password) VALUES ($1, $2)", mail, password)
+    fmt.Println(userid)
+    tokenString, err = a.Area.NewToken(userid)
     if err != nil {
         a.Error(err, http.StatusInternalServerError)
         return
@@ -103,6 +106,7 @@ func DoSomeLogin(a area.AreaRequest) {
     var err error
     var mail, password, realPassword string
     var tokenString string
+    var userid int
 
     mail, password, err = getCredentials(a.Request)
     if err != nil {
@@ -111,7 +115,7 @@ func DoSomeLogin(a area.AreaRequest) {
     }
     fmt.Println("Email:", mail)
     fmt.Println("Password:", password)
-    err = a.Area.Database.QueryRow("SELECT password FROM users WHERE email = $1", mail).Scan(&realPassword)
+    err = a.Area.Database.QueryRow("SELECT password, id FROM users WHERE email = $1", mail).Scan(&realPassword, &userid)
     if err != nil {
         a.ErrorStr("invalid email/password", http.StatusBadRequest)
         return
@@ -120,7 +124,7 @@ func DoSomeLogin(a area.AreaRequest) {
         a.ErrorStr("invalid email/password", http.StatusBadRequest)
         return
     }
-    tokenString, err = a.Area.NewToken(mail)
+    tokenString, err = a.Area.NewToken(userid)
     if err != nil {
         a.Error(err, http.StatusInternalServerError)
         return
