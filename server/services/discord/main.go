@@ -9,12 +9,15 @@ import (
 	"os"
 	"strconv"
 	"net/url"
+	"io/ioutil"
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 )
 
 const API_SEND = "https://discord.com/api/channels/"
+const API_OAUTH = "https://discord.com/api/oauth2/token"
+
 const PERMISSIONS = 8 // 2080
 
 type Objects struct {
@@ -40,9 +43,44 @@ func getOAUTHLink(w http.ResponseWriter, req *http.Request) {
 	str += "&response_type=code"
 	str += "&redirect_uri=" + x
 	str += "&integration_type=0"
-	str += "&scope=identify%20email%20bot%20guilds"
+	str += "&scope=identify+email+bot+guilds"
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintln(w, str)
+}
+
+type Result struct {
+	Code string `json:"code"`
+}
+
+func setOAUTHToken(w http.ResponseWriter, req *http.Request) {
+	var clientid = os.Getenv("DISCORD_ID")
+	var clientsecret = os.Getenv("DISCORD_SECRET")
+	var data = url.Values{}
+	var res Result
+
+	err := json.NewDecoder(req.Body).Decode(&res)
+	if err != nil {
+		fmt.Fprintln(w, "decode", err.Error())
+		return
+	}
+	data.Set("client_id", clientid)
+	data.Set("client_secret", clientsecret)
+	data.Set("grant_type", "authorization_code")
+	data.Set("code", res.Code)
+	data.Set("redirect_uri", "https://area-jeepg.vercel.app/connected")
+	fmt.Println("id & secret are ", clientid, clientid)
+	rep, err := http.PostForm(API_OAUTH, data);
+	if err != nil {
+		fmt.Fprintln(w, "postform", err.Error())
+		return
+	}
+	datajson, err := ioutil.ReadAll(rep.Body)
+	if err != nil {
+		fmt.Fprintln(w, "iotilread", err.Error())
+		return
+	}
+	fmt.Println("yo")
+	fmt.Fprintln(w, string(datajson))
 }
 
 func doSomeSend(w http.ResponseWriter, req *http.Request) {
@@ -96,5 +134,6 @@ func main() {
 	godotenv.Load("/usr/mound.d/.env")
 	router.HandleFunc("/send", doSomeSend).Methods("POST")
 	router.HandleFunc("/oauth", getOAUTHLink).Methods("GET")
+	router.HandleFunc("/oauth", setOAUTHToken).Methods("POST")
 	log.Fatal(http.ListenAndServe(":80", router))
 }
