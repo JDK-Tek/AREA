@@ -5,6 +5,8 @@
 ** Content
 */
 
+import { useEffect, useState } from "react";
+
 import Button from "../../components/Button";
 import AppletKit from "./../../components/Applet/AppletKit";
 import ServiceKit from "./../../components/Service/ServiceKit";
@@ -12,9 +14,40 @@ import ServiceKit from "./../../components/Service/ServiceKit";
 import AppletData from "./../../data/AppletData";
 import ServiceData from "./../../data/ServiceData";
 
+async function fetchData(url) {
+    const request = {
+        method: "GET"
+    };
+
+    try {
+        const res = await fetch(url, request);
+        if (!res.ok) {
+            throw new Error(`Response status: ${res.status}`);
+        }
+    
+        const json = await res.json();
+        return { success: true, data: json };
+    } catch (err) {
+        return { success: false, error: err };
+    }
+}
+
 export default function Content({ data }) {
+    const [error, setError] = useState(null);
+    const [services, setServices] = useState([]);
+
+    useEffect(() => {
+        fetchData("http://localhost:42000/api/services").then(({ success, data, error }) => {
+            if (!success) { setError("Error while fetching applets data", error);
+            } else { setServices(data);}
+        });
+
+    }, []);
+
+    
     return (
         <div className="pb-14">
+            <label className="text-1xl font-bold text-red-900">{error}</label>
             <AppletKit
                 title={"Get started with any Applet"}
                 applets={AppletData}
