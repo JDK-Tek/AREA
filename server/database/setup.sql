@@ -20,23 +20,22 @@ create table if not exists actions (
     id serial primary key,
     service varchar(255) not null,
     name varchar(255) not null,
-    spice jsonb,
-    oneshot boolean
+    spices jsonb
 );
 
 create table if not exists reactions (
     id serial primary key,
     service varchar(255) not null,
     name varchar(255) not null,
-    spice jsonb
+    spices jsonb
 );
 
 create table if not exists bridge (
     id serial primary key,
     userid int,
     action int,
-    reaction int,
-    foreign key (userid) references users(id) on delete cascade,
-    foreign key (action) references actions(id) on delete cascade,
-    foreign key (reaction) references reactions(id) on delete cascade
+    reaction int --,
+    -- foreign key (userid) references users(id) on delete cascade,
+    -- foreign key (action) references actions(id) on delete cascade,
+    -- foreign key (reaction) references reactions(id) on delete cascade
 );
