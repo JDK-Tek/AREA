@@ -59,14 +59,14 @@ CREATE TABLE IF NOT EXISTS services (
 
 INSERT INTO services (name, logo, link, colorN, colorH)
 VALUES
-    ('Spotify', './assets/services/spotify.png', 'https://www.spotify.com', '#05b348', '#038a2b'),
-    ('Netflix', './assets/services/netflix.png', 'https://www.netflix.com', '#e50914', '#b2070f'),
-    ('Weather Underground', './assets/services/weather-underground.png', 'https://www.wunderground.com/', '#222222', '#000000'),
-    ('Instagram', './assets/services/instagram.png', 'https://www.instagram.com', '#f56040', '#d84a2f'),
-    ('Twitter', './assets/services/x.png', 'https://www.x.com', '#222222', '#000000'),
-    ('Notification', './assets/services/notification.png', '/notification', '#222222', '#000000'),
-    ('Android', './assets/services/android.png', 'https://www.android.com', '#3ddc84', '#2dbb6a'),
-    ('Nasa', './assets/services/nasa.png', 'https://www.nasa.com', '#3d1f5e', '#2b1444');
+    ('Spotify', 'assets/services/spotify.png', 'https://www.spotify.com', '#05b348', '#038a2b'),
+    ('Netflix', 'assets/services/netflix.png', 'https://www.netflix.com', '#e50914', '#b2070f'),
+    ('Weather Underground', 'assets/services/weather-underground.webp', 'https://www.wunderground.com/', '#222222', '#000000'),
+    ('Instagram', 'assets/services/instagram.webp', 'https://www.instagram.com', '#f56040', '#d84a2f'),
+    ('Twitter', 'assets/services/x.webp', 'https://www.x.com', '#222222', '#000000'),
+    ('Notification', 'assets/services/notification.webp', '/notification', '#222222', '#000000'),
+    ('Android', 'assets/services/android.webp', 'https://www.android.com', '#3ddc84', '#2dbb6a'),
+    ('Nasa', 'assets/services/nasa.webp', 'https://www.nasa.com', '#3d1f5e', '#2b1444');
 
 CREATE TABLE IF NOT EXISTS applets (
     id SERIAL PRIMARY KEY,

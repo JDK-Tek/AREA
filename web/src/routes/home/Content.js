@@ -12,7 +12,6 @@ import AppletKit from "./../../components/Applet/AppletKit";
 import ServiceKit from "./../../components/Service/ServiceKit";
 
 import AppletData from "./../../data/AppletData";
-import ServiceData from "./../../data/ServiceData";
 
 async function fetchData(url) {
     const request = {
@@ -39,11 +38,10 @@ export default function Content({ data }) {
     useEffect(() => {
         fetchData("http://localhost:42000/api/services").then(({ success, data, error }) => {
             if (!success) { setError("Error while fetching applets data", error);
-            } else { setServices(data);}
+            } else { setServices(data.res); console.log(data.res); }
         });
 
     }, []);
-
     
     return (
         <div className="pb-14">
@@ -54,7 +52,7 @@ export default function Content({ data }) {
             />
             <ServiceKit
                 title={"or choose from 900+ services"}
-                services={ServiceData}
+                services={services}
                 color={"text-chartpurple-200"}
             />
             <div className="flex justify-center items-center mt-8">
