@@ -26,7 +26,7 @@ function LoginTexts() {
     )
 }
 
-export default function LoginBox () {
+export default function LoginBox ( {setToken} ) {
 
     const backendUrl = process.env.REACT_APP_BACKEND_URL
 
@@ -53,7 +53,7 @@ export default function LoginBox () {
             }
         })
         .then((response) => {
-            console.log('Success:', response.data);
+            setToken(response.data.token)
             window.location.href = "/";
         })
         .catch((error) => {
