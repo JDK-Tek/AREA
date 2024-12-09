@@ -34,13 +34,20 @@ async function fetchData(url) {
 export default function Content({ data }) {
     const [error, setError] = useState(null);
     const [services, setServices] = useState([]);
+    const [applets, setApplets] = useState([]);
 
     useEffect(() => {
+    
         fetchData("http://localhost:42000/api/services").then(({ success, data, error }) => {
-            if (!success) { setError("Error while fetching applets data", error);
-            } else { setServices(data.res); console.log(data.res); }
+            if (!success) { setError("Error while fetching services data", error);
+            } else { setServices(data.res);}
         });
 
+        fetchData("http://localhost:42000/api/applets").then(({ success, data, error }) => {
+            if (!success) { setError("Error while fetching applets data", error);
+            } else { setApplets(data.res); console.log(data.res); }
+        });
+    
     }, []);
     
     return (
@@ -48,7 +55,7 @@ export default function Content({ data }) {
             <label className="text-1xl font-bold text-red-900">{error}</label>
             <AppletKit
                 title={"Get started with any Applet"}
-                applets={AppletData}
+                applets={applets}
             />
             <ServiceKit
                 title={"or choose from 900+ services"}
