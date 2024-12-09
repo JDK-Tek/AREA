@@ -9,22 +9,27 @@ import Button from "./../Button";
 
 import Logo from './../../assets/fullLogo.png';
 
-const dataRoutes = [
-    {
-        title: "Explore",
-        link: "/about"
-    },
-    {
-        title: "Stories",
-        link: "/stories"
-    },
-    {
-        title: "Login",
-        link: "/login"
-    }
-]
 
 export default function HeaderBar({ activeBackground = false }) {
+    
+    
+    const isLogged = sessionStorage.getItem("token") === "" ? false : true;
+    
+    const dataRoutes = [
+        {
+            title: "Explore",
+            link: "/about"
+        },
+        {
+            title: "Stories",
+            link: "/stories"
+        },
+        {
+            title: (isLogged ? "Dashboard" : "Login"),
+            link: (isLogged ? "/dashboard" : "/login")
+        }
+    ]
+    
     return (
         <div className={`flex justify-between items-center p-3 relative z-10 ${activeBackground ?
             "bg-gradient-to-l from-chartpurple-200 via-chartpurple-300 to-chartgray-300" : ""
@@ -46,9 +51,16 @@ export default function HeaderBar({ activeBackground = false }) {
                     >{route.title}</label>
                 ))}
                 <Button
-                    text={"Get started"}
+                    text={isLogged ? "Logout" : "Get started"}
                     redirect={false}
-                    onClick={() => window.location.href = "/register"}
+                    onClick={() => {
+                        if (isLogged) {
+                            sessionStorage.removeItem("token");
+                            window.location.href = "/";
+                        } else {
+                            window.location.href = "/register";
+                        }
+                    }}
                     styleClolor={"bg-white text-chartgray-300 hover:bg-gray-200"}
                 />
             </div>

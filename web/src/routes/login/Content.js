@@ -7,11 +7,11 @@
 
 import LoginBox from "../../components/LoginBox/LoginBox";
 
-export default function Content() {
+export default function Content( {setToken} ) {
 
     return (
         <div className="h-screen justify-center items-center flex">
-            <LoginBox />
+            <LoginBox setToken={setToken} />
         </div>
     );
 }

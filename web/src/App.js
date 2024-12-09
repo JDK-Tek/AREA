@@ -5,7 +5,7 @@
 ** App
 */
 
-import React from 'react';
+import React, { useState } from "react";
 
 import { Routes, Route } from 'react-router-dom';
 
@@ -16,12 +16,15 @@ import NotFound from "./routes/notfound/NotFound";
 
 function App() {
 
+  const [token, setToken] = useState(sessionStorage.getItem("token") === null ? "" : sessionStorage.getItem("token"));
+  sessionStorage.setItem("token", token);
+
   return (
     <div>
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route path="/login" element={<Login setToken={setToken} />} />
+        <Route path="/register" element={<Register setToken={setToken} />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </div>
