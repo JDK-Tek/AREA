@@ -3,7 +3,6 @@ import 'package:footer/footer.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 
-
 class Footerarea extends StatelessWidget {
   const Footerarea({super.key});
 
@@ -19,25 +18,19 @@ class Footerarea extends StatelessWidget {
                 alignment: Alignment.topLeft,
                 child: Row(
                   children: [
-                    const Icon(
-                      Icons.logo_dev,
-                      color: Colors.white,
-                      size: 30.0,
-                    ),
-                    Text(
-                      "AREA",
-                      style: GoogleFonts.nunito(
-                        fontSize: screenWidth < screenHeight
-                            ? screenWidth * 0.05
-                            : screenWidth * 0.04,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                      ),
+                    Image.asset(
+                      'assets/fullLogo.png',
+                      height: screenWidth < screenHeight
+                          ? screenHeight * 0.03 : screenHeight * 0.08,
+                      width: screenWidth < screenHeight
+                          ? screenWidth * 0.2
+                          : screenWidth * 0.1,
+                      fit: BoxFit.contain,
                     ),
                   ],
                 )),
             Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 ElevatedButton(
                   onPressed: () {

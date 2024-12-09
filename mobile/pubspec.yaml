@@ -44,6 +44,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  provider:
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -66,6 +67,7 @@ flutter:
   assets:
     - assets/background_home.png
     - assets/deco.png
+    - assets/fullLogo.png
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
