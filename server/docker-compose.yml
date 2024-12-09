@@ -17,6 +17,8 @@ services:
       - DB_PASSWORD=${DATABASE_PASSWORD}
       - DB_NAME=${DATABASE_NAME}
     container_name: area-backend
+    networks:
+      - web
 
   database:
     env_file:
@@ -31,6 +33,9 @@ services:
       - POSTGRES_DB=${DATABASE_NAME}
     volumes:
       - ./database/setup.sql:/docker-entrypoint-initdb.d/setup.sql
+      - ./database/time.sql:/docker-entrypoint-initdb.d/time.sql
+    networks:
+      - web
     
   service-discord:
     env_file:

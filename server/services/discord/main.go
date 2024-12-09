@@ -23,7 +23,7 @@ type Objects struct {
 }
 
 type Content struct {
-	Dishes Objects `json:"dishes"`
+	Dishes Objects `json:"spices"`
 }
 
 func getOAUTHLink(w http.ResponseWriter, req *http.Request) {
