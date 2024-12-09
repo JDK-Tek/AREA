@@ -26,7 +26,6 @@ func (it *Area) NewToken(id int) (string, error) {
     claims = jwt.MapClaims{
         "id": id,
         "exp": time.Now().Add(time.Second * expiration).Unix(),
-		"tokenid": -1,
     }
     token = jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
     return token.SignedString(secretBytes)
@@ -46,8 +45,8 @@ func (it *Area) Token2Email(str string) (int, error) {
 		return -1, err
 	}
 	if claims, ok = token.Claims.(jwt.MapClaims); ok && token.Valid {
-		id := claims["id"].(int)
-		return id, nil
+		var id = claims["id"].(float64)
+		return int(id), nil
 	}
 	return -1, fmt.Errorf("invalid token or expired")
 }

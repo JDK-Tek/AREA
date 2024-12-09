@@ -145,7 +145,6 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     claims := jwt.MapClaims{
         "id": owner,
         "exp": time.Now().Add(time.Second * EXPIRATION).Unix(),
-		"tokenid": -1,
     }
     token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
     tokenStr, err := token.SignedString(secretBytes)
