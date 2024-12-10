@@ -1,4 +1,4 @@
-package com.example.benshmark
+package com.example.area
 
 import io.flutter.embedding.android.FlutterActivity
 
