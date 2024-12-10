@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:area/tools/screen_scale.dart';
 import 'package:go_router/go_router.dart';
 import 'package:area/tools/user_ouput.dart';
+import 'package:area/pages/DiscordAuthPage.dart';
 import 'dart:async';
 
 class UserBox extends StatefulWidget {
@@ -192,6 +193,7 @@ class _LoginPage extends State<LoginPage> {
                       color: Colors.white,
                       size: screenScale(context, 0.05).height)),
             ),
+            const DiscordLoginButton(),
           ],
         ),
       ),
