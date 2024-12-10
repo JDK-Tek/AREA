@@ -6,28 +6,11 @@
 */
 
 import { useEffect, useState } from "react";
+import fetchData from "../../utils/fetchData";
 
 import Button from "../../components/Button";
 import AppletKit from "./../../components/Applet/AppletKit";
 import ServiceKit from "./../../components/Service/ServiceKit";
-
-async function fetchData(url) {
-    const request = {
-        method: "GET"
-    };
-
-    try {
-        const res = await fetch(url, request);
-        if (!res.ok) {
-            throw new Error(`Response status: ${res.status}`);
-        }
-    
-        const json = await res.json();
-        return { success: true, data: json };
-    } catch (err) {
-        return { success: false, error: err };
-    }
-}
 
 export default function Content({ setError }) {
     const [services, setServices] = useState([]);
@@ -35,20 +18,32 @@ export default function Content({ setError }) {
 
 
     useEffect(() => {
-    
-        fetchData("http://localhost:42000/api/services").then(({ success, data, error }) => {
-            if (!success) { setError("Error while fetching services data", error);
-            } else { setServices(data.res);}
-        });
+        const fetchServices = async () => {
+            const { success, data, error } = await fetchData("http://localhost:42000/api/services");
+            if (!success) {
+                setError("Error while fetching services data: " + error);
+            } else {
+                setServices(data.res);
+            }
+        };
 
-        fetchData("http://localhost:42000/api/applets").then(({ success, data, error }) => {
-            if (!success) { setError("Error while fetching applets data", error);
-            } else { setApplets(data.res); console.log(data.res); }
-        });
+        const fetchApplets = async () => {
+            const { success, data, error } = await fetchData("http://localhost:42000/api/applets");
+            if (!success) {
+                setError("Error while fetching applets data: " + error);
+            } else {
+                setApplets(data.res);
+            }
+        };
 
-        setError(null);
+        if (services.length === 0) {
+            fetchServices();
+        }
+        if (applets.length === 0) {
+            fetchApplets();
+        }
     
-    }, [setError]);
+    }, [applets, services, setError]);
     
     return (
         <div className="pb-14">

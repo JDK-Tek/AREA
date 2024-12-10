@@ -5,17 +5,18 @@
 ** AreaDiscord1
 */
 
-import { User } from "lucide-react"
-import React, { useState } from "react";
+import { User } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import HeaderBar from "../../components/Header/HeaderBar";
 import Button from "../../components/Button";
+import Notification from "../../components/Notification";
+import fetchData from "../../utils/fetchData";
 
-function DropdownBox({options}) {
-    const [selected, setSelected] = useState(options[0]);
+function DropdownBox({ options, selected, onSelect }) {
     const [isOpen, setIsOpen] = useState(false);
 
     const handleSelect = (option) => {
-        setSelected(option);
+        onSelect(option);
         setIsOpen(false);
     };
 
@@ -59,8 +60,6 @@ function DropdownBox({options}) {
     );
 }
 
-
-
 function AreaHeader({ services }) {
     return (
         <div className="flex justify-center items-center">
@@ -90,10 +89,15 @@ function AreaHeader({ services }) {
     );
 }
 
-
-
 export default function AreaDiscord1() {
     const options = ["seconds", "minutes", "hours", "days", "weeks", "months", "years"];
+    const [error, setError] = useState(null);
+    const [success, setSuccess] = useState(null);
+    const [time, setTime] = useState("");
+    const [channel, setChannel] = useState("");
+    const [message, setMessage] = useState("");
+    const [unit, setUnit] = useState(options[0]);
+    
     const services = {
         title: "Schedule sending of discord message",
         logo1: "/assets/services/discord.webp",
@@ -101,8 +105,59 @@ export default function AreaDiscord1() {
         users: 324434
     };
 
+    const onSendArea = () => {
+        if (!time || !channel || !message) {
+            setError("Tous les champs sont obligatoires !");
+            return;
+        }
+
+        const request = {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + sessionStorage.getItem("token")
+            },
+            body: JSON.stringify({
+                action: {
+                    service: "time",
+                    name: "in",
+                    spices: {
+                        howmuch: time,
+                        unit: unit
+                    }
+                },
+                reaction: {
+                    service: "discord",
+                    name: "send",
+                    spices: {
+                        channel: channel,
+                        message: message
+                    }
+                }
+            })
+        };
+
+        console.log(request);
+
+        fetchData("http://localhost:42000/api/area", request).then(({ success, data, error }) => {
+            if (!success) {
+                setError("Error while sending area: " + error);
+            } else {
+                setSuccess("Area has been sent successfully");
+            }
+        });
+    };
+
+    useEffect(() => {
+        if (!sessionStorage.getItem("token")) {
+            window.location.replace("/login");
+        }
+    }, []);
+
     return (
         <div>
+            {error && <Notification msg={error} error={true} setError={setError}/>}
+            {success && <Notification msg={success} error={false} setError={setSuccess}/>}
             <HeaderBar activeBackground={true}/>
             <AreaHeader services={services}/>
 
@@ -113,22 +168,44 @@ export default function AreaDiscord1() {
                         <input
                             type="number"
                             id="time"
-                            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 mr-3 " placeholder="Time"
-                            />
-                        <DropdownBox options={options}/>
+                            value={time}
+                            onChange={(e) => setTime(e.target.value)}
+                            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 mr-3"
+                            placeholder="Time"
+                        />
+                        <DropdownBox options={options} selected={unit} onSelect={setUnit} />
                     </div>
                     <div className="flex items-center m-5">
-                        <label className="text-[#7289da] mr-3 font-spartan font-bold text-lg">Send</label>
+                        <label className="text-[#7289da] mr-3 font-spartan font-bold text-lg">Channel</label>
                         <input
                             type="text"
-                            id="time"
-                            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 mr-3 " placeholder="Message"
-                            />
-                        <Button text="Send" styleClolor="bg-[#7289da] text-white"/>
+                            id="channel"
+                            value={channel}
+                            onChange={(e) => setChannel(e.target.value)}
+                            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 mr-3"
+                            placeholder="Channel"
+                        />
+                    </div>
+                    <div className="flex items-center m-5">
+                        <label className="text-[#7289da] mr-3 font-spartan font-bold text-lg">Message</label>
+                        <input
+                            type="text"
+                            id="message"
+                            value={message}
+                            onChange={(e) => setMessage(e.target.value)}
+                            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 mr-3"
+                            placeholder="Message"
+                        />
+                    </div>
+                    <div className="flex items-center m-5">
+                        <Button
+                            text="Send"
+                            styleClolor="bg-[#7289da] text-white"
+                            onClick={onSendArea}
+                        />
                     </div>
                 </div>
             </div>
-
         </div>
     );
 }
