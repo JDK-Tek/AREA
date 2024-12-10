@@ -33,6 +33,7 @@ export default function Content({ setError }) {
     const [services, setServices] = useState([]);
     const [applets, setApplets] = useState([]);
 
+
     useEffect(() => {
     
         fetchData("http://localhost:42000/api/services").then(({ success, data, error }) => {
@@ -44,8 +45,10 @@ export default function Content({ setError }) {
             if (!success) { setError("Error while fetching applets data", error);
             } else { setApplets(data.res); console.log(data.res); }
         });
+
+        setError(null);
     
-    }, []);
+    }, [setError]);
     
     return (
         <div className="pb-14">
