@@ -52,6 +52,9 @@ create table if not exists tokens (
     userid text not null,
     owner int default null
 );
+
+
+
 -- EXEMPLES FOR MVP
 
 DROP TABLE IF EXISTS applets;
@@ -68,14 +71,17 @@ CREATE TABLE IF NOT EXISTS services (
 
 INSERT INTO services (name, logo, link, colorN, colorH)
 VALUES
-    ('Spotify', './assets/services/spotify.png', 'https://www.spotify.com', '#05b348', '#038a2b'),
-    ('Netflix', './assets/services/netflix.png', 'https://www.netflix.com', '#e50914', '#b2070f'),
-    ('Weather Underground', './assets/services/weather-underground.png', 'https://www.wunderground.com/', '#222222', '#000000'),
-    ('Instagram', './assets/services/instagram.png', 'https://www.instagram.com', '#f56040', '#d84a2f'),
-    ('Twitter', './assets/services/x.png', 'https://www.x.com', '#222222', '#000000'),
-    ('Notification', './assets/services/notification.png', '/notification', '#222222', '#000000'),
-    ('Android', './assets/services/android.png', 'https://www.android.com', '#3ddc84', '#2dbb6a'),
-    ('Nasa', './assets/services/nasa.png', 'https://www.nasa.com', '#3d1f5e', '#2b1444');
+    ('Spotify', 'assets/services/spotify.png', '/service/spotify', '#05b348', '#038a2b'),
+    ('Netflix', 'assets/services/netflix.png', '/service/netflix', '#e50914', '#b2070f'),
+    ('Weather Underground', 'assets/services/weather-underground.webp', '/service/weather-underground', '#222222', '#000000'),
+    ('Instagram', 'assets/services/instagram.webp', '/service/instagram', '#f56040', '#d84a2f'),
+    ('Twitter', 'assets/services/x.webp', '/service/twitter', '#222222', '#000000'),
+    ('Notification', 'assets/services/notification.webp', '/service/notification', '#222222', '#000000'),
+    ('Android', 'assets/services/android.webp', '/service/android', '#3ddc84', '#2dbb6a'),
+    ('Time', 'assets/services/time.webp', '/service/time', '#222222', '#000000'),
+    ('Discord', 'assets/services/discord.webp', '/service/discord', '#7289da', '#5865f2'),
+    ('Nasa', 'assets/services/nasa.webp', '/service/nasa', '#3d1f5e', '#2b1444');
+
 
 CREATE TABLE IF NOT EXISTS applets (
     id SERIAL PRIMARY KEY,
@@ -90,8 +96,9 @@ CREATE TABLE IF NOT EXISTS applets (
 
 INSERT INTO applets (name, link, users, service1, service2)
 VALUES
-    ('Create playlist of your favorite series in one click', 'https://spotify.com', 132124, 1, 2),
-    ('Get the weather forecast every day at 7:00 AM', 'https://www.wunderground.com/', 88432, 3, 6),
-    ('Update your Android wallpaper with NASA''s image of the day', 'https://www.nasa.gov/', 348839, 8, 7),
-    ('Tweet your Instagrams as native photos on Twitter', 'https://instagram.com', 603723, 4, 5);
+    ('Create playlist of your favorite series in one click', '/applet/spotify/1', 132124, 1, 2),
+    ('Get the weather forecast every day at 7:00 AM', '/applet/weather-underground/1', 88432, 3, 6),
+    ('Update your Android wallpaper with NASA''s image of the day', 'applet/nasa/1', 348839, 8, 7),
+    ('Tweet your Instagrams as native photos on Twitter', '/applet/instagram/1', 603723, 4, 5),
+    ('Schedule sending of discord message', '/applet/discord/1', 324434, 9, 8);
 
