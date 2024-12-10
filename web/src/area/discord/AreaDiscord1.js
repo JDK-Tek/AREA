@@ -115,14 +115,14 @@ export default function AreaDiscord1() {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": "Bearer " + sessionStorage.getItem("token")
+                "Authorization": "Bearer " + sessionStorage.getItem("token"),
             },
             body: JSON.stringify({
                 action: {
                     service: "time",
                     name: "in",
                     spices: {
-                        howmuch: time,
+                        howmuch: parseInt(time, 10),
                         unit: unit
                     }
                 },
@@ -178,7 +178,7 @@ export default function AreaDiscord1() {
                     <div className="flex items-center m-5">
                         <label className="text-[#7289da] mr-3 font-spartan font-bold text-lg">Channel</label>
                         <input
-                            type="text"
+                            type="number"
                             id="channel"
                             value={channel}
                             onChange={(e) => setChannel(e.target.value)}

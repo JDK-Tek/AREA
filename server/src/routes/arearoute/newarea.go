@@ -127,5 +127,8 @@ func NewArea(a area.AreaRequest) {
 		a.Error(err, http.StatusInternalServerError)
 		return
 	}
-	fmt.Fprintf(a.Writter, "Your email is %d, Awnser is %s", id, string(body))
+	a.Reply(map[string]any{
+		"res": "Your email is send" + string(body) + " " + string(id),
+	}, http.StatusOK)
+	// fmt.Fprintf(a.Writter, "Your email is %d, Awnser is %s", id, string(body))
 }
