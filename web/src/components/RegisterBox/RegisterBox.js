@@ -8,9 +8,10 @@
 import React, { useState } from "react"
 import axios from "axios"
 
-// import { LoginTextField } from "../LoginBox/LoginBox"
-import { LoginTextFieldsBox } from "../LoginBox/LoginBox"
-import { Button } from "../LoginBox/LoginBox"
+// Login/Register components
+import { LRTextFieldsBox } from "../TextFields/TextFields"
+import { LRButton } from "../Button"
+import LRBox from "../Box/Box"
 
 function RegisterTexts() {
     return (
@@ -25,13 +26,14 @@ function RegisterTexts() {
     )
 }
 
-export default function RegisterBox () {
+export default function RegisterBox ( {setToken} ) {
+
+    const backendUrl = process.env.REACT_APP_BACKEND_URL
 
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
 
     const handleChange = (e) => {
-        console.log(e.target.id)
         if (e.target.id === "email") {
             setEmail(e.target.value)
         }
@@ -42,7 +44,7 @@ export default function RegisterBox () {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        axios.post("http://localhost:42000/api/register", {
+        axios.post(`${backendUrl}/api/register`, {
             email: email,
             password: password
         }, {
@@ -51,8 +53,8 @@ export default function RegisterBox () {
             }
         })
         .then((response) => {
-            console.log('Success:', response.data);
-            window.location.href = "/login";
+            setToken(response.data.token)
+            window.location.href = "/";
         })
         .catch((error) => {
             console.error('Error:', error);
@@ -60,16 +62,14 @@ export default function RegisterBox () {
     }
 
     return (
-        <div className="bg-gradient-to-b from-zinc-700 to-gray-800 flex flex-col justify-center 
-                        w-3/4 sm:w-3/4 md:w-2/3 lg:w-1/2 xl:w-2/3 
-                        h-4/6 sm:h-3/4 md:h-2/3 lg:h-3/4 rounded-md">
+        <LRBox>
             <RegisterTexts />
-            <LoginTextFieldsBox text1="Email" text2="Password" handleChangeField={handleChange}/>
+            <LRTextFieldsBox text1="Email" text2="Password" handleChangeField={handleChange}/>
             <div className="text-center pt-8 sm:pt-10 text-white text-sm sm:text-base md:text-lg">
                 You already have an account? 
                 <a href="/login" className="font-bold text-white dark:text-white hover:underline"> Login here!</a>
             </div>
-            <Button text="Register" handleClick={handleSubmit}/>    
-        </div>
+            <LRButton text="Register" handleClick={handleSubmit}/>    
+        </LRBox>
     )
 }

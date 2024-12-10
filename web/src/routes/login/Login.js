@@ -8,11 +8,11 @@
 import Footer from "../home/Footer";
 import Content from './Content';
 
-export default function Login() {
+export default function Login( {setToken} ) {
 
     return (
         <div className="bg-gradient-to-br from-zinc-900 via-indigo-900 to-violet-900 animate-gradient bg-300%">
-            <Content />
+            <Content setToken={setToken} />
             <Footer />
         </div>
     );
