@@ -187,7 +187,7 @@ class _LoginPage extends State<LoginPage> {
                     },
                     child: Icon(Icons.arrow_back,
                         color: Colors.white,
-                        size: screenScale(context, 0.05).height)),
+                        size: MediaQuery.of(context).size.height * 0.05)),
               ),
               const UserOuput(
                   title: "login",

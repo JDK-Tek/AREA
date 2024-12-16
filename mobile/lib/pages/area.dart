@@ -103,7 +103,7 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
   int getGridColumnCount(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
-    return screenWidth < screenHeight ? 4 : 2;
+    return screenWidth < screenHeight ? 3 : 2;
   }
 
   Widget _buildGridItem({

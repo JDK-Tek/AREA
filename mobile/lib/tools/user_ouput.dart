@@ -132,13 +132,13 @@ class _UserOuput extends State<UserOuput> {
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Space(height: 120),
+              Space(height: MediaQuery.of(context).size.height * 0.06),
               Center(
                 child: Container(
                   height: MediaQuery.of(context).size.height < 600
                       ? MediaQuery.of(context).size.height
                       : MediaQuery.of(context).size.height * 0.5,
-                  width: MediaQuery.of(context).size.width * 0.75,
+                  width: MediaQuery.of(context).size.width * 0.85,
                   //color: const Color(0xff222222),
                   decoration: BoxDecoration(
                     color: const Color(0xff222222),
