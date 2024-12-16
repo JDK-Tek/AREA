@@ -2,20 +2,21 @@ package main
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
-	"net/url"
-	"database/sql"
 	"time"
+
 	// "io/ioutil"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
-	"github.com/dgrijalva/jwt-go"
 	_ "github.com/lib/pq"
 )
 
@@ -28,7 +29,7 @@ const PERMISSIONS = 8 // 2080
 const EXPIRATION = 60 * 30
 
 type Objects struct {
-	Channel int `json:"channel"`
+	Channel string `json:"channel"`
 	Message string `json:"message"`
 }
 
@@ -73,7 +74,6 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	var user UserResult
 	var tokid int
 	var owner = -1
-	
 	// make the request to discord api
 	clientid := os.Getenv("DISCORD_ID")
 	clientsecret := os.Getenv("DISCORD_SECRET")
@@ -88,7 +88,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	data.Set("grant_type", "authorization_code")
 	data.Set("code", res.Code)
 	data.Set("redirect_uri", "https://area-jeepg.vercel.app/connected")
-	rep, err := http.PostForm(API_OAUTH, data);
+	rep, err := http.PostForm(API_OAUTH, data)
 	if err != nil {
 		fmt.Fprintln(w, "postform", err.Error())
 		return
@@ -106,7 +106,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		fmt.Fprintln(w, "request error", err.Error())
 		return
 	}
-	req.Header.Set("Authorization", "Bearer " + tok.Token)
+	req.Header.Set("Authorization", "Bearer "+tok.Token)
 	client := &http.Client{}
 	rep, err = client.Do(req)
 	if err != nil {
@@ -142,12 +142,12 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 
 	// create the token
 	secretBytes := []byte(os.Getenv("BACKEND_KEY"))
-    claims := jwt.MapClaims{
-        "id": owner,
-        "exp": time.Now().Add(time.Second * EXPIRATION).Unix(),
-    }
-    token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-    tokenStr, err := token.SignedString(secretBytes)
+	claims := jwt.MapClaims{
+		"id":  owner,
+		"exp": time.Now().Add(time.Second * EXPIRATION).Unix(),
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenStr, err := token.SignedString(secretBytes)
 	if err != nil {
 		fmt.Fprintln(w, "sign", err.Error())
 		return
@@ -179,7 +179,7 @@ func doSomeSend(w http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
 		return
 	}
-	channel := strconv.Itoa(content.Dishes.Channel)
+	channel := content.Dishes.Channel
 	fmt.Println(channel, data["content"])
 	rep, err := http.NewRequest("POST", API_SEND+channel+"/messages", bytes.NewBuffer(dataBytes))
 	if err != nil {
@@ -187,7 +187,7 @@ func doSomeSend(w http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
 		return
 	}
-	rep.Header.Set("Authorization", "Bot " + token)
+	rep.Header.Set("Authorization", "Bot "+token)
 	rep.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
 	res, err := client.Do(rep)

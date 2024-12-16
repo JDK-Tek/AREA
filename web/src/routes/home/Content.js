@@ -5,23 +5,54 @@
 ** Content
 */
 
+
+import { useEffect, useState } from "react";
+import fetchData from "../../utils/fetchData";
 import Button from "../../components/Button";
 import AppletKit from "./../../components/Applet/AppletKit";
 import ServiceKit from "./../../components/Service/ServiceKit";
 
-import AppletData from "./../../data/AppletData";
-import ServiceData from "./../../data/ServiceData";
+export default function Content({ setError }) {
+    const [services, setServices] = useState([]);
+    const [applets, setApplets] = useState([]);
 
-export default function Content({ data }) {
+
+    useEffect(() => {
+        const fetchServices = async () => {
+            const { success, data, error } = await fetchData("http://localhost:42000/api/services");
+            if (!success) {
+                setError("Error while fetching services data: " + error);
+            } else {
+                setServices(data.res);
+            }
+        };
+
+        const fetchApplets = async () => {
+            const { success, data, error } = await fetchData("http://localhost:42000/api/applets");
+            if (!success) {
+                setError("Error while fetching applets data: " + error);
+            } else {
+                setApplets(data.res);
+            }
+        };
+
+        if (services.length === 0) {
+            fetchServices();
+        }
+        if (applets.length === 0) {
+            fetchApplets();
+        }
+    
+    }, [applets, services, setError]);
     return (
         <div className="pb-14">
             <AppletKit
                 title={"Get started with any Applet"}
-                applets={AppletData}
+                applets={applets}
             />
             <ServiceKit
                 title={"or choose from 900+ services"}
-                services={ServiceData}
+                services={services}
                 color={"text-chartpurple-200"}
             />
             <div className="flex justify-center items-center mt-8">
