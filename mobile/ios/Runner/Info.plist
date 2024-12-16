@@ -6,6 +6,8 @@
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>We require local network access to communicate with the Flutter engine during debugging.</string>
 	<key>CFBundleDisplayName</key>
 	<string>AREA</string>
 	<key>CFBundleExecutable</key>

@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:area/pages/servicepage.dart';
 import 'package:area/pages/appletspage.dart';
 
@@ -82,11 +81,14 @@ class HeaderSection extends StatelessWidget {
       padding: const EdgeInsets.all(0.0),
       margin: const EdgeInsets.all(0.0),
       height: screenWidth < screenHeight
-          ? screenHeight * 0.30
+          ? screenHeight * 0.35
           : screenHeight * 0.80,
       width: screenWidth,
-      decoration:
-          BoxDecoration(gradient: LinearGradient(colors: predefinedColors, begin: Alignment.topRight, end: Alignment.bottomLeft)),
+      decoration: BoxDecoration(
+          gradient: LinearGradient(
+              colors: predefinedColors,
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft)),
       child: Column(
         children: [
           Row(
@@ -127,12 +129,13 @@ class HeaderSection extends StatelessWidget {
                 child: Text(
                   "Login",
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.nunito(
+                  style: TextStyle(
                     fontWeight: FontWeight.w900,
                     fontSize: screenWidth < screenHeight
                         ? screenWidth * 0.049
                         : screenWidth * 0.025,
                     color: Colors.black,
+                    fontFamily: 'Nunito-Bold'
                   ),
                 ),
               ),
@@ -146,24 +149,32 @@ class HeaderSection extends StatelessWidget {
             child: Text(
               "AUTOMATION FOR BUSINESS AND HOME",
               textAlign: TextAlign.center,
-              style: GoogleFonts.nunito(
+              style: TextStyle(
                 fontSize: screenWidth < screenHeight
-                    ? screenWidth * 0.07
+                    ? screenWidth * 0.055
                     : screenWidth * 0.05,
                 fontWeight: FontWeight.w900,
                 color: Colors.white,
+                fontFamily: 'Nunito-Black'
               ),
             ),
+          ),
+          SizedBox(
+            height: screenWidth < screenHeight
+                ? screenHeight * 0.01
+                : 0,
+            width: 0,
           ),
           Text(
             "Save time and get more done",
             textAlign: TextAlign.center,
-            style: GoogleFonts.nunito(
+            style: TextStyle(
               color: const Color.fromARGB(255, 186, 151, 255),
               fontSize: screenWidth < screenHeight
                   ? screenWidth * 0.04
                   : screenWidth * 0.03,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w900,
+              fontFamily: 'Nunito-Bold'
             ),
           ),
           SizedBox(
@@ -177,7 +188,7 @@ class HeaderSection extends StatelessWidget {
                 : screenHeight * 0.08,
             width: screenWidth < screenHeight
                 ? screenWidth * 0.38
-                : screenWidth * 0.17,
+                : screenWidth * 0.2,
             child: ElevatedButton(
               onPressed: () {
                 context.go("/register");
@@ -193,12 +204,13 @@ class HeaderSection extends StatelessWidget {
               child: Text(
                 "Get started →",
                 textAlign: TextAlign.center,
-                style: GoogleFonts.nunito(
+                style: TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: screenWidth < screenHeight
-                      ? screenWidth * 0.049
+                      ? screenWidth * 0.046
                       : screenWidth * 0.025,
                   color: Colors.black,
+                  fontFamily: 'Nunito-Bold'
                 ),
               ),
             ),
@@ -208,7 +220,6 @@ class HeaderSection extends StatelessWidget {
     );
   }
 }
-
 
 class MiniHeaderSection extends StatelessWidget {
   const MiniHeaderSection({super.key});
@@ -222,8 +233,11 @@ class MiniHeaderSection extends StatelessWidget {
       padding: const EdgeInsets.all(0.0),
       margin: const EdgeInsets.all(0.0),
       width: screenWidth,
-      decoration:
-          BoxDecoration(gradient: LinearGradient(colors: predefinedColors, begin: Alignment.topRight, end: Alignment.bottomLeft)),
+      decoration: BoxDecoration(
+          gradient: LinearGradient(
+              colors: predefinedColors,
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft)),
       child: Column(
         children: [
           Row(
@@ -264,12 +278,13 @@ class MiniHeaderSection extends StatelessWidget {
                 child: Text(
                   "Login",
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.nunito(
+                  style: TextStyle(
                     fontWeight: FontWeight.w900,
                     fontSize: screenWidth < screenHeight
                         ? screenWidth * 0.049
                         : screenWidth * 0.025,
                     color: Colors.black,
+                    fontFamily: 'Nunito-Bold'
                   ),
                 ),
               ),

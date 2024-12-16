@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:area/pages/home_page.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/cupertino.dart';
@@ -24,8 +23,11 @@ class ServicesPageState extends State<ServicesPage> {
     return SafeArea(
         child: Scaffold(
       bottomNavigationBar: NavigationBar(
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         backgroundColor: Colors.black,
         indicatorColor: Colors.grey,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         selectedIndex: 2,
         onDestinationSelected: (int index) {
           setState(() {
@@ -105,12 +107,13 @@ class Service extends StatelessWidget {
             Text(
               serviceName,
               textAlign: TextAlign.center,
-              style: GoogleFonts.nunito(
+              style: TextStyle(
                 fontSize: screenWidth < screenHeight
                     ? screenWidth * 0.04
                     : screenWidth * 0.025,
                 fontWeight: FontWeight.w700,
                 color: Colors.white,
+                fontFamily: 'Nunito-Bold'
               ),
             ),
           ],
@@ -148,12 +151,13 @@ class ServiceSection extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 20),
       child: Column(
         children: [
-          Text(
+          const Text(
             "Services Available",
-            style: GoogleFonts.nunito(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.black,
+              fontFamily: 'Nunito-Bold'
             ),
           ),
           const SizedBox(height: 20),

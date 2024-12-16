@@ -1,7 +1,4 @@
 import 'dart:convert';
-import 'package:area/pages/home_page.dart';
-import 'package:area/pages/login_page.dart';
-import 'package:area/tools/log_button.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:webview_flutter/webview_flutter.dart';
@@ -15,7 +12,7 @@ class DiscordLoginButton extends StatelessWidget {
   Future<void> _launchURL(BuildContext context) async {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => DiscordAuthPage()),
+      MaterialPageRoute(builder: (context) => const DiscordAuthPage()),
     );
   }
 

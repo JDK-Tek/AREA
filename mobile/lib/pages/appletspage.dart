@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:area/pages/home_page.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -86,7 +85,7 @@ class Applet extends StatelessWidget {
             ? screenWidth * 0.48
             : screenWidth * 0.38,
         height:
-            screenWidth < screenHeight ? screenHeight * 0.2 : screenWidth * 0.3,
+            screenWidth < screenHeight ? screenHeight * 0.25 : screenWidth * 0.3,
         margin: const EdgeInsets.only(top: 20),
         child: ElevatedButton(
             onPressed: () {
@@ -113,14 +112,14 @@ class Applet extends StatelessWidget {
                               color: Colors.white,
                               size: screenWidth < screenHeight
                                   ? screenWidth * 0.1
-                                  : screenWidth * 0.02,
+                                  : screenWidth * 0.06,
                             ),
                             Icon(
                               icon2,
                               color: Colors.white,
                               size: screenWidth < screenHeight
                                   ? screenWidth * 0.1
-                                  : screenWidth * 0.02,
+                                  : screenWidth * 0.06,
                             )
                           ],
                         )),
@@ -129,12 +128,13 @@ class Applet extends StatelessWidget {
                       child: Text(
                         nameAREA,
                         textAlign: TextAlign.start,
-                        style: GoogleFonts.nunito(
+                        style: TextStyle(
                           fontSize: screenWidth < screenHeight
-                              ? screenWidth * 0.045
+                              ? screenWidth * 0.04
                               : screenWidth * 0.02,
                           fontWeight: FontWeight.w900,
                           color: const Color.fromARGB(255, 255, 255, 255),
+                          fontFamily: 'Nunito-Bold'
                         ),
                       ),
                     )
@@ -143,15 +143,16 @@ class Applet extends StatelessWidget {
                 Align(
                   alignment: Alignment.bottomLeft,
                   child: Padding(
-                    padding: const EdgeInsets.all(7.0),
+                    padding: const EdgeInsets.all(4.0),
                     child: Text(
                       nameService,
-                      style: GoogleFonts.nunito(
+                      style: TextStyle(
                         fontSize: screenWidth < screenHeight
                             ? screenWidth * 0.045
                             : screenWidth * 0.02,
                         fontWeight: FontWeight.w900,
                         color: const Color.fromARGB(255, 255, 255, 255),
+                        fontFamily: 'Nunito-Bold'
                       ),
                     ),
                   ),
@@ -193,12 +194,13 @@ class AppletSection extends StatelessWidget {
             child: Text(
               "Get started with any Applet",
               textAlign: TextAlign.center,
-              style: GoogleFonts.nunito(
+              style: TextStyle(
                 fontSize: screenWidth < screenHeight
                     ? screenWidth * 0.045
                     : screenWidth * 0.02,
                 fontWeight: FontWeight.w900,
                 color: Colors.black,
+                fontFamily: 'Nunito-Bold'
               ),
             ),
           ),
@@ -225,7 +227,6 @@ class AppletSection extends StatelessWidget {
         color: applet.color,
         press: () {
           context.go(applet.route);
-          print(applet.route);
         },
         route: applet.route);
   }

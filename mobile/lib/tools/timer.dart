@@ -1,16 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:area/tools/action_reaction.dart';
 
-class TimeTrigger extends StatefulWidget {
+class TimeTrigger extends StatefulWidget implements ActionHandler {
   final Function(Map<String, int>) onTriggerChanged;
 
   const TimeTrigger({super.key, required this.onTriggerChanged});
 
+  /// fonction implementé plus tard
   @override
-  State<TimeTrigger> createState() => _TimeTriggerState();
+  Map<String, dynamic> toJson() {
+    return {
+      "service": "time",
+      "name": "in",
+      "spices": {"howmuch": 0, "unit": "..."}
+    };
+  }
+  @override
+  _TimeTriggerState createState() => _TimeTriggerState();
 }
 
-class _TimeTriggerState extends State<TimeTrigger> {
-  final Map<String, int> timeParams = {
+class _TimeTriggerState extends State<TimeTrigger> implements ActionHandler {
+  Map<String, int> timeParams = {
     "Year": 0,
     "Month": 0,
     "Week": 0,
@@ -20,7 +30,16 @@ class _TimeTriggerState extends State<TimeTrigger> {
     "Second": 0,
   };
 
-  String selectedUnit = "Year"; // L'unité par défaut
+  String selectedUnit = "Year";
+
+  @override
+  Map<String, dynamic> toJson() {
+    return {
+      "service": "time",
+      "name": "in",
+      "spices": {"howmuch": timeParams[selectedUnit], "unit": selectedUnit}
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,22 +60,21 @@ class _TimeTriggerState extends State<TimeTrigger> {
                 if (value != null) {
                   setState(() {
                     selectedUnit = value;
+                    widget.onTriggerChanged(timeParams);
                   });
                 }
               },
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 8),
             Expanded(
               child: TextField(
+                keyboardType: TextInputType.number,
                 decoration: InputDecoration(
                   labelText: "Enter $selectedUnit",
                   border: const OutlineInputBorder(),
                 ),
-                keyboardType: TextInputType.number,
                 onChanged: (value) {
-                  setState(() {
-                    timeParams[selectedUnit] = int.tryParse(value) ?? 0;
-                  });
+                  timeParams[selectedUnit] = int.tryParse(value) ?? 0;
                   widget.onTriggerChanged(timeParams);
                 },
               ),

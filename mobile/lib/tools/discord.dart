@@ -1,9 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:area/tools/action_reaction.dart';
 
-class DiscordAction extends StatelessWidget {
+class DiscordAction extends StatelessWidget implements ReactionHandler {
   final Function(String, String) onActionChanged;
+  DiscordAction({super.key, required this.onActionChanged});
 
-  const DiscordAction({super.key, required this.onActionChanged});
+  String message = "";
+  String channelId = "";
+
+  @override
+  Map<String, dynamic> toJson() {
+    return {
+      "service": "discord",
+      "name": "send",
+      "spices": {
+        "channel": int.tryParse(channelId) ?? 0,
+        "message": message.isNotEmpty ? message : "Default Message"
+      }
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +31,8 @@ class DiscordAction extends StatelessWidget {
             border: OutlineInputBorder(),
           ),
           onChanged: (value) {
-            onActionChanged(value, "");
+            channelId = value;
+            onActionChanged(channelId, "");
           },
         ),
         const SizedBox(height: 8),
@@ -26,7 +42,8 @@ class DiscordAction extends StatelessWidget {
             border: OutlineInputBorder(),
           ),
           onChanged: (value) {
-            onActionChanged("", value);
+            message = value;
+            onActionChanged("", message);
           },
         ),
       ],

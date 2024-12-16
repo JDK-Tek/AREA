@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:footer/footer.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 
 class Footerarea extends StatelessWidget {
@@ -21,7 +20,8 @@ class Footerarea extends StatelessWidget {
                     Image.asset(
                       'assets/fullLogo.png',
                       height: screenWidth < screenHeight
-                          ? screenHeight * 0.03 : screenHeight * 0.08,
+                          ? screenHeight * 0.03
+                          : screenHeight * 0.08,
                       width: screenWidth < screenHeight
                           ? screenWidth * 0.2
                           : screenWidth * 0.1,
@@ -43,12 +43,13 @@ class Footerarea extends StatelessWidget {
                   ),
                   child: Text(
                     "Developers",
-                    style: GoogleFonts.nunito(
+                    style: TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: screenWidth < screenHeight
                           ? screenWidth * 0.04
                           : screenWidth * 0.02,
                       color: Colors.white,
+                      fontFamily: 'Nunito-Bold'
                     ),
                   ),
                 ),
@@ -63,12 +64,13 @@ class Footerarea extends StatelessWidget {
                   ),
                   child: Text(
                     "About us",
-                    style: GoogleFonts.nunito(
+                    style: TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: screenWidth < screenHeight
                           ? screenWidth * 0.04
                           : screenWidth * 0.02,
                       color: Colors.white,
+                      fontFamily: 'Nunito-Bold'
                     ),
                   ),
                 ),
@@ -83,12 +85,13 @@ class Footerarea extends StatelessWidget {
                   ),
                   child: Text(
                     "Contact",
-                    style: GoogleFonts.nunito(
+                    style: TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: screenWidth < screenHeight
                           ? screenWidth * 0.04
                           : screenWidth * 0.02,
                       color: Colors.white,
+                      fontFamily: 'Nunito-Bold'
                     ),
                   ),
                 ),

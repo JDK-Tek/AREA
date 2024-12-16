@@ -26,7 +26,7 @@ class DiscordAreaPageState extends State<DiscordAreaPage> {
 
   Future<void> _sendRequest(String channelId, String message) async {
     final token = Provider.of<UserState>(context).token;
-    final Uri uri = Uri.http("localhost:42000", "/api/area");
+    final Uri uri = Uri.http("172.20.10.3:42000", "/api/area");
     final Map<String, String> headers = {
       "Authorization": "Bearer $token",
       "Content-Type": "application/json",
@@ -99,7 +99,7 @@ class DiscordAreaPageState extends State<DiscordAreaPage> {
       bottomNavigationBar: NavigationBar(
         backgroundColor: Colors.black,
         indicatorColor: Colors.grey,
-        selectedIndex: 3,
+        selectedIndex: 0,
         onDestinationSelected: (int index) {
           setState(() {
             currentPageIndex = index;
