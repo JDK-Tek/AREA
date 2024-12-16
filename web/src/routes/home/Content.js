@@ -5,9 +5,9 @@
 ** Content
 */
 
+
 import { useEffect, useState } from "react";
 import fetchData from "../../utils/fetchData";
-
 import Button from "../../components/Button";
 import AppletKit from "./../../components/Applet/AppletKit";
 import ServiceKit from "./../../components/Service/ServiceKit";
@@ -44,7 +44,6 @@ export default function Content({ setError }) {
         }
     
     }, [applets, services, setError]);
-    
     return (
         <div className="pb-14">
             <AppletKit

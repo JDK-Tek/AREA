@@ -1,9 +1,14 @@
-import 'package:area/pages/home_page.dart';
+import 'package:area/tools/action_reaction.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:area/pages/home_page.dart';
 import 'package:area/tools/timer.dart';
 import 'package:area/tools/discord.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:area/tools/userstate.dart';
+import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class CreateAutomationPage extends StatefulWidget {
   const CreateAutomationPage({super.key});
@@ -15,24 +20,92 @@ class CreateAutomationPage extends StatefulWidget {
 class CreateAutomationPageState extends State<CreateAutomationPage> {
   String? selectedAction;
   String? selectedReaction;
+  int indexAction = -1;
+  int indexReaction = -1;
+  ActionHandler? selectedActionHandler;
+  ReactionHandler? selectedReactionHandler;
 
-  Map<String, int> timeTriggerData = {};
-  String discordChannelId = "";
-  String discordMessageTemplate = "";
+  Future<void> _sendRequest() async {
+    final token = context.read<UserState>().token;
+    final Uri uri = Uri.http("172.20.10.3:42000", "/api/area");
+    final Map<String, String> headers = {
+      "Authorization": "Bearer $token",
+      "Content-Type": "application/json",
+    };
 
-  final List<String> triggers = ["Time"];
-  final List<IconData> triggerIcons = [Icons.access_time];
-  final List<Widget Function(Function(Map<String, int>) callback)>
-      triggersBuilder = [
-    (callback) => TimeTrigger(onTriggerChanged: callback),
+    final Map<String, dynamic> body = {
+      "action": selectedActionHandler!.toJson(),
+      "reaction": selectedReactionHandler!.toJson(),
+    };
+
+    try {
+      final response =
+          await http.post(uri, headers: headers, body: jsonEncode(body));
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data =
+            jsonDecode(response.body) as Map<String, dynamic>;
+        _showDialog("Success", "Request sent successfully: $data");
+      } else {
+        final Map<String, dynamic> error =
+            jsonDecode(response.body) as Map<String, dynamic>;
+        _showDialog("Error",
+            "Failed with status: ${response.statusCode}. ${error['message'] ?? 'Unknown error'}");
+      }
+    } catch (e) {
+      _showDialog("Error", "An exception occurred: $e");
+    }
+  }
+
+  void _showDialog(String title, String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(message),
+          actions: <Widget>[
+            TextButton(
+              child: const Text("OK"),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  final List<Map<String, dynamic>> triggers = [
+    {
+      "label": "Time",
+      "icon": Icons.access_time,
+      "builder": (Function(Map<String, int>) callback) =>
+          TimeTrigger(onTriggerChanged: callback),
+      "description": "In"
+    },
   ];
 
-  final List<String> actions = ["Send a Discord message"];
-  final List<IconData> actionIcons = [Icons.discord];
-  final List<Widget Function(Function(String, String) callback)>
-      actionsBuilder = [
-    (callback) => DiscordAction(onActionChanged: callback),
+  final List<Map<String, dynamic>> reactions = [
+    {
+      "label": "Send a Discord message",
+      "icon": Icons.discord,
+      "builder": (Function(String, String) callback) =>
+          DiscordAction(onActionChanged: callback),
+      "description": "post a message to a channel"
+    },
   ];
+
+  Map<String, dynamic> triggerData = {};
+  Map<String, dynamic> reactionData = {};
+
+  int getGridColumnCount(BuildContext context) {
+    return MediaQuery.of(context).size.width <
+            MediaQuery.of(context).size.height
+        ? 2
+        : 3;
+  }
 
   Widget _buildGridItem({
     required String label,
@@ -56,9 +129,14 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon,
-                color: isSelected ? Colors.blueAccent : Colors.grey[600],
-                size: 32),
+            Icon(
+              icon,
+              color: isSelected ? Colors.blueAccent : Colors.grey[600],
+              size: MediaQuery.of(context).size.width <
+                      MediaQuery.of(context).size.height
+                  ? MediaQuery.of(context).size.height * 0.03
+                  : MediaQuery.of(context).size.height * 0.05,
+            ),
             const SizedBox(height: 8),
             Text(
               label,
@@ -74,150 +152,176 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
     );
   }
 
-  Widget _buildSummary(double screenHeight) {
+  Widget _buildSummary(BuildContext context, String descriptionAction,
+      String descriptionReaction) {
     return SizedBox(
-      height: screenHeight * 0.2,
+      height: MediaQuery.of(context).size.height * 0.2,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("Summary",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          Text("Summary",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: MediaQuery.of(context).size.width <
+                        MediaQuery.of(context).size.height
+                    ? MediaQuery.of(context).size.height * 0.02
+                    : MediaQuery.of(context).size.height * 0.03,
+              )),
           const SizedBox(height: 8),
-          Text("Action: $selectedAction"),
-          if (selectedAction == "Time")
-            ...timeTriggerData.entries.map((entry) {
-              return Text("${entry.key}: ${entry.value}");
-            }),
+          if (selectedAction != null)
+            Text("Trigger: $selectedAction, $descriptionAction $triggerData"),
           const SizedBox(height: 8),
-          Text("Reaction: $selectedReaction"),
-          if (selectedReaction == "Send a Discord message")
+          if (selectedReaction != null)
             Text(
-                "Channel ID: $discordChannelId\nMessage: $discordMessageTemplate"),
+                "Reaction: $selectedReaction, $descriptionReaction $reactionData"),
+          Text(
+              "Name Applet: $descriptionAction $triggerData, $descriptionReaction")
         ],
       ),
     );
   }
 
-  int currentPageIndex = 1;
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
-    final screenWidth = MediaQuery.of(context).size.width;
     final List<String> dest = [
       "/applets",
       "/create",
       "/services",
       "/developers"
     ];
-
     return SafeArea(
       child: Scaffold(
         bottomNavigationBar: NavigationBar(
-        backgroundColor: Colors.black,
-        indicatorColor: Colors.grey,
-        selectedIndex: 1,
-        onDestinationSelected: (int index) {
-          setState(() {
-            currentPageIndex = index;
-            context.go(dest[index]);
-          });
-        },
-        destinations: const [
-          NavigationDestination(
-              icon: Icon(Icons.folder, color: Colors.white), label: 'Applets'),
-          NavigationDestination(
-              icon: Icon(Icons.add_circle_outline, color: Colors.white),
-              label: 'Create'),
-          NavigationDestination(
-              icon: Icon(Icons.cloud, color: Colors.white), label: 'Services'),
-          NavigationDestination(
-              icon: Icon(CupertinoIcons.ellipsis, color: Colors.white),
-              label: 'Developers'),
-        ],
-      ),
-        body: SingleChildScrollView( child:
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          backgroundColor: Colors.black,
+          indicatorColor: Colors.grey,
+          selectedIndex: 1,
+          onDestinationSelected: (int index) {
+            setState(() {
+              context.go(dest[index]);
+            });
+          },
+          destinations: const [
+            NavigationDestination(
+                icon: Icon(Icons.folder, color: Colors.white),
+                label: 'Applets'),
+            NavigationDestination(
+                icon: Icon(Icons.add_circle_outline, color: Colors.white),
+                label: 'Create'),
+            NavigationDestination(
+                icon: Icon(Icons.cloud, color: Colors.white),
+                label: 'Services'),
+            NavigationDestination(
+                icon: Icon(CupertinoIcons.ellipsis, color: Colors.white),
+                label: 'Developers'),
+          ],
+        ),
+        body: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const MiniHeaderSection(),
-              const Text("Choose a Action",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              Text("If this ...",
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: MediaQuery.of(context).size.width <
+                              MediaQuery.of(context).size.height
+                          ? MediaQuery.of(context).size.height * 0.03
+                          : MediaQuery.of(context).size.height * 0.04)),
               SizedBox(
-                height: screenWidth < screenHeight ? screenHeight * 0.35 : screenHeight * 0.35,
-                width: screenWidth < screenHeight ? screenWidth * 0.9 : screenWidth * 0.35,
+                height: MediaQuery.of(context).size.height * 0.35,
+                width: MediaQuery.of(context).size.width * 0.9,
                 child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 0,
-                    mainAxisSpacing: 0,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: getGridColumnCount(context),
                   ),
                   itemCount: triggers.length,
                   itemBuilder: (context, index) {
+                    final trigger = triggers[index];
+                    indexAction = index;
                     return _buildGridItem(
-                      label: triggers[index],
-                      icon: triggerIcons[index],
-                      isSelected: selectedAction == triggers[index],
+                      label: trigger['label'],
+                      icon: trigger['icon'],
+                      isSelected: selectedAction == trigger['label'],
                       onTap: () {
                         setState(() {
-                          selectedAction = triggers[index];
+                          selectedAction = trigger['label'];
+                          indexAction = index;
+                          selectedActionHandler = trigger['builder']((data) {
+                            setState(() {
+                              triggerData = data;
+                            });
+                          });
                         });
                       },
                     );
                   },
                 ),
               ),
-              if (selectedAction != null)
-                triggersBuilder[triggers.indexOf(selectedAction!)](
+              if (selectedAction != null && indexAction != -1)
+                triggers[indexAction]['builder'](
                   (data) {
                     setState(() {
-                      timeTriggerData = data;
+                      triggerData = data;
                     });
                   },
                 ),
-              SizedBox(height: screenWidth < screenHeight ? screenHeight * 0.15 : screenHeight * 0.25),
-              const Text("Choose an Reaction",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              Text("Then that ...",
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: MediaQuery.of(context).size.width <
+                              MediaQuery.of(context).size.height
+                          ? MediaQuery.of(context).size.height * 0.03
+                          : MediaQuery.of(context).size.height * 0.04)),
               SizedBox(
-                height: screenWidth < screenHeight ? screenHeight * 0.35 : screenHeight * 0.35,
-                width: screenWidth < screenHeight ? screenWidth * 0.9 : screenWidth * 0.35,
+                height: MediaQuery.of(context).size.height * 0.35,
+                width: MediaQuery.of(context).size.width * 0.9,
                 child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 0,
-                    mainAxisSpacing: 0,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: getGridColumnCount(context),
                   ),
-                  itemCount: actions.length,
+                  itemCount: reactions.length,
                   itemBuilder: (context, index) {
+                    final reaction = reactions[index];
                     return _buildGridItem(
-                      label: actions[index],
-                      icon: actionIcons[index],
-                      isSelected: selectedReaction == actions[index],
+                      label: reaction['label'],
+                      icon: reaction['icon'],
+                      isSelected: selectedReaction == reaction['label'],
                       onTap: () {
                         setState(() {
-                          selectedReaction = actions[index];
+                          indexReaction = index;
+                          selectedReaction = reaction['label'];
+                          selectedReactionHandler = reaction['builder'](
+                              (String channel, String message) {
+                            setState(() {
+                              reactionData = {
+                                "channel": channel,
+                                "message": message
+                              };
+                            });
+                          });
                         });
                       },
                     );
                   },
                 ),
               ),
-              if (selectedReaction != null)
-                actionsBuilder[actions.indexOf(selectedReaction!)](
-                  (channelId, messageTemplate) {
+              if (selectedReaction != null && indexReaction != -1)
+                reactions[indexReaction]['builder'](
+                  (String channel, String message) {
                     setState(() {
-                      discordChannelId = channelId;
-                      discordMessageTemplate = messageTemplate;
+                      reactionData = {"channel": channel, "message": message};
                     });
                   },
                 ),
-              SizedBox(height: screenHeight * 0.02),
+              SizedBox(height: MediaQuery.of(context).size.height * 0.02),
               if (selectedAction != null && selectedReaction != null)
-                _buildSummary(screenHeight),
-              SizedBox(height: screenHeight * 0.02),
+                _buildSummary(context, triggers[indexAction]['description'],
+                    reactions[indexReaction]['description']),
+              SizedBox(height: MediaQuery.of(context).size.height * 0.02),
               if (selectedAction != null && selectedReaction != null)
                 Center(
                   child: SizedBox(
-                    width: screenWidth * 0.5,
+                    width: MediaQuery.of(context).size.width * 0.5,
                     height: 50,
                     child: ElevatedButton(
                       onPressed: () {
@@ -226,12 +330,12 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
                               content:
                                   Text("Automation created successfully!")),
                         );
+                        _sendRequest();
                       },
                       child: const Text("Create Automation"),
                     ),
                   ),
                 ),
-              SizedBox(height: screenHeight * 0.02),
             ],
           ),
         ),

@@ -74,7 +74,6 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	var user UserResult
 	var tokid int
 	var owner = -1
-
 	// make the request to discord api
 	clientid := os.Getenv("DISCORD_ID")
 	clientsecret := os.Getenv("DISCORD_SECRET")

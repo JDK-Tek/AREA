@@ -53,8 +53,6 @@ create table if not exists tokens (
     owner int default null
 );
 
-
-
 -- EXEMPLES FOR MVP
 
 DROP TABLE IF EXISTS applets;
@@ -81,7 +79,6 @@ VALUES
     ('Time', 'assets/services/time.webp', '/service/time', '#222222', '#000000'),
     ('Discord', 'assets/services/discord.webp', '/service/discord', '#7289da', '#5865f2'),
     ('Nasa', 'assets/services/nasa.webp', '/service/nasa', '#3d1f5e', '#2b1444');
-
 
 CREATE TABLE IF NOT EXISTS applets (
     id SERIAL PRIMARY KEY,

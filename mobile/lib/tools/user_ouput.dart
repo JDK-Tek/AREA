@@ -1,12 +1,13 @@
 // ignore_for_file: avoid_print
 
 import 'dart:convert';
-
+import 'package:area/tools/userstate.dart';
 import 'package:flutter/material.dart';
 import 'package:area/tools/log_button.dart';
 import 'package:area/tools/space.dart';
 import 'package:area/pages/login_page.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 
 class UserOuput extends StatefulWidget {
@@ -31,7 +32,7 @@ class _UserOuput extends State<UserOuput> {
   late TextEditingController secondController;
   late FocusNode emailFocusNode;
   late FocusNode passwordFocusNode;
-  String? _token;
+  String _token = "";
 
   @override
   void initState() {
@@ -54,15 +55,25 @@ class _UserOuput extends State<UserOuput> {
 
   Map<String, String> createHeader() {
     // need to be cancel
-    _token ?? "";
 
     // if (_token == null) {
     //   //throw Exception("Error: missing Token");
     // }
     Map<String, String> headers = {
-      "token": _token ?? "",
+      "token": _token,
     };
     return headers;
+  }
+
+  void switchPage() {
+    //context.go("/home");
+  }
+
+  void badPassword() {
+    //context.go("/home");
+    // Navigator.pop(context);
+    // Navigator.push(
+    //     context, MaterialPageRoute(builder: (context) => const LoginPage(token: "tmp",)));
   }
 
   Future<T?> _errorMessage<T>(String message) async {
@@ -83,10 +94,10 @@ class _UserOuput extends State<UserOuput> {
     );
   }
 
-  Future<void> _makeRequest(String a, String b, String u) async {
+  Future<bool> _makeRequest(String a, String b, String u) async {
     final String body = "{ \"email\": \"$a\", \"password\": \"$b\" }";
     // print("uuuuuuu = ${u}");
-    final Uri uri = Uri.http("localhost:1234", u);
+    final Uri uri = Uri.http("172.20.10.3:42000", u);
     //final Uri uri = Uri.http("172.20.10.3:1234", u);
     late final http.Response rep;
     late Map<String, dynamic> content;
@@ -97,33 +108,18 @@ class _UserOuput extends State<UserOuput> {
     } catch (e) {
       print("error in post req");
       print("$e");
-      return _errorMessage("$e");
+      _errorMessage("$e");
+      return false;
     }
     print(rep.body);
     print(rep.statusCode);
     content = jsonDecode(rep.body) as Map<String, dynamic>;
-    switch ((rep.statusCode / 100) as int) {
-      case 2:
-        print("success");
-        str = content['token']?.toString();
-        if (str != null) {
-          _token = str;
-          context.go("/");
-        } else {
-          _errorMessage("Enter a valid email and password !");
-        }
-        break;
-      case 4:
-        str = content['message']?.toString();
-        if (str != null) {
-          _errorMessage(str);
-        }
-        break;
-      case 5:
-        _errorMessage("Enter a valid email and password !");
-      default:
-        break;
+    print("success");
+    str = content['token']?.toString();
+    if (str != null) {
+      _token = str;
     }
+    return true;
   }
 
   @override
@@ -136,13 +132,13 @@ class _UserOuput extends State<UserOuput> {
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Space(height: 120),
+              Space(height: MediaQuery.of(context).size.height * 0.06),
               Center(
                 child: Container(
                   height: MediaQuery.of(context).size.height < 600
                       ? MediaQuery.of(context).size.height
                       : MediaQuery.of(context).size.height * 0.5,
-                  width: MediaQuery.of(context).size.width * 0.75,
+                  width: MediaQuery.of(context).size.width * 0.85,
                   //color: const Color(0xff222222),
                   decoration: BoxDecoration(
                     color: const Color(0xff222222),
@@ -205,7 +201,13 @@ class _UserOuput extends State<UserOuput> {
                             ),
                             onPressed: () {
                               _makeRequest(nameController.text,
-                                  secondController.text, "api/login");
+                                      secondController.text, "api/login")
+                                  .then((key) {
+                                if (!context.mounted) return;
+                                Provider.of<UserState>(context, listen: false)
+                                    .setToken(_token);
+                                context.go("/");
+                              });
                             }),
                       ]),
                 ),

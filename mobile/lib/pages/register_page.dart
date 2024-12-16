@@ -20,12 +20,6 @@ class _RegisterPage extends State<RegisterPage> {
     return SafeArea(
         child: Scaffold(
             backgroundColor: const Color(0xff222222),
-            // appBar: AppBar(
-            //   toolbarHeight: screenScale(context, 0.1).height,
-            //   elevation: 1,
-            //   backgroundColor: const Color(0xfffefffe),
-            //   title: const Text("Register Page"),
-            // ),
             body: SingleChildScrollView(
               child: Stack(
                 children: [

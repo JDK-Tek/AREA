@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:area/pages/servicepage.dart';
 import 'package:area/pages/appletspage.dart';
 
@@ -75,18 +74,19 @@ class HeaderSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    double screenHeight = MediaQuery.of(context).size.height;
-    double screenWidth = MediaQuery.of(context).size.width;
-
     return Container(
       padding: const EdgeInsets.all(0.0),
       margin: const EdgeInsets.all(0.0),
-      height: screenWidth < screenHeight
-          ? screenHeight * 0.30
-          : screenHeight * 0.80,
-      width: screenWidth,
-      decoration:
-          BoxDecoration(gradient: LinearGradient(colors: predefinedColors, begin: Alignment.topRight, end: Alignment.bottomLeft)),
+      height:
+          MediaQuery.of(context).size.width < MediaQuery.of(context).size.height
+              ? MediaQuery.of(context).size.height * 0.35
+              : MediaQuery.of(context).size.height * 0.80,
+      width: MediaQuery.of(context).size.width,
+      decoration: BoxDecoration(
+          gradient: LinearGradient(
+              colors: predefinedColors,
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft)),
       child: Column(
         children: [
           Row(
@@ -105,10 +105,11 @@ class HeaderSection extends StatelessWidget {
                 ),
                 child: Image.asset(
                   'assets/fullLogo.png',
-                  height: screenHeight * 0.08,
-                  width: screenWidth < screenHeight
-                      ? screenWidth * 0.2
-                      : screenWidth * 0.1,
+                  height: MediaQuery.of(context).size.height * 0.08,
+                  width: MediaQuery.of(context).size.width <
+                          MediaQuery.of(context).size.height
+                      ? MediaQuery.of(context).size.width * 0.2
+                      : MediaQuery.of(context).size.width * 0.1,
                   fit: BoxFit.contain,
                 ),
               ),
@@ -127,57 +128,71 @@ class HeaderSection extends StatelessWidget {
                 child: Text(
                   "Login",
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.nunito(
-                    fontWeight: FontWeight.w900,
-                    fontSize: screenWidth < screenHeight
-                        ? screenWidth * 0.049
-                        : screenWidth * 0.025,
-                    color: Colors.black,
-                  ),
+                  style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: MediaQuery.of(context).size.width <
+                              MediaQuery.of(context).size.height
+                          ? MediaQuery.of(context).size.width * 0.049
+                          : MediaQuery.of(context).size.width * 0.025,
+                      color: Colors.black,
+                      fontFamily: 'Nunito-Bold'),
                 ),
               ),
             ],
           ),
           SizedBox(
-            height: screenWidth < screenHeight
-                ? screenHeight * 0.095
-                : screenHeight * 0.3,
-            width: screenWidth * 0.8,
+            height: MediaQuery.of(context).size.width <
+                    MediaQuery.of(context).size.height
+                ? MediaQuery.of(context).size.height * 0.095
+                : MediaQuery.of(context).size.height * 0.3,
+            width: MediaQuery.of(context).size.width * 0.8,
             child: Text(
               "AUTOMATION FOR BUSINESS AND HOME",
               textAlign: TextAlign.center,
-              style: GoogleFonts.nunito(
-                fontSize: screenWidth < screenHeight
-                    ? screenWidth * 0.07
-                    : screenWidth * 0.05,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
-              ),
+              style: TextStyle(
+                  fontSize: MediaQuery.of(context).size.width <
+                          MediaQuery.of(context).size.height
+                      ? MediaQuery.of(context).size.width * 0.055
+                      : MediaQuery.of(context).size.width * 0.05,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  fontFamily: 'Nunito-Black'),
             ),
+          ),
+          SizedBox(
+            height: MediaQuery.of(context).size.width <
+                    MediaQuery.of(context).size.height
+                ? MediaQuery.of(context).size.height * 0.01
+                : 0,
+            width: 0,
           ),
           Text(
             "Save time and get more done",
             textAlign: TextAlign.center,
-            style: GoogleFonts.nunito(
-              color: const Color.fromARGB(255, 186, 151, 255),
-              fontSize: screenWidth < screenHeight
-                  ? screenWidth * 0.04
-                  : screenWidth * 0.03,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(
+                color: const Color.fromARGB(255, 186, 151, 255),
+                fontSize: MediaQuery.of(context).size.width <
+                        MediaQuery.of(context).size.height
+                    ? MediaQuery.of(context).size.width * 0.04
+                    : MediaQuery.of(context).size.width * 0.03,
+                fontWeight: FontWeight.w900,
+                fontFamily: 'Nunito-Bold'),
           ),
           SizedBox(
-            height: screenWidth < screenHeight
-                ? screenHeight * 0.01
-                : screenHeight * 0.03,
+            height: MediaQuery.of(context).size.width <
+                    MediaQuery.of(context).size.height
+                ? MediaQuery.of(context).size.height * 0.01
+                : MediaQuery.of(context).size.height * 0.03,
           ),
           SizedBox(
-            height: screenWidth < screenHeight
-                ? screenHeight * 0.05
-                : screenHeight * 0.08,
-            width: screenWidth < screenHeight
-                ? screenWidth * 0.38
-                : screenWidth * 0.17,
+            height: MediaQuery.of(context).size.width <
+                    MediaQuery.of(context).size.height
+                ? MediaQuery.of(context).size.height * 0.05
+                : MediaQuery.of(context).size.height * 0.08,
+            width: MediaQuery.of(context).size.width <
+                    MediaQuery.of(context).size.height
+                ? MediaQuery.of(context).size.width * 0.38
+                : MediaQuery.of(context).size.width * 0.2,
             child: ElevatedButton(
               onPressed: () {
                 context.go("/register");
@@ -193,13 +208,14 @@ class HeaderSection extends StatelessWidget {
               child: Text(
                 "Get started →",
                 textAlign: TextAlign.center,
-                style: GoogleFonts.nunito(
-                  fontWeight: FontWeight.w900,
-                  fontSize: screenWidth < screenHeight
-                      ? screenWidth * 0.049
-                      : screenWidth * 0.025,
-                  color: Colors.black,
-                ),
+                style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: MediaQuery.of(context).size.width <
+                            MediaQuery.of(context).size.height
+                        ? MediaQuery.of(context).size.width * 0.046
+                        : MediaQuery.of(context).size.width * 0.025,
+                    color: Colors.black,
+                    fontFamily: 'Nunito-Bold'),
               ),
             ),
           ),
@@ -209,21 +225,20 @@ class HeaderSection extends StatelessWidget {
   }
 }
 
-
 class MiniHeaderSection extends StatelessWidget {
   const MiniHeaderSection({super.key});
 
   @override
   Widget build(BuildContext context) {
-    double screenHeight = MediaQuery.of(context).size.height;
-    double screenWidth = MediaQuery.of(context).size.width;
-
     return Container(
       padding: const EdgeInsets.all(0.0),
       margin: const EdgeInsets.all(0.0),
-      width: screenWidth,
-      decoration:
-          BoxDecoration(gradient: LinearGradient(colors: predefinedColors, begin: Alignment.topRight, end: Alignment.bottomLeft)),
+      width: MediaQuery.of(context).size.width,
+      decoration: BoxDecoration(
+          gradient: LinearGradient(
+              colors: predefinedColors,
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft)),
       child: Column(
         children: [
           Row(
@@ -242,10 +257,11 @@ class MiniHeaderSection extends StatelessWidget {
                 ),
                 child: Image.asset(
                   'assets/fullLogo.png',
-                  height: screenHeight * 0.08,
-                  width: screenWidth < screenHeight
-                      ? screenWidth * 0.2
-                      : screenWidth * 0.1,
+                  height: MediaQuery.of(context).size.height * 0.08,
+                  width: MediaQuery.of(context).size.width <
+                          MediaQuery.of(context).size.height
+                      ? MediaQuery.of(context).size.width * 0.2
+                      : MediaQuery.of(context).size.width * 0.1,
                   fit: BoxFit.contain,
                 ),
               ),
@@ -264,13 +280,14 @@ class MiniHeaderSection extends StatelessWidget {
                 child: Text(
                   "Login",
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.nunito(
-                    fontWeight: FontWeight.w900,
-                    fontSize: screenWidth < screenHeight
-                        ? screenWidth * 0.049
-                        : screenWidth * 0.025,
-                    color: Colors.black,
-                  ),
+                  style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: MediaQuery.of(context).size.width <
+                              MediaQuery.of(context).size.height
+                          ? MediaQuery.of(context).size.width * 0.049
+                          : MediaQuery.of(context).size.width * 0.025,
+                      color: Colors.black,
+                      fontFamily: 'Nunito-Bold'),
                 ),
               ),
             ],

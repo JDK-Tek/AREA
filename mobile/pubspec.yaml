@@ -19,7 +19,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.5.3
+  sdk: ">=3.5.1 <4.0.0"
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -34,17 +34,21 @@ dependencies:
   flutter_randomcolor: ^1.0.16
   footer:
   go_router: ^9.0.0
+  provider: ^6.1.2
+  http: ^1.2.2
+  wave: ^0.2.2
+  url_launcher: ^6.1.9
+  uni_links: ^0.5.1
+  webview_flutter: ^4.9.0
 
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
-  http: ^1.2.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  provider:
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -57,10 +61,12 @@ dev_dependencies:
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
-flutter_icons:
+flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/logo.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/logo.png"
 
 # The following section is specific to Flutter packages.
 flutter:
@@ -68,6 +74,9 @@ flutter:
     - assets/background_home.png
     - assets/deco.png
     - assets/fullLogo.png
+    - assets/login_backGround.png
+    - assets/fonts/Nunito-Bold.ttf
+    - assets/fonts/Nunito-Black.ttf
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
