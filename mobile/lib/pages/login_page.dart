@@ -173,27 +173,29 @@ class _LoginPage extends State<LoginPage> {
         child: Stack(
           children: [
             const AnimatedBackground(),
-            const UserOuput(
-                title: "login",
-                icon: Icons.email,
-                obscureText: true,
-                u: "api/tmp"),
-            Align(
-              alignment: Alignment.topLeft,
-              child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color.fromARGB(0, 0, 0, 0),
-                    foregroundColor: const Color.fromARGB(0, 0, 0, 0),
-                    shadowColor: const Color.fromARGB(0, 0, 0, 0),
-                  ),
-                  onPressed: () {
-                    context.go("/applets");
-                  },
-                  child: Icon(Icons.arrow_back,
-                      color: Colors.white,
-                      size: screenScale(context, 0.05).height)),
-            ),
-            const DiscordLoginButton(),
+            Column(children: [
+              Align(
+                alignment: Alignment.topLeft,
+                child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color.fromARGB(0, 0, 0, 0),
+                      foregroundColor: const Color.fromARGB(0, 0, 0, 0),
+                      shadowColor: const Color.fromARGB(0, 0, 0, 0),
+                    ),
+                    onPressed: () {
+                      context.go("/applets");
+                    },
+                    child: Icon(Icons.arrow_back,
+                        color: Colors.white,
+                        size: screenScale(context, 0.05).height)),
+              ),
+              const UserOuput(
+                  title: "login",
+                  icon: Icons.email,
+                  obscureText: true,
+                  u: "api/tmp"),
+              const DiscordLoginButton(),
+            ])
           ],
         ),
       ),
