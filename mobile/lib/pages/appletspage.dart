@@ -77,15 +77,15 @@ class Applet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    double screenHeight = MediaQuery.of(context).size.height;
-    double screenWidth = MediaQuery.of(context).size.width;
-
     return Container(
-        width: screenWidth < screenHeight
-            ? screenWidth * 0.48
-            : screenWidth * 0.38,
-        height:
-            screenWidth < screenHeight ? screenHeight * 0.25 : screenWidth * 0.3,
+        width: MediaQuery.of(context).size.width <
+                MediaQuery.of(context).size.height
+            ? MediaQuery.of(context).size.width * 0.48
+            : MediaQuery.of(context).size.width * 0.38,
+        height: MediaQuery.of(context).size.width <
+                MediaQuery.of(context).size.height
+            ? MediaQuery.of(context).size.height * 0.25
+            : MediaQuery.of(context).size.width * 0.3,
         margin: const EdgeInsets.only(top: 20),
         child: ElevatedButton(
             onPressed: () {
@@ -110,16 +110,18 @@ class Applet extends StatelessWidget {
                             Icon(
                               icon1,
                               color: Colors.white,
-                              size: screenWidth < screenHeight
-                                  ? screenWidth * 0.1
-                                  : screenWidth * 0.06,
+                              size: MediaQuery.of(context).size.width <
+                                      MediaQuery.of(context).size.height
+                                  ? MediaQuery.of(context).size.width * 0.1
+                                  : MediaQuery.of(context).size.width * 0.06,
                             ),
                             Icon(
                               icon2,
                               color: Colors.white,
-                              size: screenWidth < screenHeight
-                                  ? screenWidth * 0.1
-                                  : screenWidth * 0.06,
+                              size: MediaQuery.of(context).size.width <
+                                      MediaQuery.of(context).size.height
+                                  ? MediaQuery.of(context).size.width * 0.1
+                                  : MediaQuery.of(context).size.width * 0.06,
                             )
                           ],
                         )),
@@ -129,13 +131,13 @@ class Applet extends StatelessWidget {
                         nameAREA,
                         textAlign: TextAlign.start,
                         style: TextStyle(
-                          fontSize: screenWidth < screenHeight
-                              ? screenWidth * 0.04
-                              : screenWidth * 0.02,
-                          fontWeight: FontWeight.w900,
-                          color: const Color.fromARGB(255, 255, 255, 255),
-                          fontFamily: 'Nunito-Bold'
-                        ),
+                            fontSize: MediaQuery.of(context).size.width <
+                                    MediaQuery.of(context).size.height
+                                ? MediaQuery.of(context).size.width * 0.04
+                                : MediaQuery.of(context).size.width * 0.02,
+                            fontWeight: FontWeight.w900,
+                            color: const Color.fromARGB(255, 255, 255, 255),
+                            fontFamily: 'Nunito-Bold'),
                       ),
                     )
                   ],
@@ -147,13 +149,13 @@ class Applet extends StatelessWidget {
                     child: Text(
                       nameService,
                       style: TextStyle(
-                        fontSize: screenWidth < screenHeight
-                            ? screenWidth * 0.045
-                            : screenWidth * 0.02,
-                        fontWeight: FontWeight.w900,
-                        color: const Color.fromARGB(255, 255, 255, 255),
-                        fontFamily: 'Nunito-Bold'
-                      ),
+                          fontSize: MediaQuery.of(context).size.width <
+                                  MediaQuery.of(context).size.height
+                              ? MediaQuery.of(context).size.width * 0.045
+                              : MediaQuery.of(context).size.width * 0.02,
+                          fontWeight: FontWeight.w900,
+                          color: const Color.fromARGB(255, 255, 255, 255),
+                          fontFamily: 'Nunito-Bold'),
                     ),
                   ),
                 )
@@ -179,8 +181,6 @@ class AppletSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    double screenHeight = MediaQuery.of(context).size.height;
-    double screenWidth = MediaQuery.of(context).size.width;
     return Container(
       alignment: Alignment.center,
       decoration: const BoxDecoration(
@@ -195,19 +195,20 @@ class AppletSection extends StatelessWidget {
               "Get started with any Applet",
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: screenWidth < screenHeight
-                    ? screenWidth * 0.045
-                    : screenWidth * 0.02,
-                fontWeight: FontWeight.w900,
-                color: Colors.black,
-                fontFamily: 'Nunito-Bold'
-              ),
+                  fontSize: MediaQuery.of(context).size.width <
+                          MediaQuery.of(context).size.height
+                      ? MediaQuery.of(context).size.width * 0.045
+                      : MediaQuery.of(context).size.width * 0.02,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.black,
+                  fontFamily: 'Nunito-Bold'),
             ),
           ),
           Wrap(
-            spacing: screenWidth < screenHeight
-                ? screenWidth * 0.040
-                : screenWidth * 0.02,
+            spacing: MediaQuery.of(context).size.width <
+                    MediaQuery.of(context).size.height
+                ? MediaQuery.of(context).size.width * 0.040
+                : MediaQuery.of(context).size.width * 0.02,
             alignment: WrapAlignment.center,
             children: applets
                 .map((applet) => _buildAppletCard(context, applet))

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:area/tools/screen_scale.dart';
 import 'package:go_router/go_router.dart';
 import 'package:area/tools/user_ouput.dart';
 import 'package:area/pages/DiscordAuthPage.dart';

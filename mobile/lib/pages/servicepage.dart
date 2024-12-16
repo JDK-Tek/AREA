@@ -75,14 +75,15 @@ class Service extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    double screenHeight = MediaQuery.of(context).size.height;
-    double screenWidth = MediaQuery.of(context).size.width;
-
     return Container(
       width:
-          screenWidth < screenHeight ? screenWidth * 0.25 : screenWidth * 0.2,
+          MediaQuery.of(context).size.width < MediaQuery.of(context).size.height
+              ? MediaQuery.of(context).size.width * 0.25
+              : MediaQuery.of(context).size.width * 0.2,
       height:
-          screenWidth < screenHeight ? screenHeight * 0.15 : screenWidth * 0.15,
+          MediaQuery.of(context).size.width < MediaQuery.of(context).size.height
+              ? MediaQuery.of(context).size.height * 0.15
+              : MediaQuery.of(context).size.width * 0.15,
       margin: const EdgeInsets.only(top: 20),
       child: ElevatedButton(
         onPressed: onPress,
@@ -99,22 +100,27 @@ class Service extends StatelessWidget {
             Icon(
               icon,
               color: Colors.white,
-              size: screenWidth < screenHeight
-                  ? screenWidth * 0.08
-                  : screenWidth * 0.05,
+              size: MediaQuery.of(context).size.width <
+                      MediaQuery.of(context).size.height
+                  ? MediaQuery.of(context).size.width * 0.08
+                  : MediaQuery.of(context).size.width * 0.05,
             ),
-            SizedBox(height: screenWidth < screenHeight ? 10 : 5),
+            SizedBox(
+                height: MediaQuery.of(context).size.width <
+                        MediaQuery.of(context).size.height
+                    ? 10
+                    : 5),
             Text(
               serviceName,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: screenWidth < screenHeight
-                    ? screenWidth * 0.04
-                    : screenWidth * 0.025,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-                fontFamily: 'Nunito-Bold'
-              ),
+                  fontSize: MediaQuery.of(context).size.width <
+                          MediaQuery.of(context).size.height
+                      ? MediaQuery.of(context).size.width * 0.04
+                      : MediaQuery.of(context).size.width * 0.025,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  fontFamily: 'Nunito-Bold'),
             ),
           ],
         ),
@@ -154,11 +160,10 @@ class ServiceSection extends StatelessWidget {
           const Text(
             "Services Available",
             style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-              fontFamily: 'Nunito-Bold'
-            ),
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+                fontFamily: 'Nunito-Bold'),
           ),
           const SizedBox(height: 20),
           Wrap(

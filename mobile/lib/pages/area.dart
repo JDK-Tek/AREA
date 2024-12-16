@@ -101,9 +101,10 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
   Map<String, dynamic> reactionData = {};
 
   int getGridColumnCount(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
-    final screenWidth = MediaQuery.of(context).size.width;
-    return screenWidth < screenHeight ? 3 : 2;
+    return MediaQuery.of(context).size.width <
+            MediaQuery.of(context).size.height
+        ? 2
+        : 3;
   }
 
   Widget _buildGridItem({
@@ -151,19 +152,20 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
     );
   }
 
-  Widget _buildSummary(double screenHeight, double screenWidth,
-      String descriptionAction, String descriptionReaction) {
+  Widget _buildSummary(BuildContext context, String descriptionAction,
+      String descriptionReaction) {
     return SizedBox(
-      height: screenHeight * 0.2,
+      height: MediaQuery.of(context).size.height * 0.2,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text("Summary",
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                fontSize: screenWidth < screenHeight
-                    ? screenHeight * 0.02
-                    : screenHeight * 0.03,
+                fontSize: MediaQuery.of(context).size.width <
+                        MediaQuery.of(context).size.height
+                    ? MediaQuery.of(context).size.height * 0.02
+                    : MediaQuery.of(context).size.height * 0.03,
               )),
           const SizedBox(height: 8),
           if (selectedAction != null)
@@ -181,8 +183,6 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
-    final screenWidth = MediaQuery.of(context).size.width;
     final List<String> dest = [
       "/applets",
       "/create",
@@ -223,12 +223,13 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
               Text("If this ...",
                   style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: screenWidth < screenHeight
-                          ? screenHeight * 0.03
-                          : screenHeight * 0.04)),
+                      fontSize: MediaQuery.of(context).size.width <
+                              MediaQuery.of(context).size.height
+                          ? MediaQuery.of(context).size.height * 0.03
+                          : MediaQuery.of(context).size.height * 0.04)),
               SizedBox(
-                height: screenHeight * 0.35,
-                width: screenWidth * 0.9,
+                height: MediaQuery.of(context).size.height * 0.35,
+                width: MediaQuery.of(context).size.width * 0.9,
                 child: GridView.builder(
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: getGridColumnCount(context),
@@ -264,15 +265,16 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
                     });
                   },
                 ),
-              Text("Then ...",
+              Text("Then that ...",
                   style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: screenWidth < screenHeight
-                          ? screenHeight * 0.03
-                          : screenHeight * 0.04)),
+                      fontSize: MediaQuery.of(context).size.width <
+                              MediaQuery.of(context).size.height
+                          ? MediaQuery.of(context).size.height * 0.03
+                          : MediaQuery.of(context).size.height * 0.04)),
               SizedBox(
-                height: screenHeight * 0.35,
-                width: screenWidth * 0.9,
+                height: MediaQuery.of(context).size.height * 0.35,
+                width: MediaQuery.of(context).size.width * 0.9,
                 child: GridView.builder(
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: getGridColumnCount(context),
@@ -288,9 +290,13 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
                         setState(() {
                           indexReaction = index;
                           selectedReaction = reaction['label'];
-                          selectedReactionHandler = reaction['builder']((String channel, String message) {
+                          selectedReactionHandler = reaction['builder'](
+                              (String channel, String message) {
                             setState(() {
-                              reactionData = {"channel": channel, "message": message};
+                              reactionData = {
+                                "channel": channel,
+                                "message": message
+                              };
                             });
                           });
                         });
@@ -307,18 +313,15 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
                     });
                   },
                 ),
-              SizedBox(height: screenHeight * 0.02),
+              SizedBox(height: MediaQuery.of(context).size.height * 0.02),
               if (selectedAction != null && selectedReaction != null)
-                _buildSummary(
-                    screenHeight,
-                    screenWidth,
-                    triggers[indexAction]['description'],
+                _buildSummary(context, triggers[indexAction]['description'],
                     reactions[indexReaction]['description']),
-              SizedBox(height: screenHeight * 0.02),
+              SizedBox(height: MediaQuery.of(context).size.height * 0.02),
               if (selectedAction != null && selectedReaction != null)
                 Center(
                   child: SizedBox(
-                    width: screenWidth * 0.5,
+                    width: MediaQuery.of(context).size.width * 0.5,
                     height: 50,
                     child: ElevatedButton(
                       onPressed: () {
