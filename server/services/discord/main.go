@@ -45,13 +45,14 @@ func getOAUTHLink(w http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(w, "{ \"error\": \"missing\" }\n")
 		return
 	}
-	x := url.QueryEscape(redirect)
+	// x := url.QueryEscape(redirect)
 	str += "client_id=" + os.Getenv("DISCORD_ID")
 	str += "&permissions=" + strconv.Itoa(PERMISSIONS)
 	str += "&response_type=code"
-	str += "&redirect_uri=" + x
+	str += "&redirect_uri=" + url.QueryEscape(os.Getenv("DISCORD_REDIRECT"))
 	str += "&integration_type=0"
 	str += "&scope=identify+email+bot+guilds"
+	fmt.Println(str)
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintln(w, str)
 }
