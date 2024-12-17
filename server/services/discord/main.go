@@ -39,13 +39,6 @@ type Content struct {
 
 func getOAUTHLink(w http.ResponseWriter, req *http.Request) {
 	str := "https://discord.com/oauth2/authorize?"
-	redirect := req.URL.Query().Get("redirect")
-	if redirect == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(w, "{ \"error\": \"missing\" }\n")
-		return
-	}
-	// x := url.QueryEscape(redirect)
 	str += "client_id=" + os.Getenv("DISCORD_ID")
 	str += "&permissions=" + strconv.Itoa(PERMISSIONS)
 	str += "&response_type=code"
