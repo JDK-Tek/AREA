@@ -6,9 +6,10 @@ import os
 
 load_dotenv("/usr/mount.d/.env")
 
-CLIENT_ID = os.environ.get("CLIENT_ID")
+CLIENT_ID = os.environ.get("ROBLOX_ID")
 
 API_URL = "https://authorize.roblox.com/"
+TOKEN_URL = "https://apis.roblox.com/oauth/v1/token"
 
 app = Flask(__name__)
 
@@ -33,13 +34,8 @@ def oauth():
 		req = request.get_json()
 		if not "code" in req:
 			return error({ "error": "missing code" }, 400)
-		print("test")
-		print(req)
+		
 		return req
-
-@app.route('/')
-def hello():
-	return "Hello World!"
 
 if __name__ == '__main__':
 	app.run(host='0.0.0.0', port=80)
