@@ -2,13 +2,15 @@ package service
 
 import (
 	"area-backend/area"
-	"net/http"
 	"fmt"
-	"github.com/gorilla/mux"
+	"net/http"
 	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
 func GetServices(a area.AreaRequest) {
+	fmt.Println("get services")
 	rows, err := a.Area.Database.Query("SELECT id, name, logo, link, colorN, colorH FROM services")
 	if err != nil {
 		a.Error(err, http.StatusInternalServerError)
@@ -50,6 +52,7 @@ func GetServices(a area.AreaRequest) {
 }
 
 func GetServiceID(a area.AreaRequest) (int, bool) {
+	fmt.Println("get services id")
 	serviceIdStr := mux.Vars(a.Request)["id"]
 	if serviceIdStr == "" {
 		a.Error(fmt.Errorf("missing service ID"), http.StatusBadRequest)
@@ -80,6 +83,7 @@ func GetServiceApplets(a area.AreaRequest) {
 		a.Error(err, http.StatusInternalServerError)
 		return
 	}
+	defer rowsApplet.Close()
 
 	var applets []map[string]any
 
@@ -97,6 +101,7 @@ func GetServiceApplets(a area.AreaRequest) {
 			a.Error(err, http.StatusInternalServerError)
 			return
 		}
+		defer rowsService1.Close()
 		rowsService1.Next()
 		if err := rowsService1.Scan(&service1Name, &service1Logo, &service1ColorN, &service1ColorH); err != nil {
 			a.Error(err, http.StatusInternalServerError)
@@ -109,6 +114,8 @@ func GetServiceApplets(a area.AreaRequest) {
 			a.Error(err, http.StatusInternalServerError)
 			return
 		}
+		defer rowsService2.Close()
+
 		rowsService2.Next()
 		if err := rowsService2.Scan(&service2Logo); err != nil {
 			a.Error(err, http.StatusInternalServerError)
