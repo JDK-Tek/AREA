@@ -3,14 +3,17 @@ package applet
 import (
 	"area-backend/area"
 	"net/http"
+	"fmt"
 )
 
 func GetApplets(a area.AreaRequest) {
+	fmt.Println("get applets")
 	rowsApplet, err := a.Area.Database.Query("SELECT id, name, link, users, service1, service2 FROM applets")
 	if err != nil {
 		a.Error(err, http.StatusInternalServerError)
 		return
 	}
+	defer rowsApplet.Close()
 
 	var applets []map[string]any
 
@@ -28,6 +31,7 @@ func GetApplets(a area.AreaRequest) {
 			a.Error(err, http.StatusInternalServerError)
 			return
 		}
+		defer rowsService1.Close()
 		rowsService1.Next()
 		if err := rowsService1.Scan(&service1Name, &service1Logo, &service1ColorN, &service1ColorH); err != nil {
 			a.Error(err, http.StatusInternalServerError)
@@ -40,6 +44,7 @@ func GetApplets(a area.AreaRequest) {
 			a.Error(err, http.StatusInternalServerError)
 			return
 		}
+		defer rowsService2.Close()
 		rowsService2.Next()
 		if err := rowsService2.Scan(&service2Logo); err != nil {
 			a.Error(err, http.StatusInternalServerError)
