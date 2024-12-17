@@ -96,9 +96,7 @@ class _UserOuput extends State<UserOuput> {
 
   Future<bool> _makeRequest(String a, String b, String u) async {
     final String body = "{ \"email\": \"$a\", \"password\": \"$b\" }";
-    // print("uuuuuuu = ${u}");
-    final Uri uri = Uri.http("172.20.10.3:42000", u);
-    //final Uri uri = Uri.http("172.20.10.3:1234", u);
+    final Uri uri = Uri.http("https://api.area.jepgo.root.sx/", u);
     late final http.Response rep;
     late Map<String, dynamic> content;
     late String? str;

@@ -23,10 +23,10 @@ class DiscordAreaPageState extends State<DiscordAreaPage> {
   final TextEditingController messageTemplateController =
       TextEditingController();
 
-
   Future<void> _sendRequest(String channelId, String message) async {
-    final token = Provider.of<UserState>(context).token;
-    final Uri uri = Uri.http("172.20.10.3:42000", "/api/area");
+    final token = Provider.of<UserState>(context, listen: false).token;
+    print("${token}");
+    final Uri uri = Uri.https("api.area.jepgo.root.sx", "/api/area");
     final Map<String, String> headers = {
       "Authorization": "Bearer $token",
       "Content-Type": "application/json",
@@ -42,7 +42,7 @@ class DiscordAreaPageState extends State<DiscordAreaPage> {
         "service": "discord",
         "name": "send",
         "spices": {
-          "channel": int.tryParse(channelId) ?? 0,
+          "channel": channelId,
           "message": message.isNotEmpty ? message : "Default Message"
         }
       }
@@ -59,7 +59,8 @@ class DiscordAreaPageState extends State<DiscordAreaPage> {
       } else {
         final Map<String, dynamic> error =
             jsonDecode(response.body) as Map<String, dynamic>;
-        _showDialog("Error", "Failed with status: ${response.statusCode}. ${error['message'] ?? 'Unknown error'}");
+        _showDialog("Error",
+            "Failed with status: ${response.statusCode}. ${response.reasonPhrase ?? 'Unknown error'}");
       }
     } catch (e) {
       _showDialog("Error", "An exception occurred: $e");
@@ -158,8 +159,7 @@ class DiscordAreaPageState extends State<DiscordAreaPage> {
                   if (channelId.isNotEmpty && messageTemplate.isNotEmpty) {
                     _sendRequest(channelId, messageTemplate);
                   } else {
-                    _showDialog(
-                        "Error", "Please fill in all required fields.");
+                    _showDialog("Error", "Please fill in all required fields.");
                   }
                 },
                 child: const Icon(Icons.check_box, color: Colors.green))
