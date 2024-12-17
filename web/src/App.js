@@ -9,10 +9,13 @@ import React, { useState } from "react";
 
 import { Routes, Route } from 'react-router-dom';
 
+import listRoutes from "./data/Routes";
+
 import Home from "./routes/home/Home";
 import Login from "./routes/login/Login";
 import Register from "./routes/register/Register";
 import NotFound from "./routes/notfound/NotFound";
+import CreateArea from "./routes/create/CreateArea";
 import AreaDiscord1 from './area/discord/AreaDiscord1';
 
 
@@ -23,11 +26,12 @@ function App() {
   return (
     <div>
       <Routes>
-        <Route path="/" element={<Home />} />        
-        <Route path="/login" element={<Login setToken={setToken} />} />
-        <Route path="/register" element={<Register setToken={setToken} />} />
+        <Route path={listRoutes.home} element={<Home />} />        
+        <Route path={listRoutes.login} element={<Login setToken={setToken} />} />
+        <Route path={listRoutes.register} element={<Register setToken={setToken} />} />
+        <Route path={listRoutes.create} element={<CreateArea />} />
 
-        <Route path="/applet/discord/1" element={<AreaDiscord1 />} />
+        {/* <Route path="/applet/discord/1" element={<AreaDiscord1 />} /> */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </div>

@@ -8,7 +8,7 @@
 import Button from "./../Button";
 
 import Logo from './../../assets/fullLogo.png';
-
+import listRoutes from "../../data/Routes";
 
 export default function HeaderBar({ activeBackground = false }) {
     
@@ -25,8 +25,8 @@ export default function HeaderBar({ activeBackground = false }) {
             link: "/stories"
         },
         {
-            title: (isLogged ? "Dashboard" : "Login"),
-            link: (isLogged ? "/dashboard" : "/login")
+            title: "My Applets",
+            link: (isLogged ? listRoutes.myApplets : listRoutes.login)
         }
     ]
     
@@ -50,6 +50,15 @@ export default function HeaderBar({ activeBackground = false }) {
                         onClick={() => window.location.href = route.link}
                     >{route.title}</label>
                 ))}
+                {isLogged && (
+                    <Button
+                        text={"Create"}
+                        redirect={false}
+                        onClick={() => isLogged ? window.location.href = "/create" : "/login"
+                        }
+                        styleClolor={"bg-white text-chartgray-300 hover:bg-gray-200"}
+                    />
+                )}
                 <Button
                     text={isLogged ? "Logout" : "Get started"}
                     redirect={false}
