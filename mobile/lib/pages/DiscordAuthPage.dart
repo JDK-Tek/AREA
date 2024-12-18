@@ -46,8 +46,7 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
   }
 
   Future<void> _makeDemand(String u) async {
-    final Uri uri = Uri.http("172.20.10.3:42000", u);
-    //final Uri uri = Uri.http("172.20.10.3:1234", u);
+    final Uri uri = Uri.http("https://api.area.jepgo.root.sx/", u);
     late final http.Response rep;
     late String content;
     late String? str;
@@ -144,8 +143,7 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
 
   Future<void> _makeRequest(String a, String u) async {
     final String body = "{ \"code\": \"$a\" }";
-    final Uri uri = Uri.http("172.20.10.3:42000", u);
-    //final Uri uri = Uri.http("172.20.10.3:1234", u);
+    final Uri uri = Uri.http("https://api.area.jepgo.root.sx/", u);
     late final http.Response rep;
     late Map<String, dynamic> content;
     late String? str;
