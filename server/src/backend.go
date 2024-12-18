@@ -182,8 +182,8 @@ type Foo struct {
 
 func getAllServices(a area.AreaRequest) {
 	var list = []Foo{
-		Foo{Name: "Time", IconUrl: "none"},
-		Foo{Name: "Discord", IconUrl: "none"},
+		Foo{Name: "Time"},
+		Foo{Name: "Discord"},
 	}
 	a.Reply(list, http.StatusOK)
 }
@@ -210,7 +210,8 @@ func getRoutes(a area.AreaRequest) {
 		a.ErrorStr(string(body), http.StatusInternalServerError)
 		return
 	}
-	a.Reply(string(body), http.StatusOK)
+	a.Writter.WriteHeader(http.StatusOK)
+	a.Writter.Write(body)
 }
 
 func main() {
