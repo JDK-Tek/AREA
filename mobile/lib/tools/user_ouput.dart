@@ -8,7 +8,7 @@ import 'package:area/tools/space.dart';
 import 'package:area/pages/login_page.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:http/http.dart' as http;
+import 'package:http/http.dart' as https;
 
 class UserOuput extends StatefulWidget {
   const UserOuput(
@@ -96,17 +96,21 @@ class _UserOuput extends State<UserOuput> {
 
   Future<bool> _makeRequest(String a, String b, String u) async {
     final String body = "{ \"email\": \"$a\", \"password\": \"$b\" }";
-    final Uri uri = Uri.http("https://api.area.jepgo.root.sx/", u);
-    late final http.Response rep;
+    final Uri uri = Uri.https("api.area.jepgo.root.sx", u);
+    late final https.Response rep;
     late Map<String, dynamic> content;
     late String? str;
 
     try {
-      rep = await http.post(uri, body: body);
+      rep = await https.post(uri, body: body);
     } catch (e) {
       print("error in post req");
       print("$e");
       _errorMessage("$e");
+      return false;
+    }
+    if (rep.statusCode >= 500) {
+      _errorMessage(rep.body);
       return false;
     }
     print(rep.body);
@@ -189,7 +193,8 @@ class _UserOuput extends State<UserOuput> {
                               ]),
                         ),
                         FloatingActionButton.extended(
-                            label: const Text(
+                            label
+                            : const Text(
                                 style: TextStyle(color: Colors.black), "Login"),
                             backgroundColor: Colors.white,
                             extendedPadding: const EdgeInsets.symmetric(
@@ -201,7 +206,7 @@ class _UserOuput extends State<UserOuput> {
                               _makeRequest(nameController.text,
                                       secondController.text, "api/login")
                                   .then((key) {
-                                if (!context.mounted) return;
+                                if (!context.mounted || key == false) return;
                                 Provider.of<UserState>(context, listen: false)
                                     .setToken(_token);
                                 context.go("/");

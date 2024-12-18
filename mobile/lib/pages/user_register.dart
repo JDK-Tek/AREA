@@ -69,13 +69,13 @@ class _UserRegister extends State<UserRegister> {
     );
   }
 
-  Future<void> _makeRequest(
-      String email, String password, String endpoint) async {
-    final Uri uri = Uri.https("api.area.jepgo.root.sx", endpoint);
-    final Map<String, dynamic> requestBody = {
-      "email": email,
-      "password": password,
-    };
+  Future<void> _makeRequest(String a, String b, String u) async {
+    final String body = "{ \"email\": \"$a\", \"password\": \"$b\" }";
+    // print("uuuuuuu = ${u}");
+    final Uri uri = Uri.https("api.area.jepgo.root.sx", u);
+    late final https.Response rep;
+    late Map<String, dynamic> content;
+    late String? str;
 
     try {
 
