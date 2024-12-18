@@ -16,7 +16,7 @@ import Login from "./routes/login/Login";
 import Register from "./routes/register/Register";
 import NotFound from "./routes/notfound/NotFound";
 import CreateArea from "./routes/create/CreateArea";
-import AreaDiscord1 from './area/discord/AreaDiscord1';
+// import AreaDiscord1 from './area/discord/AreaDiscord1';
 
 
 function App() {

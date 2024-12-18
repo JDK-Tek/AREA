@@ -5,13 +5,35 @@
 ** CreateArea
 */
 
+import { useState } from "react";
+import { Plus } from "lucide-react";
+
+import SidePannel from "../../components/SidePannel"
 import HeaderBar from "../../components/Header/HeaderBar"
 
-export default function CreateArea() {
-    
+import Button from "../../components/Button";
+
+export default function App() {
+    const [open, setOpen] = useState(false);
+
     return (
-        <div>
+        <div className="relative">
             <HeaderBar activeBackground={true} />
+
+            <div className="relative">
+                <SidePannel title={"Chose an action"} setOpen={setOpen} open={open}/>
+
+                <label className="ml-[300px] mt-4 text-chartpurple-200">
+                    Create Area
+                </label>
+
+                <Button
+                    text="Action"
+                    styleClolor={`bg-chartpurple-200 text-white`}
+                    onClick={() => setOpen(true)}
+                    icon={<Plus />}
+                />
+            </div>
         </div>
-    )
+    );
 }
