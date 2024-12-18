@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:area/pages/login_page.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:webview_flutter/webview_flutter.dart';
@@ -6,14 +8,31 @@ import 'package:go_router/go_router.dart';
 
 class DiscordLoginButton extends StatelessWidget {
   const DiscordLoginButton({super.key});
-  final String discordLoginUrl =
-      'https://discord.com/oauth2/authorize?client_id=1314608006486429786&response_type=code&redirect_uri=https%3A%2F%2Farea-jeepg.vercel.app%2Fconnected&scope=identify+guilds+email';
+
+  Future<bool> _checkConnectivity() async {
+    var connectivityResult = await (Connectivity().checkConnectivity());
+
+    if (connectivityResult == ConnectivityResult.none) {
+      return false;
+    }
+    return true;
+  }
 
   Future<void> _launchURL(BuildContext context) async {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const DiscordAuthPage()),
-    );
+    bool tmp = await _checkConnectivity();
+
+    if (!context.mounted) return;
+    if (!tmp) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const DiscordAuthPage()),
+      );
+    }
   }
 
   @override
@@ -34,7 +53,6 @@ class DiscordAuthPage extends StatefulWidget {
 
 class _DiscordAuthPageState extends State<DiscordAuthPage> {
   bool _isWebViewInitialized = false;
-  String u = "ooo";
   String url = "";
   late WebViewController _webViewController;
   String _authCode = "";
@@ -47,12 +65,11 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
   }
 
   Future<void> _initialize() async {
-    await _makeDemand(
-        "api/oauth/discord");
+    await _makeDemand("api/oauth/discord");
     setState(() {
       print(url);
       _initializeWebView();
-      
+
       // print("finishghghghghghghghghghghghh");
       // print(u);
       _isWebViewInitialized = true;
@@ -83,27 +100,27 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
       u = content;
       url = content;
     });
-      // switch ((rep.statusCode / 100) as int) {
-      //   case 2:
-      //     str = content;
-      //     if (str != "error") {
-      //       _token = str;
-      //       u = str;
-      //       url = str;
-      //     } else {
-      //       _errorMessage("Enter a valid email and password !");
-      //     }
-      //     break;
-      //   case 4:
-      //     str = content;
-      //     if (str != "") {
-      //       _errorMessage(str);
-      //     }
-      //     break;
-      //   case 5:
-      //     _errorMessage("Enter a valid email and password !");
-      //   default:
-      //     break;
+    // switch ((rep.statusCode / 100) as int) {
+    //   case 2:
+    //     str = content;
+    //     if (str != "error") {
+    //       _token = str;
+    //       u = str;
+    //       url = str;
+    //     } else {
+    //       _errorMessage("Enter a valid email and password !");
+    //     }
+    //     break;
+    //   case 4:
+    //     str = content;
+    //     if (str != "") {
+    //       _errorMessage(str);
+    //     }
+    //     break;
+    //   case 5:
+    //     _errorMessage("Enter a valid email and password !");
+    //   default:
+    //     break;
   }
 
   void _initializeWebView() {

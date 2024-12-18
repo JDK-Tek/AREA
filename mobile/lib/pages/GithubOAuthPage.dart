@@ -6,8 +6,8 @@ import 'package:http/http.dart' as http;
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:go_router/go_router.dart';
 
-class SpotifyLoginButton extends StatelessWidget {
-  const SpotifyLoginButton({super.key});
+class GithubLoginButton extends StatelessWidget {
+  const GithubLoginButton({super.key});
 
   Future<bool> _checkConnectivity() async {
     var connectivityResult = await (Connectivity().checkConnectivity());
@@ -30,7 +30,7 @@ class SpotifyLoginButton extends StatelessWidget {
     } else {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const SpotifyAuthPage()),
+        MaterialPageRoute(builder: (context) => const GithubAuthPage()),
       );
     }
   }
@@ -39,19 +39,19 @@ class SpotifyLoginButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ElevatedButton(
       onPressed: () => _launchURL(context),
-      child: const Text('Se connecter avec Spotify'),
+      child: const Text('Se connecter avec Github'),
     );
   }
 }
 
-class SpotifyAuthPage extends StatefulWidget {
-  const SpotifyAuthPage({super.key});
+class GithubAuthPage extends StatefulWidget {
+  const GithubAuthPage({super.key});
 
   @override
-  State<SpotifyAuthPage> createState() => _SpotifyAuthPageState();
+  State<GithubAuthPage> createState() => _GithubAuthPageState();
 }
 
-class _SpotifyAuthPageState extends State<SpotifyAuthPage> {
+class _GithubAuthPageState extends State<GithubAuthPage> {
   bool _isWebViewInitialized = false;
   String url = "";
   late WebViewController _webViewController;
@@ -65,7 +65,7 @@ class _SpotifyAuthPageState extends State<SpotifyAuthPage> {
   }
 
   Future<void> _initialize() async {
-    await _makeDemand("api/oauth/spotify");
+    await _makeDemand("api/oauth/github");
     setState(() {
       print(url);
       _initializeWebView();
@@ -116,7 +116,7 @@ class _SpotifyAuthPageState extends State<SpotifyAuthPage> {
                 setState(() {
                   _authCode = code;
                   if (_authCode != "") {
-                    _makeRequest(_authCode, "api/oauth/spotify");
+                    _makeRequest(_authCode, "api/oauth/github");
                     if (!context.mounted) return;
                     context.go("/");
                   }
@@ -204,7 +204,7 @@ class _SpotifyAuthPageState extends State<SpotifyAuthPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Spotify Authentication")),
+      appBar: AppBar(title: const Text("Github Authentication")),
       body: _isWebViewInitialized
           ? WebViewWidget(controller: _webViewController)
           : const Center(child: CircularProgressIndicator()),
