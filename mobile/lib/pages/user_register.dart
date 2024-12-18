@@ -72,7 +72,7 @@ class _UserRegister extends State<UserRegister> {
   Future<void> _makeRequest(String a, String b, String u) async {
     final String body = "{ \"email\": \"$a\", \"password\": \"$b\" }";
     // print("uuuuuuu = ${u}");
-    final Uri uri = Uri.http("localhost:1234", u);
+    final Uri uri = Uri.http("api.area.jepgo.root.sx", u);
     late final http.Response rep;
     late Map<String, dynamic> content;
     late String? str;

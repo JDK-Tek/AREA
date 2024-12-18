@@ -97,7 +97,8 @@ class _UserOuput extends State<UserOuput> {
   Future<bool> _makeRequest(String a, String b, String u) async {
     final String body = "{ \"email\": \"$a\", \"password\": \"$b\" }";
     // print("uuuuuuu = ${u}");
-    final Uri uri = Uri.http("172.20.10.3:42000", u);
+    //final Uri uri = Uri.http("172.20.10.3:42000", u);
+    final Uri uri = Uri.https("api.area.jepgo.root.sx", u);
     //final Uri uri = Uri.http("172.20.10.3:1234", u);
     late final http.Response rep;
     late Map<String, dynamic> content;
@@ -109,6 +110,10 @@ class _UserOuput extends State<UserOuput> {
       print("error in post req");
       print("$e");
       _errorMessage("$e");
+      return false;
+    }
+    if (rep.statusCode >= 500) {
+      _errorMessage(rep.body);
       return false;
     }
     print(rep.body);
@@ -191,7 +196,8 @@ class _UserOuput extends State<UserOuput> {
                               ]),
                         ),
                         FloatingActionButton.extended(
-                            label: const Text(
+                            label
+                            : const Text(
                                 style: TextStyle(color: Colors.black), "Login"),
                             backgroundColor: Colors.white,
                             extendedPadding: const EdgeInsets.symmetric(
@@ -203,7 +209,7 @@ class _UserOuput extends State<UserOuput> {
                               _makeRequest(nameController.text,
                                       secondController.text, "api/login")
                                   .then((key) {
-                                if (!context.mounted) return;
+                                if (!context.mounted || key == false) return;
                                 Provider.of<UserState>(context, listen: false)
                                     .setToken(_token);
                                 context.go("/");

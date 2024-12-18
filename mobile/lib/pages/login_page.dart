@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:area/tools/user_ouput.dart';
 import 'package:area/pages/DiscordAuthPage.dart';
+import 'package:area/pages/OAuthRoblox.dart';
 import 'dart:async';
 
 class UserBox extends StatefulWidget {
@@ -194,6 +195,7 @@ class _LoginPage extends State<LoginPage> {
                   obscureText: true,
                   u: "api/tmp"),
               const DiscordLoginButton(),
+              const RobloxLoginButton(),
             ])
           ],
         ),
