@@ -23,10 +23,6 @@ export default function App() {
             <div className="relative">
                 <SidePannel title={"Chose an action"} setOpen={setOpen} open={open}/>
 
-                <label className="ml-[300px] mt-4 text-chartpurple-200">
-                    Create Area
-                </label>
-
                 <Button
                     text="Action"
                     styleClolor={`bg-chartpurple-200 text-white`}
