@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'package:area/tools/userstate.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as https;
+import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:go_router/go_router.dart';
 
@@ -47,12 +49,11 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
   }
 
   Future<void> _initialize() async {
-    await _makeDemand(
-        "api/oauth/discord");
+    await _makeDemand("api/oauth/discord");
     setState(() {
       print(url);
       _initializeWebView();
-      
+
       // print("finishghghghghghghghghghghghh");
       // print(u);
       _isWebViewInitialized = true;
@@ -61,11 +62,11 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
 
   Future<void> _makeDemand(String u) async {
     final Uri uri = Uri.https("api.area.jepgo.root.sx", u);
-    late final https.Response rep;
+    late final http.Response rep;
     late String content;
 
     try {
-      rep = await https.get(uri);
+      rep = await http.get(uri);
     } catch (e) {
       return _errorMessage("$e");
     }
@@ -82,27 +83,27 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
       u = content;
       url = content;
     });
-      // switch ((rep.statusCode / 100) as int) {
-      //   case 2:
-      //     str = content;
-      //     if (str != "error") {
-      //       _token = str;
-      //       u = str;
-      //       url = str;
-      //     } else {
-      //       _errorMessage("Enter a valid email and password !");
-      //     }
-      //     break;
-      //   case 4:
-      //     str = content;
-      //     if (str != "") {
-      //       _errorMessage(str);
-      //     }
-      //     break;
-      //   case 5:
-      //     _errorMessage("Enter a valid email and password !");
-      //   default:
-      //     break;
+    // switch ((rep.statusCode / 100) as int) {
+    //   case 2:
+    //     str = content;
+    //     if (str != "error") {
+    //       _token = str;
+    //       u = str;
+    //       url = str;
+    //     } else {
+    //       _errorMessage("Enter a valid email and password !");
+    //     }
+    //     break;
+    //   case 4:
+    //     str = content;
+    //     if (str != "") {
+    //       _errorMessage(str);
+    //     }
+    //     break;
+    //   case 5:
+    //     _errorMessage("Enter a valid email and password !");
+    //   default:
+    //     break;
   }
 
   void _initializeWebView() {
@@ -168,12 +169,12 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
   Future<void> _makeRequest(String a, String u) async {
     final String body = "{ \"code\": \"$a\" }";
     final Uri uri = Uri.https("api.area.jepgo.root.sx", u);
-    late final https.Response rep;
+    late final http.Response rep;
     late Map<String, dynamic> content;
     late String? str;
 
     try {
-      rep = await https.post(uri, body: body);
+      rep = await http.post(uri, body: body);
     } catch (e) {
       return _errorMessage("$e");
     }
@@ -182,6 +183,8 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
       case 2:
         str = content['token']?.toString();
         if (str != null) {
+          if (!mounted) return;
+          Provider.of<UserState>(context, listen: false).setToken(_token!);
           _token = str;
         } else {
           _errorMessage("Enter a valid email and password !");

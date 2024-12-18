@@ -120,6 +120,9 @@ class _UserOuput extends State<UserOuput> {
     str = content['token']?.toString();
     if (str != null) {
       _token = str;
+      if (mounted) {
+        Provider.of<UserState>(context, listen: false).setToken(_token);
+      }
     }
     return true;
   }
@@ -193,8 +196,7 @@ class _UserOuput extends State<UserOuput> {
                               ]),
                         ),
                         FloatingActionButton.extended(
-                            label
-                            : const Text(
+                            label: const Text(
                                 style: TextStyle(color: Colors.black), "Login"),
                             backgroundColor: Colors.white,
                             extendedPadding: const EdgeInsets.symmetric(

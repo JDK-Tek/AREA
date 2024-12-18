@@ -19,8 +19,6 @@ class UserRegister extends StatefulWidget {
   final bool obscureText;
   final IconData icon;
   final String u;
-  final email = TextEditingController();
-  final password = TextEditingController();
 
   @override
   State<UserRegister> createState() => _UserRegister();
@@ -30,14 +28,17 @@ class _UserRegister extends State<UserRegister> {
   final FocusNode emailFocusNode = FocusNode();
   final FocusNode passwordFocusNode = FocusNode();
 
+  final email = TextEditingController();
+  final password = TextEditingController();
+
   String? _token;
 
   @override
   void dispose() {
     emailFocusNode.dispose();
     passwordFocusNode.dispose();
-    widget.email.dispose();
-    widget.password.dispose();
+    email.dispose();
+    password.dispose();
     super.dispose();
   }
 
@@ -70,27 +71,27 @@ class _UserRegister extends State<UserRegister> {
   }
 
   Future<void> _makeRequest(String a, String b, String u) async {
-    final String body = "{ \"email\": \"$a\", \"password\": \"$b\" }";
-    // print("uuuuuuu = ${u}");
+    final Map<String, String> body = {
+      "email" : a,
+      "password": b,
+    };
     final Uri uri = Uri.https("api.area.jepgo.root.sx", u);
     late final https.Response rep;
     late Map<String, dynamic> content;
-    late String? str;
 
     try {
-
-      final https.Response rep = await https.post(
+      rep = await https.post(
         uri,
         headers: {
           "Content-Type": "application/json",
         },
-        body: jsonEncode(requestBody),
+        body: jsonEncode(body),
       );
       switch (rep.statusCode) {
         case 200:
-          final Map<String, dynamic> content = jsonDecode(rep.body);
+          content = jsonDecode(rep.body);
           _token = content['token']?.toString();
-          if (_token != null && context.mounted) {
+          if (_token != null && mounted) {
             Provider.of<UserState>(context, listen: false).setToken(_token!);
             context.go("/");
           } else {
@@ -151,7 +152,7 @@ class _UserRegister extends State<UserRegister> {
                           height: 50,
                           width: 300,
                           child: UserBox(
-                            nameController: widget.email,
+                            nameController: email,
                             icon: Icons.email,
                             obscureText: false,
                             title: "email:",
@@ -162,7 +163,7 @@ class _UserRegister extends State<UserRegister> {
                           height: 50,
                           width: 300,
                           child: UserBox(
-                            nameController: widget.password,
+                            nameController: password,
                             icon: Icons.password,
                             obscureText: true,
                             title: "password:",
@@ -202,8 +203,8 @@ class _UserRegister extends State<UserRegister> {
                               borderRadius: BorderRadius.circular(15),
                             ),
                             onPressed: () {
-                              _makeRequest(widget.email.text,
-                                  widget.password.text, "api/register");
+                              _makeRequest(email.text,
+                                  password.text, "api/register");
                             }),
                       ]),
                 ),

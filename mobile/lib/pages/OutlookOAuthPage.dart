@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'package:area/tools/userstate.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:go_router/go_router.dart';
 
@@ -162,6 +164,7 @@ class _OutlookAuthPageState extends State<OutlookAuthPage> {
         if (str != null) {
           _token = str;
           if (mounted) {
+            Provider.of<UserState>(context, listen: false).setToken(_token!);
             context.go("/");
           }
         } else {
