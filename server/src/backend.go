@@ -16,7 +16,7 @@ import (
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-	"github.com/joho/godotenv"
+	// "github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 
 	"area-backend/area"
@@ -217,33 +217,45 @@ func getRoutes(a area.AreaRequest) {
 func main() {
     router := mux.NewRouter()
     var err error
-    var dbPassword, dbUser string
+    var dbPassword, dbUser, dbName, dbHost, dbPort string
     var connectStr string
     var portString string
     var a area.Area
 
-    if err = godotenv.Load("/usr/mount.d/.env"); err != nil {
-        log.Fatal("no .env")
-    }
+    // if err = godotenv.Load("/usr/mount.d/.env"); err != nil {
+    //     log.Fatal("no .env")
+    // }
     if dbPassword = os.Getenv("DB_PASSWORD"); dbPassword == "" {
         log.Fatal("DB_PASSWORD not found")
     }
     if dbUser = os.Getenv("DB_USER"); dbUser == "" {
         log.Fatal("DB_USER not found")
     }
+	if dbName = os.Getenv("DB_NAME"); dbName == "" {
+		log.Fatal("DB_NAME not found")
+	}
+	if dbHost = os.Getenv("DB_HOST"); dbHost == "" {
+		log.Fatal("DB_HOST not found")
+	}
+	if dbPort = os.Getenv("DB_PORT"); dbPort == "" {
+		log.Fatal("DB_PORT not found")
+	}
     if portString = os.Getenv("BACKEND_PORT"); portString == "" {
         log.Fatal("BACKEND_PORT not found")
     }
-    if a.Key = os.Getenv("BACKEND_KEY"); portString == "" {
+    if a.Key = os.Getenv("BACKEND_KEY"); a.Key == "" {
         log.Fatal("BACKEND_KEY not found")
     }
     if _, err = strconv.Atoi(portString); err != nil {
         log.Fatal("atoi:", err)
     }
     connectStr = fmt.Sprintf(
-        "postgresql://%s:%s@database:5432/area_database?sslmode=disable",
+        "postgresql://%s:%s@%s:%s/%s?sslmode=disable",
         dbUser,
         dbPassword,
+		dbHost,
+		dbPort,
+		dbName,
     )
     if a.Database, err = sql.Open("postgres", connectStr); err != nil {
         log.Fatal(err)

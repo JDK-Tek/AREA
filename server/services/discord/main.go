@@ -215,9 +215,12 @@ func connectToDatabase() (*sql.DB, error) {
 		log.Fatal("DB_PORT not found")
 	}
 	connectStr := fmt.Sprintf(
-		"postgresql://%s:%s@database:5432/area_database?sslmode=disable",
+		"postgresql://%s:%s@%s:%s/%s?sslmode=disable",
 		dbUser,
 		dbPassword,
+		dbHost,
+		dbPort,
+		dbName,
 	)
 	return sql.Open("postgres", connectStr)
 }
@@ -275,7 +278,7 @@ func main() {
 	}
 	fmt.Println("discord microservice container is running !")
 	router := mux.NewRouter()
-	godotenv.Load("/usr/mound.d/.env", "/usr/mound.d/.env1")
+	godotenv.Load(".env")
 	router.HandleFunc("/send", doSomeSend).Methods("POST")
 	router.HandleFunc("/oauth", getOAUTHLink).Methods("GET")
 	router.HandleFunc("/oauth", miniproxy(setOAUTHToken, db)).Methods("POST")

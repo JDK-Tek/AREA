@@ -150,7 +150,7 @@ func connectToDatabase() (*sql.DB, error) {
 	// 	dbName,
 	// )
 	connectStr := fmt.Sprintf(
-		"postgresql://%s:%s@database:5432/area_database?sslmode=disable",
+		"postgresql://%s:%s@database:42001/area_database?sslmode=disable",
 		dbUser,
 		dbPassword,
 	)
