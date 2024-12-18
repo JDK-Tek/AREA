@@ -18,3 +18,13 @@ samples, guidance on mobile development, and a full API reference.
 # Warning ! Dependencies needed
 
 ## Temurin v.17
+
+`install temurin version 17`
+
+## Generer les icones android et ios
+
+`dart run flutter_launcher_icons:generate`
+
+## Lancer l'app
+
+`flutter run --release`

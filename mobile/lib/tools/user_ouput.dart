@@ -8,7 +8,7 @@ import 'package:area/tools/space.dart';
 import 'package:area/pages/login_page.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:http/http.dart' as http;
+import 'package:http/http.dart' as https;
 
 class UserOuput extends StatefulWidget {
   const UserOuput(
@@ -96,16 +96,13 @@ class _UserOuput extends State<UserOuput> {
 
   Future<bool> _makeRequest(String a, String b, String u) async {
     final String body = "{ \"email\": \"$a\", \"password\": \"$b\" }";
-    // print("uuuuuuu = ${u}");
-    //final Uri uri = Uri.http("172.20.10.3:42000", u);
     final Uri uri = Uri.https("api.area.jepgo.root.sx", u);
-    //final Uri uri = Uri.http("172.20.10.3:1234", u);
-    late final http.Response rep;
+    late final https.Response rep;
     late Map<String, dynamic> content;
     late String? str;
 
     try {
-      rep = await http.post(uri, body: body);
+      rep = await https.post(uri, body: body);
     } catch (e) {
       print("error in post req");
       print("$e");

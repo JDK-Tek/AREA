@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:area/tools/space.dart';
 import 'package:area/pages/login_page.dart';
 import 'package:go_router/go_router.dart';
-import 'package:http/http.dart' as http;
+import 'package:http/http.dart' as https;
 import 'dart:convert';
 import 'package:area/tools/userstate.dart';
 import 'package:provider/provider.dart';
@@ -72,40 +72,42 @@ class _UserRegister extends State<UserRegister> {
   Future<void> _makeRequest(String a, String b, String u) async {
     final String body = "{ \"email\": \"$a\", \"password\": \"$b\" }";
     // print("uuuuuuu = ${u}");
-    final Uri uri = Uri.http("api.area.jepgo.root.sx", u);
-    late final http.Response rep;
+    final Uri uri = Uri.https("api.area.jepgo.root.sx", u);
+    late final https.Response rep;
     late Map<String, dynamic> content;
     late String? str;
 
     try {
-      rep = await http.post(uri, body: body);
-    } catch (e) {
-      return _errorMessage("$e");
-    }
-    content = jsonDecode(rep.body) as Map<String, dynamic>;
-    switch ((rep.statusCode / 100) as int) {
-      case 2:
-        str = content['token']?.toString();
-        if (str != null) {
-          _token = str;
-          if (mounted) {
+
+      final https.Response rep = await https.post(
+        uri,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode(requestBody),
+      );
+      switch (rep.statusCode) {
+        case 200:
+          final Map<String, dynamic> content = jsonDecode(rep.body);
+          _token = content['token']?.toString();
+          if (_token != null && context.mounted) {
             Provider.of<UserState>(context, listen: false).setToken(_token!);
             context.go("/");
+          } else {
+            await _errorMessage("Token not received from server.");
           }
-        } else {
-          _errorMessage("Enter a valid email and password !");
-        }
-        break;
-      case 4:
-        str = content['message']?.toString();
-        if (str != null) {
-          _errorMessage(str);
-        }
-        break;
-      case 5:
-        _errorMessage("Enter a valid email and password !");
-      default:
-        break;
+          break;
+        case 400:
+          await _errorMessage("400 Bad Request: ${rep.body}");
+          break;
+        case 500:
+          await _errorMessage("Server error: ${rep.body}");
+          break;
+        default:
+          await _errorMessage("Unexpected server response.");
+      }
+    } catch (e) {
+      await _errorMessage("Failed to make request: $e");
     }
   }
 

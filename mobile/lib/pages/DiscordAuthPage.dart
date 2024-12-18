@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:http/http.dart' as https;
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:go_router/go_router.dart';
 
@@ -61,12 +61,11 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
 
   Future<void> _makeDemand(String u) async {
     final Uri uri = Uri.https("api.area.jepgo.root.sx", u);
-    //final Uri uri = Uri.http("172.20.10.3:1234", u);
-    late final http.Response rep;
+    late final https.Response rep;
     late String content;
 
     try {
-      rep = await http.get(uri);
+      rep = await https.get(uri);
     } catch (e) {
       return _errorMessage("$e");
     }
@@ -168,14 +167,13 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
 
   Future<void> _makeRequest(String a, String u) async {
     final String body = "{ \"code\": \"$a\" }";
-    final Uri uri = Uri.http("api.area.jepgo.root.sx", u);
-    //final Uri uri = Uri.http("172.20.10.3:1234", u);
-    late final http.Response rep;
+    final Uri uri = Uri.https("api.area.jepgo.root.sx", u);
+    late final https.Response rep;
     late Map<String, dynamic> content;
     late String? str;
 
     try {
-      rep = await http.post(uri, body: body);
+      rep = await https.post(uri, body: body);
     } catch (e) {
       return _errorMessage("$e");
     }
