@@ -188,34 +188,26 @@ func getAllServices(a area.AreaRequest) {
 	a.Reply(list, http.StatusOK)
 }
 
-func getServiceInfo(a area.AreaRequest) {
+func getRoutes(a area.AreaRequest) {
 	vars := mux.Vars(a.Request)
     service := vars["service"]
 	url := fmt.Sprintf(
 		"http://reverse-proxy:42002/service/%s/routes",
 		service,
 	)
-	req, err := http.NewRequest("POST", url, a.Request.Body)
+	rep, err := http.Get(url)
 	if err != nil {
-		a.Error(err, http.StatusBadGateway)
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
-	client := http.Client{}
-	rep, err := client.Do(req)
-	if err != nil {
-		a.Error(err, http.StatusBadGateway)
+		a.Error(err, rep.StatusCode)
 		return
 	}
 	defer rep.Body.Close()
-	if rep.StatusCode != 200 {
-		a.Error(err, http.StatusBadGateway)
-		return
-	}
 	body, err := ioutil.ReadAll(rep.Body)
 	if err != nil {
 		a.Error(err, http.StatusBadGateway)
+		return
+	}
+	if rep.StatusCode != 200 {
+		a.ErrorStr(string(body), http.StatusInternalServerError)
 		return
 	}
 	a.Reply(string(body), http.StatusOK)
@@ -278,7 +270,7 @@ func main() {
 	router.HandleFunc("/api/orchestrator", newProxy(&a, onUpdate)).Methods("PUT")
 	router.HandleFunc("/caca", newProxy(&a, codeCallback)).Methods("GET")
 	router.HandleFunc("/api/services", newProxy(&a, getAllServices)).Methods("GET")
-	router.HandleFunc("/api/services/{service}", newProxy(&a, getAllServices)).Methods("GET")
+	router.HandleFunc("/api/services/{service}", newProxy(&a, getRoutes)).Methods("GET")
     
     fmt.Println("=> server listens on port ", portString)
     log.Fatal(http.ListenAndServe(":"+portString, corsMiddleware(router)))
