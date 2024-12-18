@@ -175,6 +175,52 @@ func codeCallback(a area.AreaRequest) {
 	}, http.StatusOK)
 }
 
+type Foo struct {
+	Name string `json:"name"`
+	IconUrl string `json:"icon_url"`
+}
+
+func getAllServices(a area.AreaRequest) {
+	var list = []Foo{
+		Foo{Name: "Time", IconUrl: "none"},
+		Foo{Name: "Discord", IconUrl: "none"},
+	}
+	a.Reply(list, http.StatusOK)
+}
+
+func getServiceInfo(a area.AreaRequest) {
+	vars := mux.Vars(a.Request)
+    service := vars["service"]
+	url := fmt.Sprintf(
+		"http://reverse-proxy:42002/service/%s/routes",
+		service,
+	)
+	req, err := http.NewRequest("POST", url, a.Request.Body)
+	if err != nil {
+		a.Error(err, http.StatusBadGateway)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	client := http.Client{}
+	rep, err := client.Do(req)
+	if err != nil {
+		a.Error(err, http.StatusBadGateway)
+		return
+	}
+	defer rep.Body.Close()
+	if rep.StatusCode != 200 {
+		a.Error(err, http.StatusBadGateway)
+		return
+	}
+	body, err := ioutil.ReadAll(rep.Body)
+	if err != nil {
+		a.Error(err, http.StatusBadGateway)
+		return
+	}
+	a.Reply(string(body), http.StatusOK)
+}
+
 func main() {
     router := mux.NewRouter()
     var err error
@@ -216,7 +262,6 @@ func main() {
         time.Sleep(time.Second)
         err = a.Database.Ping()
     }
-
     corsMiddleware := handlers.CORS(
         handlers.AllowedOrigins([]string{"*"}),
         handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE"}),
@@ -225,13 +270,15 @@ func main() {
 	router.HandleFunc("/api/login", newProxy(&a, auth.DoSomeLogin)).Methods("POST")
 	router.HandleFunc("/api/register", newProxy(&a, auth.DoSomeRegister)).Methods("POST")
 	router.HandleFunc("/api/area", newProxy(&a, arearoute.NewArea)).Methods("POST")
-	router.HandleFunc("/api/services", newProxy(&a, service.GetServices)).Methods("GET")
-	router.HandleFunc("/api/service/{id}", newProxy(&a, service.GetServiceApplets)).Methods("GET")
+	router.HandleFunc("/api/v2/services", newProxy(&a, service.GetServices)).Methods("GET")
+	router.HandleFunc("/api/v2/service/{id}", newProxy(&a, service.GetServiceApplets)).Methods("GET")
 	router.HandleFunc("/api/oauth/{service}", newProxy(&a, oauthGetter)).Methods("GET")
 	router.HandleFunc("/api/oauth/{service}", newProxy(&a, oauthSetter)).Methods("POST")
 	router.HandleFunc("/api/applets", newProxy(&a, applet.GetApplets)).Methods("GET")
 	router.HandleFunc("/api/orchestrator", newProxy(&a, onUpdate)).Methods("PUT")
 	router.HandleFunc("/caca", newProxy(&a, codeCallback)).Methods("GET")
+	router.HandleFunc("/api/services", newProxy(&a, getAllServices)).Methods("GET")
+	router.HandleFunc("/api/services/{service}", newProxy(&a, getAllServices)).Methods("GET")
     
     fmt.Println("=> server listens on port ", portString)
     log.Fatal(http.ListenAndServe(":"+portString, corsMiddleware(router)))
