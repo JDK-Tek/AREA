@@ -2,8 +2,6 @@ services:
   backend:
     env_file:
       - .env
-    volumes:
-      - ./.env:/usr/mount.d/.env
     build:
       context: ./src
     ports:
@@ -11,20 +9,23 @@ services:
     depends_on:
       - database
     environment:
-      - DB_HOST=database
-      - DB_PORT=${DATABASE_PORT}
       - DB_USER=${DATABASE_USER}
       - DB_PASSWORD=${DATABASE_PASSWORD}
       - DB_NAME=${DATABASE_NAME}
+      - DB_HOST=database
+      - DB_PORT=${DATABASE_PORT}
     container_name: area-backend
     networks:
       - web
 
   database:
+    expose:
+      - ${DATABASE_PORT}
     env_file:
       - .env
     image: postgres
     container_name: area-database
+    command: -p ${DATABASE_PORT}
     ports:
       - "${DATABASE_PORT}:${DATABASE_PORT}"
     environment:
@@ -39,11 +40,7 @@ services:
     
   service-discord:
     env_file:
-      - ./services/discord/.env
       - .env
-    volumes:
-      - ./services/discord/.env:/usr/mount.d/.env
-      - ./.env:/usr/mount.d/.env1
     container_name: area-service-discord
     build:
       context: ./services/discord
@@ -54,27 +51,7 @@ services:
       - "traefik.http.routers.discord.middlewares=stripprefix-service-discord"
       - "traefik.http.middlewares.stripprefix-service-discord.stripprefix.prefixes=/service/discord"
     environment:
-      - DB_HOST=database
-      - DB_PORT=${DATABASE_PORT}
-      - DB_USER=${DATABASE_USER}
-      - DB_PASSWORD=${DATABASE_PASSWORD}
-      - DB_NAME=${DATABASE_NAME}
-    networks:
-      - web
-    
-  service-time:
-    env_file:
-      - .env
-    container_name: area-service-time
-    build:
-      context: ./services/time
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.time.rule=PathPrefix(`/service/time/`)"
-      - "traefik.http.services.time.loadbalancer.server.port=80"
-      - "traefik.http.routers.time.middlewares=stripprefix-service-time"
-      - "traefik.http.middlewares.stripprefix-service-time.stripprefix.prefixes=/service/time"
-    environment:
+      - BACKEND_KEY=${BACKEND_KEY}
       - DB_HOST=database
       - DB_PORT=${DATABASE_PORT}
       - DB_USER=${DATABASE_USER}

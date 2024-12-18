@@ -16,7 +16,7 @@ import (
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-	"github.com/joho/godotenv"
+	// "github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 
 	"area-backend/area"
@@ -175,36 +175,87 @@ func codeCallback(a area.AreaRequest) {
 	}, http.StatusOK)
 }
 
+type Foo struct {
+	Name string `json:"name"`
+	IconUrl string `json:"icon_url"`
+}
+
+func getAllServices(a area.AreaRequest) {
+	var list = []Foo{
+		Foo{Name: "Time"},
+		Foo{Name: "Discord"},
+	}
+	a.Reply(list, http.StatusOK)
+}
+
+func getRoutes(a area.AreaRequest) {
+	vars := mux.Vars(a.Request)
+    service := vars["service"]
+	url := fmt.Sprintf(
+		"http://reverse-proxy:42002/service/%s/routes",
+		service,
+	)
+	rep, err := http.Get(url)
+	if err != nil {
+		a.Error(err, rep.StatusCode)
+		return
+	}
+	defer rep.Body.Close()
+	body, err := ioutil.ReadAll(rep.Body)
+	if err != nil {
+		a.Error(err, http.StatusBadGateway)
+		return
+	}
+	if rep.StatusCode != 200 {
+		a.ErrorStr(string(body), http.StatusInternalServerError)
+		return
+	}
+	a.Writter.WriteHeader(http.StatusOK)
+	a.Writter.Write(body)
+}
+
 func main() {
     router := mux.NewRouter()
     var err error
-    var dbPassword, dbUser string
+    var dbPassword, dbUser, dbName, dbHost, dbPort string
     var connectStr string
     var portString string
     var a area.Area
 
-    if err = godotenv.Load("/usr/mount.d/.env"); err != nil {
-        log.Fatal("no .env")
-    }
+    // if err = godotenv.Load("/usr/mount.d/.env"); err != nil {
+    //     log.Fatal("no .env")
+    // }
     if dbPassword = os.Getenv("DB_PASSWORD"); dbPassword == "" {
         log.Fatal("DB_PASSWORD not found")
     }
     if dbUser = os.Getenv("DB_USER"); dbUser == "" {
         log.Fatal("DB_USER not found")
     }
+	if dbName = os.Getenv("DB_NAME"); dbName == "" {
+		log.Fatal("DB_NAME not found")
+	}
+	if dbHost = os.Getenv("DB_HOST"); dbHost == "" {
+		log.Fatal("DB_HOST not found")
+	}
+	if dbPort = os.Getenv("DB_PORT"); dbPort == "" {
+		log.Fatal("DB_PORT not found")
+	}
     if portString = os.Getenv("BACKEND_PORT"); portString == "" {
         log.Fatal("BACKEND_PORT not found")
     }
-    if a.Key = os.Getenv("BACKEND_KEY"); portString == "" {
+    if a.Key = os.Getenv("BACKEND_KEY"); a.Key == "" {
         log.Fatal("BACKEND_KEY not found")
     }
     if _, err = strconv.Atoi(portString); err != nil {
         log.Fatal("atoi:", err)
     }
     connectStr = fmt.Sprintf(
-        "postgresql://%s:%s@database:5432/area_database?sslmode=disable",
+        "postgresql://%s:%s@%s:%s/%s?sslmode=disable",
         dbUser,
         dbPassword,
+		dbHost,
+		dbPort,
+		dbName,
     )
     if a.Database, err = sql.Open("postgres", connectStr); err != nil {
         log.Fatal(err)
@@ -216,7 +267,6 @@ func main() {
         time.Sleep(time.Second)
         err = a.Database.Ping()
     }
-
     corsMiddleware := handlers.CORS(
         handlers.AllowedOrigins([]string{"*"}),
         handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE"}),
@@ -225,13 +275,15 @@ func main() {
 	router.HandleFunc("/api/login", newProxy(&a, auth.DoSomeLogin)).Methods("POST")
 	router.HandleFunc("/api/register", newProxy(&a, auth.DoSomeRegister)).Methods("POST")
 	router.HandleFunc("/api/area", newProxy(&a, arearoute.NewArea)).Methods("POST")
-	router.HandleFunc("/api/services", newProxy(&a, service.GetServices)).Methods("GET")
-	router.HandleFunc("/api/service/{id}", newProxy(&a, service.GetServiceApplets)).Methods("GET")
+	router.HandleFunc("/api/v2/services", newProxy(&a, service.GetServices)).Methods("GET")
+	router.HandleFunc("/api/v2/service/{id}", newProxy(&a, service.GetServiceApplets)).Methods("GET")
 	router.HandleFunc("/api/oauth/{service}", newProxy(&a, oauthGetter)).Methods("GET")
 	router.HandleFunc("/api/oauth/{service}", newProxy(&a, oauthSetter)).Methods("POST")
 	router.HandleFunc("/api/applets", newProxy(&a, applet.GetApplets)).Methods("GET")
 	router.HandleFunc("/api/orchestrator", newProxy(&a, onUpdate)).Methods("PUT")
 	router.HandleFunc("/caca", newProxy(&a, codeCallback)).Methods("GET")
+	router.HandleFunc("/api/services", newProxy(&a, getAllServices)).Methods("GET")
+	router.HandleFunc("/api/services/{service}", newProxy(&a, getRoutes)).Methods("GET")
     
     fmt.Println("=> server listens on port ", portString)
     log.Fatal(http.ListenAndServe(":"+portString, corsMiddleware(router)))
