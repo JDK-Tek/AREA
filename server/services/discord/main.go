@@ -38,17 +38,10 @@ type Content struct {
 
 func getOAUTHLink(w http.ResponseWriter, req *http.Request) {
 	str := "https://discord.com/oauth2/authorize?"
-	redirect := req.URL.Query().Get("redirect")
-	if redirect == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(w, "{ \"error\": \"missing\" }\n")
-		return
-	}
-	x := url.QueryEscape(redirect)
 	str += "client_id=" + os.Getenv("DISCORD_ID")
 	str += "&permissions=" + strconv.Itoa(PERMISSIONS)
 	str += "&response_type=code"
-	str += "&redirect_uri=" + x
+	str += "&redirect_uri=" + os.Getenv("DISCORD_REDIRECT")
 	str += "&integration_type=0"
 	str += "&scope=identify+email+bot+guilds"
 	w.WriteHeader(http.StatusOK)
@@ -87,7 +80,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	data.Set("client_secret", clientsecret)
 	data.Set("grant_type", "authorization_code")
 	data.Set("code", res.Code)
-	data.Set("redirect_uri", "https://area-jeepg.vercel.app/connected")
+	data.Set("redirect_uri", os.Getenv("DISCORD_REDIRECT"))
 	rep, err := http.PostForm(API_OAUTH, data);
 	if err != nil {
 		fmt.Fprintln(w, "postform", err.Error())
@@ -235,6 +228,46 @@ func miniproxy(f func(http.ResponseWriter, *http.Request, *sql.DB), c *sql.DB) f
 	}
 }
 
+type Spice struct {
+	Name string `json:"name"`
+	Type string `json:"type"`
+}
+
+type Route struct {
+	Type string `json:"type"`
+	Name string `json:"name"`
+	Spices []Spice `json:"spices"`
+}
+
+func getRoutes(w http.ResponseWriter, req *http.Request) {
+	var list = []Route{
+		Route{
+			Name: "send",
+			Type: "reaction",
+			Spices: []Spice{
+				{
+					Name: "channel",
+					Type: "number",
+				},
+				{
+					Name: "message",
+					Type: "text",
+				},
+			},
+		},
+	}
+	var data []byte
+	var err error
+
+	data, err = json.Marshal(list)
+	if err != nil {
+		http.Error(w, `{ "error":  "marshal" }`, http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+    fmt.Fprintln(w, string(data))
+}
+
 func main() {
 	db, err := connectToDatabase()
 	if err != nil {
@@ -246,5 +279,6 @@ func main() {
 	router.HandleFunc("/send", doSomeSend).Methods("POST")
 	router.HandleFunc("/oauth", getOAUTHLink).Methods("GET")
 	router.HandleFunc("/oauth", miniproxy(setOAUTHToken, db)).Methods("POST")
+	router.HandleFunc("/routes", getRoutes).Methods("GET")
 	log.Fatal(http.ListenAndServe(":80", router))
 }
