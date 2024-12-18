@@ -1,9 +1,13 @@
 services:
   server:
     env_file:
+<<<<<<< HEAD:docker-compose.yaml
       - ./.env
     volumes:
       - ./.env:/usr/mount.d/.env
+=======
+      - .env
+>>>>>>> 6dfa4cb (feat[#131]: start .env only importation):server/docker-compose.yml
     build:
       context: ./server/src
     ports:
@@ -11,20 +15,27 @@ services:
     depends_on:
       - database
     environment:
-      - DB_HOST=database
-      - DB_PORT=${DATABASE_PORT}
       - DB_USER=${DATABASE_USER}
       - DB_PASSWORD=${DATABASE_PASSWORD}
       - DB_NAME=${DATABASE_NAME}
+<<<<<<< HEAD:docker-compose.yaml
     container_name: area-server
+=======
+      - DB_HOST=database
+      - DB_PORT=${DATABASE_PORT}
+    container_name: area-backend
+>>>>>>> 6dfa4cb (feat[#131]: start .env only importation):server/docker-compose.yml
     networks:
       - web
 
   database:
+    expose:
+      - ${DATABASE_PORT}
     env_file:
       - ./.env
     image: postgres
     container_name: area-database
+    command: -p ${DATABASE_PORT}
     ports:
       - "${DATABASE_PORT}:${DATABASE_PORT}"
     environment:
@@ -39,11 +50,7 @@ services:
     
   service-discord:
     env_file:
-      - ./server/services/discord/.env
-      - ./.env
-    volumes:
-      - ./server/services/discord/.env:/usr/mount.d/.env
-      - ./.env:/usr/mount.d/.env1
+      - .env
     container_name: area-service-discord
     build:
       context: ./server/services/discord
@@ -54,6 +61,7 @@ services:
       - "traefik.http.routers.discord.middlewares=stripprefix-service-discord"
       - "traefik.http.middlewares.stripprefix-service-discord.stripprefix.prefixes=/service/discord"
     environment:
+      - BACKEND_KEY=${BACKEND_KEY}
       - DB_HOST=database
       - DB_PORT=${DATABASE_PORT}
       - DB_USER=${DATABASE_USER}
