@@ -103,7 +103,7 @@ services:
     build:
       context: ./web
     ports:
-      - ${WEB_PORT}:80
+      - ${WEB_PORT}:3000
     networks:
       - web
 
