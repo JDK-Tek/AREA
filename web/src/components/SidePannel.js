@@ -14,6 +14,7 @@ export default function SidePannel({ title, open, setOpen }) {
     const isResizing = useRef(false);
 
     useEffect(() => {
+        
         const handleClickOutside = (event) => {
             if (panelRef.current && !panelRef.current.contains(event.target)) {
                 setOpen(false);
@@ -32,7 +33,7 @@ export default function SidePannel({ title, open, setOpen }) {
     useEffect(() => {
         const handleMouseMove = (event) => {
             if (isResizing.current) {
-                const newWidth = Math.min(Math.max(400, event.clientX), window.innerWidth - 100);
+                const newWidth = Math.min(Math.max(400, event.clientX), window.innerWidth / 2 - 100);
                 setWidth(newWidth);
             }
         };
