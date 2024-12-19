@@ -6,4 +6,4 @@ RUN go mod tidy
 COPY . .
 RUN go build
 
-CMD ./spotify
+CMD ./outlook
