@@ -46,10 +46,6 @@ export default function SearchInputBox({
                     placeholder={placeholder}
                     onChange={(e) => setText(e.target.value)}
                 />
-                <button
-                    className="select-none text-white absolute end-2.5 bottom-2.5 bg-chartpurple-100 hover:bg-chartpurple-200 active:ring-2 active:outline-none active:border-chartpurple-200 font-medium rounded-lg text-sm px-4 py-2"
-                    onClick={() => setText(document.getElementById("default-search").value)}
-                >Search</button>
             </div>  
         </div>
     )

@@ -13,7 +13,7 @@ import HeaderBar from "../../components/Header/HeaderBar"
 
 import Button from "../../components/Button";
 
-export default function App() {
+export default function CreateArea() {
     const [open, setOpen] = useState(false);
 
     return (

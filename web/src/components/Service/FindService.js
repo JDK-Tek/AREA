@@ -63,7 +63,7 @@ export default function FindService({ dark }) {
     }, [search, setFilteredServices, services]);
 
     return (
-        <div className="h-full flex flex-wrap justify-center items-center">
+        <div className="h-full flex flex-col justify-start">
             {error && <Notification error={true} msg={error} setError={setError}/>}
 
             <SearchInput
@@ -75,7 +75,10 @@ export default function FindService({ dark }) {
                 iconColor={mode.iconColor}
                 borderColor={mode.borderColor}
             />
-            <ServiceKit services={filteredServices}/>
+            
+            <div className="mt-5 overflow-y-auto max-h-[calc(85vh-4rem-64px)] w-full flex flex-col">
+                <ServiceKit services={filteredServices} className="self-start"/>
+            </div>
         </div>
     )
 }

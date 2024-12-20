@@ -14,7 +14,6 @@ export default function SidePannel({ title, open, setOpen }) {
     const isResizing = useRef(false);
 
     useEffect(() => {
-        
         const handleClickOutside = (event) => {
             if (panelRef.current && !panelRef.current.contains(event.target)) {
                 setOpen(false);
@@ -67,7 +66,7 @@ export default function SidePannel({ title, open, setOpen }) {
                     className="absolute top-0 right-0 w-1 h-full bg-chartgray-200"
                 />
             </div>
-            <div className="p-5">
+            <div className="p-5" style={{ height: 'calc(100vh - 4rem - 64px)' }}>
                 <FindService dark={true} />
             </div>
         </div>
