@@ -56,6 +56,7 @@ type Result struct {
 
 type TokenResult struct {
 	Token string `json:"access_token"`
+	Refresh string `json:"refresh_token"`
 }
 
 type UserResult struct {
@@ -68,6 +69,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	var user UserResult
 	var tokid int
 	var owner = -1
+
 	// make the request to discord api
 	clientid := os.Getenv("DISCORD_ID")
 	clientsecret := os.Getenv("DISCORD_SECRET")
@@ -117,9 +119,10 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	// seelect the user id shit
 	err = db.QueryRow("select id, owner from tokens where userid = $1", user.ID).Scan(&tokid, &owner)
 	if err != nil {
-		err = db.QueryRow("insert into tokens (service, token, userid) values ($1, $2, $3) returning id",
+		err = db.QueryRow("insert into tokens (service, token, refresh, userid) values ($1, $2, $3, $4) returning id",
 			"discord",
 			tok.Token,
+			tok.Refresh,
 			user.ID,
 		).Scan(&tokid)
 		if err != nil {
