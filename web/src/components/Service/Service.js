@@ -5,10 +5,10 @@
 ** Service
 */
 
-export default function Service({ service }) {
+export default function Service({ service, rounded }) {
     return (
         <div
-            className={`relative w-[200px] h-[150px] text-white rounded-2xl shadow-md p-6 flex flex-col justify-between items-center cursor-pointer`}
+            className={`select-none relative w-[200px] h-[150px] text-white ${rounded} shadow-md p-6 flex flex-col justify-between items-center cursor-pointer`}
             onClick={() => window.location.href = service.link}
             style={{
                 backgroundColor: service.color.normal

@@ -53,6 +53,8 @@ export default function Content({ setError }) {
                 title={"or choose from 900+ services"}
                 services={services}
                 color={"text-chartpurple-200"}
+                gap={"gap-3"}
+                rounded={"rounded-xl"}
             />
             <div className="flex justify-center items-center mt-8">
                 <Button

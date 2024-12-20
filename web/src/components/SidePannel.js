@@ -10,7 +10,7 @@ import FindService from "./Service/FindService";
 
 export default function SidePannel({ title, open, setOpen }) {
     const panelRef = useRef(null);
-    const [width, setWidth] = useState(400);
+    const [width, setWidth] = useState(535);
     const isResizing = useRef(false);
 
     useEffect(() => {
@@ -66,7 +66,7 @@ export default function SidePannel({ title, open, setOpen }) {
                     className="absolute top-0 right-0 w-1 h-full bg-chartgray-200"
                 />
             </div>
-            <div className="p-5" style={{ height: 'calc(100vh - 4rem - 64px)' }}>
+            <div className="p-5" style={{ height: 'calc(95vh - 4rem - 64px)' }}>
                 <FindService dark={true} />
             </div>
         </div>

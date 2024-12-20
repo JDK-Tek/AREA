@@ -77,7 +77,11 @@ export default function FindService({ dark }) {
             />
             
             <div className="mt-5 overflow-y-auto max-h-[calc(85vh-4rem-64px)] w-full flex flex-col">
-                <ServiceKit services={filteredServices} className="self-start"/>
+                <ServiceKit
+                    services={filteredServices}
+                    gap={"gap-1"}
+                    centered={false}
+                />
             </div>
         </div>
     )
