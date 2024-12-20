@@ -184,6 +184,9 @@ func getAllServices(a area.AreaRequest) {
 	var list = []Foo{
 		Foo{Name: "Time"},
 		Foo{Name: "Discord"},
+		Foo{Name: "Roblox"},
+		Foo{Name: "Outlook"},
+		Foo{Name: "Spotify"},
 	}
 	a.Reply(list, http.StatusOK)
 }
@@ -212,6 +215,26 @@ func getRoutes(a area.AreaRequest) {
 	}
 	a.Writter.WriteHeader(http.StatusOK)
 	a.Writter.Write(body)
+}
+
+type Message struct {
+	Message string `json:"message"`
+	Authentificated bool `json:"authentificated"`
+}
+
+type MessageWithID struct {
+	Message string `json:"message"`
+	Authentificated bool `json:"authentificated"`
+	ID int `json:"id"`
+}
+
+func doctor(a area.AreaRequest) {
+	id, err := a.AssertToken()
+	if err != nil {
+		a.Reply(Message{Message: "i'm ok", Authentificated: false}, http.StatusOK)
+		return
+	}
+	a.Reply(MessageWithID{Message: "i'm ok", Authentificated: true, ID: id}, http.StatusOK)
 }
 
 func main() {
@@ -281,10 +304,10 @@ func main() {
 	router.HandleFunc("/api/oauth/{service}", newProxy(&a, oauthSetter)).Methods("POST")
 	router.HandleFunc("/api/applets", newProxy(&a, applet.GetApplets)).Methods("GET")
 	router.HandleFunc("/api/orchestrator", newProxy(&a, onUpdate)).Methods("PUT")
-	router.HandleFunc("/caca", newProxy(&a, codeCallback)).Methods("GET")
 	router.HandleFunc("/api/services", newProxy(&a, getAllServices)).Methods("GET")
 	router.HandleFunc("/api/services/{service}", newProxy(&a, getRoutes)).Methods("GET")
-    
+    router.HandleFunc("/api/doctor", newProxy(&a, doctor)).Methods("GET")
+
     fmt.Println("=> server listens on port ", portString)
     log.Fatal(http.ListenAndServe(":"+portString, corsMiddleware(router)))
 }

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -40,16 +39,9 @@ type Content struct {
 
 func getOAUTHLink(w http.ResponseWriter, req *http.Request) {
 	str := "https://accounts.spotify.com/authorize?"
-	redirect := req.URL.Query().Get("redirect")
-	if redirect == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(w, "{ \"error\": \"missing\" }\n")
-		return
-	}
-	x := url.QueryEscape(redirect)
 	str += "client_id=" + os.Getenv("SPOTIFY_CLIENT_ID")
 	str += "&response_type=code"
-	str += "&redirect_uri=" + x
+	str += "&redirect_uri=" + url.QueryEscape(os.Getenv("REDIRECT"))
 	str += "&scope=user-read-private user-read-email"
 	str += "&state=some-state-value"
 	w.WriteHeader(http.StatusOK)
@@ -62,6 +54,7 @@ type Result struct {
 
 type TokenResult struct {
 	Token string `json:"access_token"`
+	Refresh string `json:"refresh_token"`
 }
 
 type UserResult struct {
@@ -87,13 +80,14 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	data.Set("client_secret", clientsecret)
 	data.Set("grant_type", "authorization_code")
 	data.Set("code", res.Code)
-	data.Set("redirect_uri", "https://area-jeepg.vercel.app/connected")
+	data.Set("redirect_uri", os.Getenv("REDIRECT"))
 	rep, err := http.PostForm(API_OAUTH_SPOTIFY, data)
 	if err != nil {
 		fmt.Fprintln(w, "postform", err.Error())
 		return
 	}
 	defer rep.Body.Close()
+	fmt.Println(rep.Body)
 	err = json.NewDecoder(rep.Body).Decode(&tok)
 	if err != nil {
 		fmt.Fprintln(w, "decode", err.Error())
@@ -122,9 +116,10 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 
 	err = db.QueryRow("select id, owner from tokens where userid = $1", user.ID).Scan(&tokid, &owner)
 	if err != nil {
-		err = db.QueryRow("insert into tokens (service, token, userid) values ($1, $2, $3) returning id",
-			"spotify",
+		err = db.QueryRow("insert into tokens (service, token, refresh, userid) values ($1, $2, $3, $4) returning id",
+			"discord",
 			tok.Token,
+			tok.Refresh,
 			user.ID,
 		).Scan(&tokid)
 		if err != nil {
@@ -154,51 +149,6 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	fmt.Fprintf(w, `{"token": "%s"}\n`, tokenStr)
 }
 
-func doSomeSend(w http.ResponseWriter, req *http.Request) {
-	var content Content
-
-	decoder := json.NewDecoder(req.Body)
-	err := decoder.Decode(&content)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
-		return
-	}
-	token := os.Getenv("DISCORD_TOKEN")
-	if token == "" {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "{ \"error\": \"token is missing\" }\n")
-		return
-	}
-	data := make(map[string]string)
-	data["content"] = content.Dishes.Message
-	dataBytes, err := json.Marshal(data)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
-		return
-	}
-	channel := content.Dishes.Channel
-	fmt.Println(channel, data["content"])
-	rep, err := http.NewRequest("POST", API_SEND+channel+"/messages", bytes.NewBuffer(dataBytes))
-	if err != nil {
-		w.WriteHeader(http.StatusBadGateway)
-		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
-		return
-	}
-	rep.Header.Set("Authorization", "Bot "+token)
-	rep.Header.Set("Content-Type", "application/json")
-	client := &http.Client{}
-	res, err := client.Do(rep)
-	if err != nil {
-		w.WriteHeader(http.StatusBadGateway)
-		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
-		return
-	}
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "{ \"status\": \"%s\" }\n", res.Status)
-}
-
 func connectToDatabase() (*sql.DB, error) {
 	dbPassword := os.Getenv("DB_PASSWORD")
 	if dbPassword == "" {
@@ -221,9 +171,12 @@ func connectToDatabase() (*sql.DB, error) {
 		log.Fatal("DB_PORT not found")
 	}
 	connectStr := fmt.Sprintf(
-		"postgresql://%s:%s@database:5432/area_database?sslmode=disable",
+		"postgresql://%s:%s@%s:%s/%s?sslmode=disable",
 		dbUser,
 		dbPassword,
+		dbHost,
+		dbPort,
+		dbName,
 	)
 	return sql.Open("postgres", connectStr)
 }
@@ -239,10 +192,9 @@ func main() {
 	if err != nil {
 		os.Exit(84)
 	}
-	fmt.Println("discord microservice container is running !")
+	fmt.Println("spotify microservice container is running !")
 	router := mux.NewRouter()
-	godotenv.Load("/usr/mound.d/.env", "/usr/mound.d/.env1")
-	//router.HandleFunc("/send", doSomeSend).Methods("POST")
+	godotenv.Load(".env")
 	router.HandleFunc("/oauth", getOAUTHLink).Methods("GET")
 	router.HandleFunc("/oauth", miniproxy(setOAUTHToken, db)).Methods("POST")
 	log.Fatal(http.ListenAndServe(":80", router))

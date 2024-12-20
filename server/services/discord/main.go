@@ -42,7 +42,7 @@ func getOAUTHLink(w http.ResponseWriter, req *http.Request) {
 	str += "client_id=" + os.Getenv("DISCORD_ID")
 	str += "&permissions=" + strconv.Itoa(PERMISSIONS)
 	str += "&response_type=code"
-	str += "&redirect_uri=" + url.QueryEscape(os.Getenv("DISCORD_REDIRECT"))
+	str += "&redirect_uri=" + url.QueryEscape(os.Getenv("REDIRECT"))
 	str += "&integration_type=0"
 	str += "&scope=identify+email+bot+guilds"
 	fmt.Println(str)
@@ -83,7 +83,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	data.Set("client_secret", clientsecret)
 	data.Set("grant_type", "authorization_code")
 	data.Set("code", res.Code)
-	data.Set("redirect_uri", os.Getenv("DISCORD_REDIRECT"))
+	data.Set("redirect_uri", os.Getenv("REDIRECT"))
 	rep, err := http.PostForm(API_OAUTH, data);
 	if err != nil {
 		fmt.Fprintln(w, "postform", err.Error())
