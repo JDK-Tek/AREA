@@ -14,12 +14,10 @@ export default function SearchInputBox({
         borderColor
     }) {
 
-        
 
     return (
         <div className="w-full pl-3 pr-3">
             <label
-                for="default-search"
                 className="mb-2 text-sm font-medium sr-only text-white"
             >
                 Search
@@ -35,9 +33,9 @@ export default function SearchInputBox({
                     >
                         <path
                             stroke="currentColor"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
                             d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"
                         />
                     </svg>
@@ -46,6 +44,7 @@ export default function SearchInputBox({
                     id="default-search"
                     className={`placeholder:select-none block w-full p-4 ps-10 text-sm ${txtColor} border ${borderColor} rounded-lg ${bgColor}`}
                     placeholder={placeholder}
+                    onChange={(e) => setText(e.target.value)}
                 />
                 <button
                     className="select-none text-white absolute end-2.5 bottom-2.5 bg-chartpurple-100 hover:bg-chartpurple-200 active:ring-2 active:outline-none active:border-chartpurple-200 font-medium rounded-lg text-sm px-4 py-2"

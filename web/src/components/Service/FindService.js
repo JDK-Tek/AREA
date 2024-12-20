@@ -8,6 +8,7 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 
+import matchPattern from "../../utils/matchPattern";
 import SearchInput from '../SearchInputBox'
 import ServiceKit from "./ServiceKit";
 import Notification from '../Notification'
@@ -15,7 +16,9 @@ import Notification from '../Notification'
 export default function FindService({ dark }) {
     const [services, setServices] = useState([]);
     const [error, setError] = useState("");
+
     const [search, setSearch] = useState("");
+    const [filteredServices, setFilteredServices] = useState([]);
 
     const mode = dark ?
         {
@@ -44,8 +47,23 @@ export default function FindService({ dark }) {
         getServices();
     }, [setServices, setError]);
 
+    useEffect(() => {
+        if (search === "") {
+            setFilteredServices(services);
+            return;
+        }
+
+        let fstmp = [];
+        services.forEach((service) => {
+            if (matchPattern(search, service.name)) {
+                fstmp.push(service);
+            }
+        });
+        setFilteredServices(fstmp);
+    }, [search, setFilteredServices, services]);
+
     return (
-        <div clasName="flex flex-wrap justify-center items-center">
+        <div className="h-full flex flex-wrap justify-center items-center">
             {error && <Notification error={true} msg={error} setError={setError}/>}
 
             <SearchInput
@@ -57,7 +75,7 @@ export default function FindService({ dark }) {
                 iconColor={mode.iconColor}
                 borderColor={mode.borderColor}
             />
-            <ServiceKit services={services}/>
+            <ServiceKit services={filteredServices}/>
         </div>
     )
 }
