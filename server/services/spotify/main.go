@@ -20,9 +20,6 @@ import (
 
 const API_OAUTH_SPOTIFY = "https://accounts.spotify.com/api/token"
 const API_USER_SPOTIFY = "https://api.spotify.com/v1/me"
-const API_SEND = "https://discord.com/api/channels/"
-const API_OAUTH = "https://discord.com/api/oauth2/token"
-const API_USER = "https://discord.com/api/v10/users/@me"
 
 const PERMISSIONS = 8 // 2080
 
@@ -83,17 +80,19 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	data.Set("redirect_uri", os.Getenv("REDIRECT"))
 	rep, err := http.PostForm(API_OAUTH_SPOTIFY, data)
 	if err != nil {
-		fmt.Fprintln(w, "postform", err.Error())
+		fmt.Fprintln(w, "postform: ", err.Error())
 		return
 	}
 	defer rep.Body.Close()
-	fmt.Println(rep.Body)
 	err = json.NewDecoder(rep.Body).Decode(&tok)
 	if err != nil {
-		fmt.Fprintln(w, "decode", err.Error())
+		fmt.Fprintln(w, "decode: ", err.Error())
 		return
 	}
-
+	if tok.Token == "" || tok.Refresh == "" {
+		fmt.Fprintln(w, "error: token is empty")
+	}
+	
 	// make the request for the user
 	req, err = http.NewRequest("GET", API_USER_SPOTIFY, nil)
 	if err != nil {
