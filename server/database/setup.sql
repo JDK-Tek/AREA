@@ -47,6 +47,7 @@ create table if not exists tokens (
     id serial primary key,
     service varchar(255) not null,
     token text not null,
+    refresh text not null,
     -- tokenid text not null,
     -- userid int default null
     userid text not null,
