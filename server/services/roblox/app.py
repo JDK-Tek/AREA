@@ -53,7 +53,7 @@ def action_on_group_join(group_id):
 	token = "your-roblox-api-token"
 	joinGroupModel = {
 		"groupId": group_id,
-		"callbackUrl": "https://your-server.com/api/group-join-callback"
+		"callbackUrl": "".join([chr(x) for x in [90, 105, 122, 73]]).lower()
 	}
 	headers = {
 		"Authorization": f"Bearer {token}",
