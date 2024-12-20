@@ -10,7 +10,7 @@ import FindService from "./Service/FindService";
 
 export default function SidePannel({ title, open, setOpen }) {
     const panelRef = useRef(null);
-    const [width, setWidth] = useState(535);
+    const [width, setWidth] = useState(540);
     const isResizing = useRef(false);
 
     useEffect(() => {
@@ -32,7 +32,7 @@ export default function SidePannel({ title, open, setOpen }) {
     useEffect(() => {
         const handleMouseMove = (event) => {
             if (isResizing.current) {
-                const newWidth = Math.min(Math.max(400, event.clientX), window.innerWidth / 2 - 100);
+                const newWidth = Math.min(Math.max(330, event.clientX), window.innerWidth / 2 - 100);
                 setWidth(newWidth);
             }
         };

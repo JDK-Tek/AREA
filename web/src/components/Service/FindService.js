@@ -76,12 +76,13 @@ export default function FindService({ dark }) {
                 borderColor={mode.borderColor}
             />
             
-            <div className="mt-5 overflow-y-auto max-h-[calc(85vh-4rem-64px)] w-full flex flex-col">
+            <div className="mt-5 overflow-y-auto max-h-[calc(85vh-4rem-64px)]">
                 <ServiceKit
                     services={filteredServices}
-                    gap={"gap-1"}
-                    centered={false}
-                />
+                    gap={"gap-2"}
+                    centered={true}
+                    bgColor={dark ? "bg-[#1d1d1d]" : ""}
+                    />
             </div>
         </div>
     )
