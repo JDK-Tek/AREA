@@ -1,6 +1,9 @@
-FROM python:3.10-alpine
+FROM python:3.10-slim
 
 WORKDIR /usr/app
+
+RUN apt-get update && \
+    apt-get install -y libpq-dev gcc
 
 COPY requirements.txt /usr/app
 RUN pip3 install -r requirements.txt
