@@ -18,7 +18,7 @@ export default function HeaderBar({ activeBackground = false }) {
     const dataRoutes = [
         {
             title: "Explore",
-            link: "/about"
+            link: listRoutes.explore
         },
         {
             title: "Stories",

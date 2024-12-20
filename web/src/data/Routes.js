@@ -10,7 +10,8 @@ const listRoutes = {
     login: "/login",
     register: "/register",
     myApplets: "/myapplets",
-    create: "/create"
+    create: "/create",
+    explore: "/explore",
 }
 
 export default listRoutes;

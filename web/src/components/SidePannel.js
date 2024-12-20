@@ -6,7 +6,7 @@
 */
 
 import { useEffect, useRef, useState } from "react";
-import SearchInputBox from "./SearchInputBox";
+import FindService from "./Service/FindService";
 
 export default function SidePannel({ title, open, setOpen }) {
     const panelRef = useRef(null);
@@ -68,7 +68,7 @@ export default function SidePannel({ title, open, setOpen }) {
                 />
             </div>
             <div className="p-5">
-                <SearchInputBox placeholder={"Search a service ..."}/>
+                <FindService dark={true} />
             </div>
         </div>
     );
