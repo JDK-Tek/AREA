@@ -45,8 +45,11 @@ TRAEFIK_VERSION=2.10
     - Web: `localhost:8081`
 
 ## Deployment 🚀
-The project is deployed on Azure using VMs. The production web interface is available at `https://area.jepgo.root.sx/` and the production server at `https://api.area.jepgo.root.sx/`.
-The development web interface is available at `https://dev.area.jepgo.root.sx/` and the development server at `https://api.dev.area.jepgo.root.sx/`. (Not available, still in development)
+The project is deployed on Azure using VMs.
+<br>
+The production web interface is available at [https://area.jepgo.root.sx/](https://area.jepgo.root.sx/) and the production server at [https://api.area.jepgo.root.sx/](https://api.area.jepgo.root.sx/).
+<br>
+The development web interface is available at [https://dev.area.jepgo.root.sx/](https://dev.area.jepgo.root.sx/) and the development server at [https://api.dev.area.jepgo.root.sx/](https://api.dev.area.jepgo.root.sx/).
 
 ## Authors ✨
 - Elise PIPET
