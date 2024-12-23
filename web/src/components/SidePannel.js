@@ -7,6 +7,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import FindService from "./Service/FindService";
+import FindFeature from "./Feature/FindFeature";
 import FeaturesKit from "./Feature/FeaturesKit";
 
 export default function SidePannel({ title, open, setOpen }) {
@@ -51,18 +52,6 @@ export default function SidePannel({ title, open, setOpen }) {
         };
     }, []);
 
-    const FeatureList = {
-        color: "#05b348",
-        colorHover: "#038a2b",
-        features: [
-            { title: "When a new song is added to a playlist"},
-            { title: "When a new song is played on a playlist"},
-            { title: "When an followed artist releases a new album"},
-            { title: "When an user likes one of your playlists"},
-            { title: "When an user follows you"},
-        ]
-    };
-
     return (
         <div
             ref={panelRef}
@@ -81,7 +70,7 @@ export default function SidePannel({ title, open, setOpen }) {
             </div>
             <div className="p-5" style={{ height: 'calc(95vh - 4rem - 64px)' }}>
                 {/* <FindService dark={true} /> */}
-                <FeaturesKit features={FeatureList} />
+                <FindFeature dark={true} />
             </div>
         </div>
     );
