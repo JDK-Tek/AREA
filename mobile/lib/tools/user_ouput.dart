@@ -1,7 +1,7 @@
 // ignore_for_file: avoid_print
 
 import 'dart:convert';
-import 'package:area/tools/userstate.dart';
+import 'package:area/tools/providers.dart';
 import 'package:flutter/material.dart';
 import 'package:area/tools/log_button.dart';
 import 'package:area/tools/space.dart';
@@ -96,7 +96,8 @@ class _UserOuput extends State<UserOuput> {
 
   Future<bool> _makeRequest(String a, String b, String u) async {
     final String body = "{ \"email\": \"$a\", \"password\": \"$b\" }";
-    final Uri uri = Uri.https("api.area.jepgo.root.sx", u);
+    final Uri uri =
+        Uri.https(Provider.of<IPState>(context, listen: false).ip, u);
     late final https.Response rep;
     late Map<String, dynamic> content;
     late String? str;

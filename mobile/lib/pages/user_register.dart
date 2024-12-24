@@ -4,11 +4,11 @@ import 'package:area/pages/login_page.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as https;
 import 'dart:convert';
-import 'package:area/tools/userstate.dart';
+import 'package:area/tools/providers.dart';
 import 'package:provider/provider.dart';
 
 class UserRegister extends StatefulWidget {
-  UserRegister(
+  const UserRegister(
       {super.key,
       required this.title,
       required this.icon,
@@ -72,10 +72,11 @@ class _UserRegister extends State<UserRegister> {
 
   Future<void> _makeRequest(String a, String b, String u) async {
     final Map<String, String> body = {
-      "email" : a,
+      "email": a,
       "password": b,
     };
-    final Uri uri = Uri.https("api.area.jepgo.root.sx", u);
+    final Uri uri =
+        Uri.https(Provider.of<IPState>(context, listen: false).ip, u);
     late final https.Response rep;
     late Map<String, dynamic> content;
 
@@ -203,8 +204,8 @@ class _UserRegister extends State<UserRegister> {
                               borderRadius: BorderRadius.circular(15),
                             ),
                             onPressed: () {
-                              _makeRequest(email.text,
-                                  password.text, "api/register");
+                              _makeRequest(
+                                  email.text, password.text, "api/register");
                             }),
                       ]),
                 ),

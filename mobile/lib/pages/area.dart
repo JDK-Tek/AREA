@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:area/pages/home_page.dart';
 import 'package:area/tools/dynamic.dart';
+import 'package:http/http.dart' as https;
+import 'dart:convert';
+import 'package:area/tools/providers.dart';
+import 'package:provider/provider.dart';
 
 class CreateAutomationPage extends StatefulWidget {
   const CreateAutomationPage({super.key});
@@ -19,6 +22,9 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
   List<dynamic> reactionsConfigurations = [];
   dynamic selectedReaction;
 
+  Map<String, dynamic> triggerValues = {};
+  Map<String, dynamic> reactionValues = {};
+
   @override
   void initState() {
     super.initState();
@@ -32,32 +38,17 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
     ];
     triggersConfigurations = [
       {
-        "label": "In...",
-        "children": [
+        "type": "action",
+        "name": "in",
+        "spices": [
+          {"name": "howmuch", "type": "number", "extraParams": null},
           {
-            "type": "textfield",
-            "extraParams": {
-              "labelText": "Saisissez une valeur",
-              "keyboardType": "number",
-            },
-          },
-          {
+            "name": "unit",
             "type": "dropdown",
-            "extraParams": {
-              "initialValue": "Seconds",
-              "items": [
-                "Seconds",
-                "Minutes",
-                "Hours",
-                "Days",
-                "Weeks",
-                "Months",
-                "Years"
-              ],
-            },
-          },
-        ],
-      },
+            "extraParams": ["weeks", "days", "hours", "minutes", "seconds"]
+          }
+        ]
+      }
     ];
     setState(() {});
   }
@@ -65,30 +56,25 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
   void _loadMockReactions() {
     reactions = [
       {
-        "label": "Send Message on Discord",
+        "label": "Discord",
         "icon_url": "https://img.icons8.com/ios/452/discord.png",
       },
     ];
     reactionsConfigurations = [
       {
-        "label": "Post message on a channel",
-        "children": [
+        "type": "reaction",
+        "name": "send",
+        "spices": [
           {
-            "type": "textfield",
-            "extraParams": {
-              "labelText": "Channel ID",
-              "keyboardType": "number",
-            },
+            "name": "channel",
+            "type": "number",
           },
           {
-            "type": "textfield",
-            "extraParams": {
-              "labelText": "Message on channel",
-              "keyboardType": "text",
-            },
-          },
-        ],
-      },
+            "name": "message",
+            "type": "text",
+          }
+        ]
+      }
     ];
     setState(() {});
   }
@@ -103,11 +89,21 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         children: triggersConfigurations.expand<Widget>((config) {
-          return config['children']?.map<Widget>((childConfig) {
+          return config['spices']?.map<Widget>((childConfig) {
                 return Dynamic(
                   title: childConfig['type'],
-                  extraParams:
-                      Map<String, dynamic>.from(childConfig['extraParams']),
+                  extraParams: {
+                    'items': childConfig['extraParams'],
+                  },
+                  onValueChanged: (key, value) {
+                    setState(() {
+                      if (childConfig['name'] == 'howmuch') {
+                        triggerValues[childConfig['name']] = int.parse(value);
+                      } else {
+                        triggerValues[childConfig['name']] = value;
+                      }
+                    });
+                  },
                 );
               }).toList() ??
               [];
@@ -125,16 +121,100 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: reactionsConfigurations.expand<Widget>((config) {
-          return config['children']?.map<Widget>((childConfig) {
+          return config['spices']?.map<Widget>((childConfig) {
                 return Dynamic(
                   title: childConfig['type'],
-                  extraParams:
-                      Map<String, dynamic>.from(childConfig['extraParams']),
+                  extraParams: {
+                    'items': childConfig['extraParams'],
+                  },
+                  onValueChanged: (key, value) {
+                    setState(() {
+                      reactionValues[childConfig['name']] = value;
+                    });
+                  },
                 );
               }).toList() ??
               [];
         }).toList(),
       ),
+    );
+  }
+
+  void _submitAutomation() {
+    if (selectedTrigger == null || selectedReaction == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text("Please select both a trigger and a reaction.")),
+      );
+      return;
+    }
+
+    final automation = {
+      "action": {
+        "service": selectedTrigger['label'].toLowerCase(),
+        "name": triggersConfigurations[0]['name'],
+        "spices": triggerValues,
+      },
+      "reaction": {
+        "service": selectedReaction['label'].toLowerCase(),
+        "name": reactionsConfigurations[0]['name'],
+        "spices": reactionValues,
+      },
+    };
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+          content: Text("Automation Submitted: \n${automation.toString()}")),
+    );
+    _sendRequest(automation);
+  }
+
+  Future<void> _sendRequest(body) async {
+    final token = Provider.of<UserState>(context, listen: false).token;
+    print("$token");
+    final Uri uri =
+        Uri.https(Provider.of<IPState>(context, listen: false).ip, "/api/area");
+    print("Request URL: $uri");
+    final Map<String, String> headers = {
+      "Authorization": "Bearer $token",
+      "Content-Type": "application/json",
+    };
+   print("Request body: ${jsonEncode(body)}");
+
+    try {
+      final response =
+          await https.post(uri, headers: headers, body: jsonEncode(body));
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data =
+            jsonDecode(response.body) as Map<String, dynamic>;
+        _showDialog("Success", "Request sent successfully: $data");
+      } else {
+        _showDialog("Error",
+            "Failed with status: ${response.statusCode}. ${response.reasonPhrase ?? 'Unknown error'}");
+      }
+    } catch (e) {
+      _showDialog("Error", "An exception occurred: $e");
+    }
+  }
+
+  void _showDialog(String title, String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(message),
+          actions: <Widget>[
+            TextButton(
+              child: const Text("OK"),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -153,7 +233,6 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
         body: SingleChildScrollView(
           child: Column(
             children: [
-              const MiniHeaderSection(),
               const SizedBox(height: 20),
               Text(
                 "If this ...",
@@ -179,7 +258,7 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
                       },
                       child: Container(
                         decoration: BoxDecoration(
-                          color: selectedTrigger?['id'] == trigger['id']
+                          color: selectedTrigger == trigger
                               ? Colors.white
                               : Colors.grey,
                           borderRadius: BorderRadius.circular(12),
@@ -230,7 +309,7 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
                       },
                       child: Container(
                         decoration: BoxDecoration(
-                          color: selectedReaction?['id'] == reaction['id']
+                          color: selectedReaction == reaction
                               ? Colors.white
                               : Colors.grey,
                           borderRadius: BorderRadius.circular(12),
@@ -258,12 +337,8 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
               _buildDynamicReactionConfig(),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Soumis")),
-                  );
-                },
-                child: const Text("Soumettre"),
+                onPressed: _submitAutomation,
+                child: const Text("Submit"),
               ),
             ],
           ),

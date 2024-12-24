@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:area/tools/userstate.dart';
+import 'package:area/tools/providers.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
@@ -46,12 +46,11 @@ class _RobloxAuthPageState extends State<RobloxAuthPage> {
   }
 
   Future<void> _initialize() async {
-    await _makeDemand(
-        "api/oauth/roblox");
+    await _makeDemand("api/oauth/roblox");
     setState(() {
       print(url);
       _initializeWebView();
-      
+
       // print("finishghghghghghghghghghghghh");
       // print(u);
       _isWebViewInitialized = true;
@@ -59,7 +58,8 @@ class _RobloxAuthPageState extends State<RobloxAuthPage> {
   }
 
   Future<void> _makeDemand(String u) async {
-    final Uri uri = Uri.https("api.area.jepgo.root.sx", u);
+    final Uri uri =
+        Uri.https(Provider.of<IPState>(context, listen: false).ip, u);
     //final Uri uri = Uri.http("172.20.10.3:1234", u);
     late final http.Response rep;
     late String content;
@@ -85,7 +85,7 @@ class _RobloxAuthPageState extends State<RobloxAuthPage> {
   }
 
   void _initializeWebView() {
-       _webViewController = WebViewController()
+    _webViewController = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setNavigationDelegate(
         NavigationDelegate(
@@ -146,8 +146,8 @@ class _RobloxAuthPageState extends State<RobloxAuthPage> {
 
   Future<void> _makeRequest(String a, String u) async {
     final String body = "{ \"code\": \"$a\" }";
-    final Uri uri = Uri.https("api.area.jepgo.root.sx", u);
-    //final Uri uri = Uri.http("172.20.10.3:1234", u);
+    final Uri uri =
+        Uri.https(Provider.of<IPState>(context, listen: false).ip, u);
     late final http.Response rep;
     late Map<String, dynamic> content;
     late String? str;
@@ -165,7 +165,7 @@ class _RobloxAuthPageState extends State<RobloxAuthPage> {
           _token = str;
           if (mounted) {
             Provider.of<UserState>(context, listen: false).setToken(_token!);
-            context.go("/");
+            context.go("/login");
           }
         } else {
           _errorMessage("Enter a valid email and password !");

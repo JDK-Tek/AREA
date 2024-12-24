@@ -8,8 +8,7 @@ import 'package:area/pages/register_page.dart';
 import 'package:go_router/go_router.dart';
 import 'package:area/pages/developers.dart';
 import 'package:area/pages/area.dart';
-import 'package:area/tools/userstate.dart';
-// ignore: depend_on_referenced_packages
+import 'package:area/tools/providers.dart';
 import 'package:provider/provider.dart';
 
 void main() {
@@ -17,6 +16,7 @@ void main() {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => UserState()),
+        ChangeNotifierProvider(create: (_) => IPState()),
       ],
       child: MyApp(),
     ),

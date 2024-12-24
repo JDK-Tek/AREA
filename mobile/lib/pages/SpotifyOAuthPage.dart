@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:area/tools/userstate.dart';
+import 'package:area/tools/providers.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
@@ -58,7 +58,8 @@ class _SpotifyAuthPageState extends State<SpotifyAuthPage> {
   }
 
   Future<void> _makeDemand(String u) async {
-    final Uri uri = Uri.https("api.area.jepgo.root.sx", u);
+    final Uri uri =
+        Uri.https(Provider.of<IPState>(context, listen: false).ip, u);
     //final Uri uri = Uri.http("172.20.10.3:1234", u);
     late final http.Response rep;
     late String content;
@@ -145,7 +146,8 @@ class _SpotifyAuthPageState extends State<SpotifyAuthPage> {
 
   Future<void> _makeRequest(String a, String u) async {
     final String body = "{ \"code\": \"$a\" }";
-    final Uri uri = Uri.https("api.area.jepgo.root.sx", u);
+    final Uri uri =
+        Uri.https(Provider.of<IPState>(context, listen: false).ip, u);
     //final Uri uri = Uri.http("172.20.10.3:1234", u);
     late final http.Response rep;
     late Map<String, dynamic> content;
