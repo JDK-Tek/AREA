@@ -16,10 +16,11 @@ export default function Content({ setError }) {
     const [services, setServices] = useState([]);
     const [applets, setApplets] = useState([]);
 
+    const backendUrl = process.env.REACT_APP_BACKEND_URL;
 
     useEffect(() => {
         const fetchServices = async () => {
-            const { success, data, error } = await fetchData("http://localhost:42000/api/services");
+            const { success, data, error } = await fetchData(`${backendUrl}/api/services`);
             if (!success) {
                 setError("Error while fetching services data: " + error);
             } else {
@@ -28,7 +29,7 @@ export default function Content({ setError }) {
         };
 
         const fetchApplets = async () => {
-            const { success, data, error } = await fetchData("http://localhost:42000/api/applets");
+            const { success, data, error } = await fetchData(`${backendUrl}/api/applets`);
             if (!success) {
                 setError("Error while fetching applets data: " + error);
             } else {

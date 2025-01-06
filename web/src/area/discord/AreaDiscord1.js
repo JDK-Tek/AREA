@@ -97,6 +97,7 @@ export default function AreaDiscord1() {
     const [channel, setChannel] = useState("");
     const [message, setMessage] = useState("");
     const [unit, setUnit] = useState(options[0]);
+    const backendUrl = process.env.REACT_APP_BACKEND_URL;
     
     const services = {
         title: "Schedule sending of discord message",
@@ -139,7 +140,7 @@ export default function AreaDiscord1() {
 
         console.log(request);
 
-        fetchData("http://localhost:42000/api/area", request).then(({ success, data, error }) => {
+        fetchData(`${backendUrl}/api/area`, request).then(({ success, data, error }) => {
             if (!success) {
                 setError("Error while sending area: " + error);
             } else {
