@@ -9,9 +9,7 @@ class Dynamic extends StatefulWidget {
   });
 
   final String title;
-
   final Map<String, dynamic>? extraParams;
-
   final Function(String key, dynamic value) onValueChanged;
 
   @override
@@ -20,6 +18,18 @@ class Dynamic extends StatefulWidget {
 
 class _DynamicState extends State<Dynamic> {
   String dropdownValue = 'Option 1';
+
+  @override
+  void initState() {
+    super.initState();
+    final extraParams = widget.extraParams ?? {};
+    List<String> items = extraParams['items'] ?? [];
+    if (items.isNotEmpty) {
+      dropdownValue = extraParams['currentValue'] ?? items[0];
+    } else {
+      dropdownValue = '';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,15 +54,14 @@ class _DynamicState extends State<Dynamic> {
         return SizedBox(
           width: 200,
           child: TextField(
-            decoration: InputDecoration(
-              labelText: "Enter ${widget.title}",
-              border: const OutlineInputBorder(),
-            ),
-            keyboardType: TextInputType.number,
-            onChanged: (value) {
-              widget.onValueChanged(widget.title, value);
-            },
-          ),
+              decoration: InputDecoration(
+                labelText: "Enter ${widget.title}",
+                border: const OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.number,
+              onChanged: (value) {
+                widget.onValueChanged(widget.title, value);
+              }),
         );
       },
       "email": () {
@@ -71,28 +80,23 @@ class _DynamicState extends State<Dynamic> {
         );
       },
       "dropdown": () {
-        List<String> items = (extraParams['items'] as List<String>?) ?? [];
-
-        if (items.isNotEmpty && !items.contains(dropdownValue)) {
-          dropdownValue = items[0];
-        }
-
         return DropdownButton<String>(
           value: dropdownValue,
-          items: items
-              .map((item) => DropdownMenuItem(
-                    value: item,
-                    child: Text(item),
-                  ))
-              .toList(),
           onChanged: (String? newValue) {
-            if (newValue != null) {
-              setState(() {
-                dropdownValue = newValue;
-                widget.onValueChanged(widget.title, newValue);
-              });
-            }
+            setState(() {
+              dropdownValue = newValue ?? dropdownValue;
+            });
+            widget.onValueChanged(
+                widget.title, dropdownValue);
           },
+          items: (extraParams['items'] as List<dynamic>)
+              .map<DropdownMenuItem<String>>((dynamic value) {
+            return DropdownMenuItem<String>(
+              value: value.toString(),
+              child: Text(
+                  value.toString()),
+            );
+          }).toList(),
         );
       },
       "date_picker": () {
@@ -162,6 +166,7 @@ class _DynamicState extends State<Dynamic> {
         );
       },
     };
+
     final widgetBuilder = widgetMap[widget.title];
     if (widgetBuilder != null) {
       return widgetBuilder();

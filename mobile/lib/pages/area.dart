@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:area/pages/home_page.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:area/tools/dynamic.dart';
+import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as https;
 import 'dart:convert';
 import 'package:area/tools/providers.dart';
@@ -17,13 +18,13 @@ class CreateAutomationPage extends StatefulWidget {
 class CreateAutomationPageState extends State<CreateAutomationPage> {
   List<dynamic> triggers = [];
   List<dynamic> triggersConfigurations = [];
-  dynamic selectedTrigger;
+  List<dynamic> selectedTriggers = [];
   List<dynamic> reactions = [];
   List<dynamic> reactionsConfigurations = [];
-  dynamic selectedReaction;
+  List<dynamic> selectedReactions = [];
 
-  Map<String, dynamic> triggerValues = {};
-  Map<String, dynamic> reactionValues = {};
+  List<Map<String, dynamic>> triggerValues = [];
+  List<Map<String, dynamic>> reactionValues = [];
 
   @override
   void initState() {
@@ -65,129 +66,148 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
         "type": "reaction",
         "name": "send",
         "spices": [
-          {
-            "name": "channel",
-            "type": "number",
-          },
-          {
-            "name": "message",
-            "type": "text",
-          }
+          {"name": "channel", "type": "number"},
+          {"name": "message", "type": "text"}
         ]
       }
     ];
     setState(() {});
   }
 
-  Widget _buildDynamicTriggerConfig() {
-    if (selectedTrigger == null || triggersConfigurations.isEmpty) {
-      return const SizedBox.shrink();
-    }
+  void _addService(String type) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        final services = type == "Action" ? triggers : reactions;
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: triggersConfigurations.expand<Widget>((config) {
-          return config['spices']?.map<Widget>((childConfig) {
-                return Dynamic(
-                  title: childConfig['type'],
-                  extraParams: {
-                    'items': childConfig['extraParams'],
-                  },
-                  onValueChanged: (key, value) {
-                    setState(() {
-                      if (childConfig['name'] == 'howmuch') {
-                        triggerValues[childConfig['name']] = int.parse(value);
-                      } else {
-                        triggerValues[childConfig['name']] = value;
-                      }
-                    });
-                  },
-                );
-              }).toList() ??
-              [];
-        }).toList(),
-      ),
+        return ListView.builder(
+          itemCount: services.length,
+          itemBuilder: (context, index) {
+            return ListTile(
+              title: Row(children: [
+                Image.network(
+                  services[index]['icon_url'],
+                  width: MediaQuery.of(context).size.width * 0.05,
+                ),
+                SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.01,
+                ),
+                Text(services[index]['label'])
+              ]),
+              onTap: () {
+                setState(() {
+                  if (type == "Action") {
+                    selectedTriggers.add(services[index]);
+                    if (index < triggersConfigurations.length) {
+                      _buildDynamicConfig(selectedTriggers,
+                          triggersConfigurations, triggerValues, index);
+                    }
+                  } else {
+                    selectedReactions.add(services[index]);
+                    if (index < reactionsConfigurations.length) {
+                      _buildDynamicConfig(selectedReactions,
+                          reactionsConfigurations, reactionValues, index);
+                    }
+                  }
+                });
+              },
+            );
+          },
+        );
+      },
     );
   }
 
-  Widget _buildDynamicReactionConfig() {
-    if (selectedReaction == null || reactionsConfigurations.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: reactionsConfigurations.expand<Widget>((config) {
-          return config['spices']?.map<Widget>((childConfig) {
-                return Dynamic(
-                  title: childConfig['type'],
-                  extraParams: {
-                    'items': childConfig['extraParams'],
-                  },
-                  onValueChanged: (key, value) {
-                    setState(() {
-                      reactionValues[childConfig['name']] = value;
-                    });
-                  },
-                );
-              }).toList() ??
-              [];
-        }).toList(),
-      ),
+  void _buildDynamicConfig(
+      List<dynamic> selectedItems,
+      List<dynamic> configurations,
+      List<Map<String, dynamic>> values,
+      int index) {
+    showModalBottomSheet(
+      useSafeArea: true,
+      context: context,
+      builder: (BuildContext context) {
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: configurations.asMap().entries.expand<Widget>((entry) {
+              var config = entry.value;
+              return config['spices']?.map<Widget>((childConfig) {
+                    return Dynamic(
+                      title: childConfig['type'],
+                      extraParams: {
+                        'items': childConfig['extraParams'],
+                      },
+                      onValueChanged: (key, value) {
+                        setState(() {
+                          if (childConfig['type'] == "number") {
+                            values.add({childConfig['name']: int.parse(value)});
+                          } else {
+                            values.add({childConfig['name']: value});
+                          }
+                        });
+                      },
+                    );
+                  }).toList() ??
+                  [];
+            }).toList(),
+          ),
+        );
+      },
     );
   }
 
   void _submitAutomation() {
-    if (selectedTrigger == null || selectedReaction == null) {
+    if (selectedTriggers.isEmpty || selectedReactions.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text("Please select both a trigger and a reaction.")),
+            content:
+                Text("Please select at least one trigger and one reaction.")),
       );
       return;
     }
 
     final automation = {
-      "action": {
-        "service": selectedTrigger['label'].toLowerCase(),
-        "name": triggersConfigurations[0]['name'],
-        "spices": triggerValues,
-      },
-      "reaction": {
-        "service": selectedReaction['label'].toLowerCase(),
-        "name": reactionsConfigurations[0]['name'],
-        "spices": reactionValues,
-      },
+      "action": List.generate(selectedTriggers.length, (index) {
+        return {
+          "service": selectedTriggers[index]['label'].toLowerCase(),
+          "name": triggersConfigurations[index]['name'],
+          "spices": triggerValues[index],
+        };
+      }),
+      "reaction": List.generate(selectedReactions.length, (index) {
+        return {
+          "service": selectedReactions[index]['label'].toLowerCase(),
+          "name": reactionsConfigurations[index]['name'],
+          "spices": reactionValues[index],
+        };
+      }),
     };
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-          content: Text("Automation Submitted: \n${automation.toString()}")),
+          content: Text("Automation Submitted: \n${jsonEncode(automation)}")),
     );
     _sendRequest(automation);
   }
 
-  Future<void> _sendRequest(body) async {
+  Future<void> _sendRequest(Map<String, dynamic> body) async {
     final token = Provider.of<UserState>(context, listen: false).token;
-    print("$token");
     final Uri uri =
         Uri.https(Provider.of<IPState>(context, listen: false).ip, "/api/area");
-    print("Request URL: $uri");
-    final Map<String, String> headers = {
+
+    final headers = {
       "Authorization": "Bearer $token",
       "Content-Type": "application/json",
     };
-   print("Request body: ${jsonEncode(body)}");
 
     try {
       final response =
           await https.post(uri, headers: headers, body: jsonEncode(body));
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> data =
-            jsonDecode(response.body) as Map<String, dynamic>;
+        final data = jsonDecode(response.body);
         _showDialog("Success", "Request sent successfully: $data");
       } else {
         _showDialog("Error",
@@ -201,16 +221,14 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
   void _showDialog(String title, String message) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
+      builder: (context) {
         return AlertDialog(
           title: Text(title),
           content: Text(message),
-          actions: <Widget>[
+          actions: [
             TextButton(
+              onPressed: () => Navigator.of(context).pop(),
               child: const Text("OK"),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
             ),
           ],
         );
@@ -218,162 +236,132 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
     );
   }
 
+  int currentPageIndex = 1;
   @override
   Widget build(BuildContext context) {
-    int currentPageIndex = 1;
-    final List<String> routes = [
+    final List<String> dest = [
       "/applets",
       "/create",
       "/services",
       "/developers"
     ];
-
     return SafeArea(
-      child: Scaffold(
-        body: SingleChildScrollView(
-          child: Column(
-            children: [
-              const SizedBox(height: 20),
-              Text(
-                "If this ...",
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: 10),
-              SizedBox(
-                height: 200,
-                child: GridView.builder(
-                  scrollDirection: Axis.vertical,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 10,
+        child: Scaffold(
+      bottomNavigationBar: NavigationBar(
+        backgroundColor: Colors.black,
+        indicatorColor: Colors.grey,
+        selectedIndex: 1,
+        onDestinationSelected: (int index) {
+          setState(() {
+            currentPageIndex = index;
+            context.go(dest[index]);
+          });
+        },
+        destinations: const [
+          NavigationDestination(
+              icon: Icon(Icons.folder, color: Colors.white), label: 'Applets'),
+          NavigationDestination(
+              icon: Icon(Icons.add_circle_outline, color: Colors.white),
+              label: 'Create'),
+          NavigationDestination(
+              icon: Icon(Icons.cloud, color: Colors.white), label: 'Services'),
+          NavigationDestination(
+              icon: Icon(CupertinoIcons.ellipsis, color: Colors.white),
+              label: 'Developers'),
+        ],
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const MiniHeaderSection(),
+            Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'If this ...',
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.add),
+                      onPressed: () => _addService("Action"),
+                    ),
+                  ],
+                )),
+            const Divider(),
+            ...selectedTriggers.map((trigger) => ListTile(
+                  key: ValueKey(trigger['label']),
+                  title: Text(trigger['label']),
+                  leading: Image.network(
+                    trigger['icon_url'],
+                    width: 40,
+                    height: 40,
+                    errorBuilder: (context, error, stackTrace) =>
+                        const Icon(Icons.error),
                   ),
-                  itemCount: triggers.length,
-                  itemBuilder: (context, index) {
-                    final trigger = triggers[index];
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          selectedTrigger = trigger;
-                        });
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: selectedTrigger == trigger
-                              ? Colors.white
-                              : Colors.grey,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: const EdgeInsets.all(8),
-                        child: Column(
-                          children: [
-                            Expanded(
-                              child: Image.network(
-                                trigger['icon_url'],
-                                fit: BoxFit.contain,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    const Icon(Icons.error),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(trigger['label']),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              _buildDynamicTriggerConfig(),
-              const SizedBox(height: 20),
-              Text(
-                "Then that...",
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: 10),
-              SizedBox(
-                height: 200,
-                child: GridView.builder(
-                  scrollDirection: Axis.vertical,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 10,
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete),
+                    onPressed: () {
+                      setState(() {
+                        triggerValues
+                            .removeAt(selectedTriggers.indexOf(trigger));
+                        selectedTriggers.remove(trigger);
+                      });
+                    },
                   ),
-                  itemCount: reactions.length,
-                  itemBuilder: (context, index) {
-                    final reaction = reactions[index];
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          selectedReaction = reaction;
-                        });
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: selectedReaction == reaction
-                              ? Colors.white
-                              : Colors.grey,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: const EdgeInsets.all(8),
-                        child: Column(
-                          children: [
-                            Expanded(
-                              child: Image.network(
-                                reaction['icon_url'],
-                                fit: BoxFit.contain,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    const Icon(Icons.error),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(reaction['label']),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              _buildDynamicReactionConfig(),
-              const SizedBox(height: 20),
-              ElevatedButton(
+                )),
+            const SizedBox(height: 32),
+            Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'then that...',
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.add),
+                      onPressed: () => _addService("Reaction"),
+                    ),
+                  ],
+                )),
+            const Divider(),
+            ...selectedReactions.map((reaction) => ListTile(
+                  key: ValueKey(reaction['label']),
+                  title: Text(reaction['label']),
+                  leading: Image.network(
+                    reaction['icon_url'],
+                    width: 40,
+                    height: 40,
+                    errorBuilder: (context, error, stackTrace) =>
+                        const Icon(Icons.error),
+                  ),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete),
+                    onPressed: () {
+                      setState(() {
+                        reactionValues
+                            .removeAt(selectedTriggers.indexOf(reaction));
+                        selectedReactions.remove(reaction);
+                      });
+                    },
+                  ),
+                )),
+            const SizedBox(height: 32),
+            Center(
+              child: ElevatedButton(
                 onPressed: _submitAutomation,
                 child: const Text("Submit"),
               ),
-            ],
-          ),
-        ),
-        backgroundColor: Colors.white,
-        bottomNavigationBar: NavigationBar(
-          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-          backgroundColor: Colors.black,
-          indicatorColor: Colors.grey,
-          selectedIndex: currentPageIndex,
-          onDestinationSelected: (index) {
-            setState(() {
-              context.go(routes[index]);
-            });
-          },
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.folder, color: Colors.white),
-              label: 'Applets',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.add_circle_outline, color: Colors.white),
-              label: 'Create',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.cloud, color: Colors.white),
-              label: 'Services',
-            ),
-            NavigationDestination(
-              icon: Icon(CupertinoIcons.ellipsis, color: Colors.white),
-              label: 'Developers',
             ),
           ],
         ),
       ),
-    );
+    ));
   }
 }
