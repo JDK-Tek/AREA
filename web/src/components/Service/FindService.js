@@ -13,7 +13,7 @@ import SearchInput from '../SearchInputBox'
 import ServiceKit from "./ServiceKit";
 import Notification from '../Notification'
 
-export default function FindService({ dark }) {
+export default function FindService({ dark, setService }) {
     const [services, setServices] = useState([]);
     const [error, setError] = useState("");
 
@@ -82,6 +82,7 @@ export default function FindService({ dark }) {
                     gap={"gap-2"}
                     centered={true}
                     bgColor={dark ? "bg-[#1d1d1d]" : ""}
+                    setService={setService}
                     />
             </div>
         </div>

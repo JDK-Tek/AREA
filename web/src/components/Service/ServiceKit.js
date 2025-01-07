@@ -7,7 +7,14 @@
 
 import Service from "./Service"
 
-export default function ServiceKit({ title, services, color = "text-black", gap, rounded, centered = true, bgColor = "" }) {
+export default function ServiceKit({ title,
+        services,
+        setService,
+        color = "text-black",
+        gap,
+        rounded,
+        centered = true,
+        bgColor = "" }) {
 
     return (
         <div className={`text-center p-5 ${bgColor}`}>
@@ -18,6 +25,7 @@ export default function ServiceKit({ title, services, color = "text-black", gap,
                         key={index}
                         service={service}
                         rounded={rounded}
+                        setService={setService}
                     />
                 ))}
             </div>

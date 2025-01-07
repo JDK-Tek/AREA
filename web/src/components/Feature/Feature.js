@@ -4,11 +4,11 @@
 ** File description:
 ** Feature
 */
-export default function Feature({ title, color, colorHover }) {
+export default function Feature({ id, title, color, colorHover, setFeature }) {
     return (
         <div
             className={`select-none relative text-white shadow-md p-3 cursor-pointer transition-transform duration-200`}
-            onClick={() => window.location.href = "/"}
+            onClick={() => setFeature(id)}
             style={{
                 backgroundColor: color
             }}

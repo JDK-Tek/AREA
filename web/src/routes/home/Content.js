@@ -16,6 +16,7 @@ import ServiceKit from "./../../components/Service/ServiceKit";
 export default function Content({ setError }) {
     const [services, setServices] = useState([]);
     const [applets, setApplets] = useState([]);
+    const [service, setService] = useState(null);
     
     useEffect(() => {
         const getServices = async () => {
@@ -43,6 +44,12 @@ export default function Content({ setError }) {
         getApplets();
     }, [setApplets, setError]);
 
+    useEffect(() => {
+        if (service) {
+            window.location.href = `/services/${service.id}`;
+        }
+    }, [service]);
+
     return (
         <div className="pb-14">
             <AppletKit
@@ -55,6 +62,7 @@ export default function Content({ setError }) {
                 color={"text-chartpurple-200"}
                 gap={"gap-3"}
                 rounded={"rounded-xl"}
+                setService={setService}
             />
             <div className="flex justify-center items-center mt-8">
                 <Button

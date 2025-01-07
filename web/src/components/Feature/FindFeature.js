@@ -13,8 +13,8 @@ import SearchInput from '../SearchInputBox'
 import FeaturesKit from "./FeaturesKit";
 import Notification from '../Notification'
 
-export default function FindFeature({ dark }) {
-    const [feature, setFeature] = useState({
+export default function FindFeature({ dark, setFeature }) {
+    const [features, setFeatures] = useState({
         color: "",
         colorHover: "",
         feat: []
@@ -45,7 +45,7 @@ export default function FindFeature({ dark }) {
         }
 
     useEffect(() => {
-        setFeature({
+        setFeatures({
             color: "#05b348",
             colorHover: "#038a2b",
             feat: [
@@ -56,27 +56,27 @@ export default function FindFeature({ dark }) {
                 { title: "When an user follows you"}
             ]
         })
-    }, [setFeature, setError]);
+    }, [setFeatures, setError]);
 
     useEffect(() => {
         if (search === "") {
-            setFilteredFeature(feature);
+            setFilteredFeature(features);
             return;
         }
 
         let fstmp = [];
-        feature.feat.forEach((service) => {
+        features.feat.forEach((service) => {
             if (matchPattern(search, service.title)) {
                 fstmp.push(service);
             }
         });
         const searchFeature = {
-            color: feature.color,
-            colorHover: feature.colorHover,
+            color: features.color,
+            colorHover: features.colorHover,
             feat: fstmp
         }
         setFilteredFeature(searchFeature);
-    }, [search, setFilteredFeature, feature]);
+    }, [search, setFilteredFeature, features]);
 
     return (
         <div className="h-full flex flex-col justify-start">
@@ -93,7 +93,7 @@ export default function FindFeature({ dark }) {
             />
             
             <div className="mt-5 overflow-y-auto max-h-[calc(85vh-4rem-64px)]">
-                <FeaturesKit features={filteredFeature} bgColor="bg-[#1d1d1d]"/>
+                <FeaturesKit features={filteredFeature} bgColor={"bg-[#1d1d1d]"} setFeature={setFeature}/>
             </div>
         </div>
     )

@@ -8,11 +8,14 @@
 import { useEffect, useRef, useState } from "react";
 import FindService from "./Service/FindService";
 import FindFeature from "./Feature/FindFeature";
-import FeaturesKit from "./Feature/FeaturesKit";
+import Button from "./Button";
+import { Undo2 } from 'lucide-react';
 
 export default function SidePannel({ title, open, setOpen }) {
     const panelRef = useRef(null);
     const [width, setWidth] = useState(540);
+    const [service, setService] = useState(null);
+    const [feature, setFeature] = useState(null);
     const isResizing = useRef(false);
 
     useEffect(() => {
@@ -61,6 +64,18 @@ export default function SidePannel({ title, open, setOpen }) {
                 transition-transform duration-300 ease-in-out ${open ? "translate-x-0" : "-translate-x-full"}`}
         >
             <div className="ml-5 mr-5 mt-3 flex flex-wrap justify-center items-center border-b-[1px] border-chartgray-200">
+                {service &&
+                    <div className="absolute left-0">
+                        <Button
+                            onClick={() => {
+                                if (feature) setFeature(null)
+                                else setService(null)
+                            }}
+                            icon={<Undo2 />}
+                            styleClolor={"bg-chartpurple-200 text-white hover:bg-chartpurple-100 text-2xl"}
+                        />
+                    </div>
+                }
                 <p className="p-3 font-spartan font-bold text-xl">{title}</p>
                 <div
                     onMouseDown={() => (isResizing.current = true)}
@@ -69,8 +84,15 @@ export default function SidePannel({ title, open, setOpen }) {
                 />
             </div>
             <div className="p-5" style={{ height: 'calc(95vh - 4rem - 64px)' }}>
-                {/* <FindService dark={true} /> */}
-                <FindFeature dark={true} />
+                {
+                feature ?
+                    (<div>configuration</div>)
+                    :
+                service ?
+                    <FindFeature dark={true} setFeature={setFeature} />
+                    :
+                    <FindService dark={true} setService={setService} />
+                }
             </div>
         </div>
     );
