@@ -279,13 +279,14 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 }
 
 func main() {
+	godotenv.Load("/usr/mount.d/.env")
 	db, err := connectToDatabase()
 	if err != nil {
 		os.Exit(84)
 	}
 	fmt.Println("discord microservice container is running !")
 	router := mux.NewRouter()
-	godotenv.Load(".env")
+	fmt.Println(os.Getenv("DISCORD_ID"))
 	router.HandleFunc("/send", doSomeSend).Methods("POST")
 	router.HandleFunc("/oauth", getOAUTHLink).Methods("GET")
 	router.HandleFunc("/oauth", miniproxy(setOAUTHToken, db)).Methods("POST")

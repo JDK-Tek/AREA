@@ -70,6 +70,8 @@ services:
       - DB_NAME=${DATABASE_NAME}
     networks:
       - web
+    volumes:
+      - ./services/discord/.env:/usr/mount.d/.env
   
   service-spotify:
     env_file:
