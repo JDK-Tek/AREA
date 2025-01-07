@@ -26,6 +26,12 @@ const API_USER = "https://discord.com/api/v10/users/@me"
 const PERMISSIONS = 8
 const EXPIRATION = 60 * 30
 
+type TeamsContent struct {
+	TeamID   string `json:"team_id"`
+	ChannelID string `json:"channel_id"`
+	Message  string `json:"message"`
+}
+
 type Objects struct {
 	Channel string `json:"channel"`
 	Message string `json:"message"`
@@ -33,6 +39,12 @@ type Objects struct {
 
 type Content struct {
 	Dishes Objects `json:"spices"`
+}
+
+type EmailContent struct {
+	To      string `json:"to"`
+	Subject string `json:"subject"`
+	Body    string `json:"body"`
 }
 
 func getOAUTHLink(w http.ResponseWriter, req *http.Request) {
@@ -84,7 +96,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	data.Set("client_secret", clientsecret)
 	data.Set("grant_type", "authorization_code")
 	data.Set("code", res.Code)
-	data.Set("redirect_uri", "https://area-jeepg.vercel.app/connected")
+	data.Set("redirect_uri", os.Getenv("REDIRECT"))
 	rep, err := http.PostForm(API_OAUTH_OUTLOOK, data)
 	if err != nil {
 		fmt.Fprintln(w, "postform", err.Error())
@@ -149,49 +161,133 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	fmt.Fprintf(w, `{"token": "%s"}\n`, tokenStr)
 }
 
-func doSomeSend(w http.ResponseWriter, req *http.Request) {
-	var content Content
-
+func sendTeamsMessage(w http.ResponseWriter, req *http.Request) {
+	var teamsContent TeamsContent
 	decoder := json.NewDecoder(req.Body)
-	err := decoder.Decode(&content)
+	err := decoder.Decode(&teamsContent)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
 		return
 	}
+
 	token := os.Getenv("OUTLOOK_TOKEN")
 	if token == "" {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "{ \"error\": \"token is missing\" }\n")
 		return
 	}
-	data := make(map[string]string)
-	data["content"] = content.Dishes.Message
-	dataBytes, err := json.Marshal(data)
+
+	messageData := map[string]interface{}{
+		"body": map[string]interface{}{
+			"content": teamsContent.Message,
+		},
+	}
+	messageBytes, err := json.Marshal(messageData)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
 		return
 	}
-	channel := content.Dishes.Channel
-	fmt.Println(channel, data["content"])
-	rep, err := http.NewRequest("POST", API_SEND+channel+"/messages", bytes.NewBuffer(dataBytes))
+
+	teamsMessageURL := fmt.Sprintf("https://graph.microsoft.com/v1.0/teams/%s/channels/%s/messages", teamsContent.TeamID, teamsContent.ChannelID)
+
+	reqTeams, err := http.NewRequest("POST", teamsMessageURL, bytes.NewBuffer(messageBytes))
 	if err != nil {
-		w.WriteHeader(http.StatusBadGateway)
+		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
 		return
 	}
-	rep.Header.Set("Authorization", "Bot "+token)
-	rep.Header.Set("Content-Type", "application/json")
+
+	reqTeams.Header.Set("Authorization", "Bearer "+token)
+	reqTeams.Header.Set("Content-Type", "application/json")
+
 	client := &http.Client{}
-	res, err := client.Do(rep)
+	resp, err := client.Do(reqTeams)
 	if err != nil {
 		w.WriteHeader(http.StatusBadGateway)
 		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
 		return
 	}
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "{ \"status\": \"%s\" }\n", res.Status)
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusOK {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, "{ \"status\": \"Message sent successfully\" }\n")
+	} else {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "{ \"error\": \"Failed to send message\" }\n")
+	}
+}
+
+func sendEmail(w http.ResponseWriter, req *http.Request) {
+	var emailContent EmailContent
+	decoder := json.NewDecoder(req.Body)
+	err := decoder.Decode(&emailContent)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+		return
+	}
+
+	token := os.Getenv("OUTLOOK_TOKEN")
+	if token == "" {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "{ \"error\": \"token is missing\" }\n")
+		return
+	}
+
+	emailData := map[string]interface{}{
+		"message": map[string]interface{}{
+			"subject": emailContent.Subject,
+			"body": map[string]interface{}{
+				"contentType": "Text",
+				"content":     emailContent.Body,
+			},
+			"toRecipients": []map[string]interface{}{ 
+				{
+					"emailAddress": map[string]string{
+						"address": emailContent.To,
+					},
+				},
+			},
+		},
+		"saveToSentItems": "true",
+	}
+	emailBytes, err := json.Marshal(emailData)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+		return
+	}
+
+	// send
+	reqEmail, err := http.NewRequest("POST", "https://graph.microsoft.com/v1.0/me/sendMail", bytes.NewBuffer(emailBytes))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+		return
+	}
+
+	reqEmail.Header.Set("Authorization", "Bearer "+token)
+	reqEmail.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(reqEmail)
+	if err != nil {
+		w.WriteHeader(http.StatusBadGateway)
+		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusOK {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, "{ \"status\": \"Email sent successfully\" }\n")
+	} else {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "{ \"error\": \"Failed to send email\" }\n")
+	}
 }
 
 func connectToDatabase() (*sql.DB, error) {
@@ -236,9 +332,11 @@ func main() {
 	}
 	fmt.Println("outlook microservice container is running !")
 	router := mux.NewRouter()
-	godotenv.Load("/usr/mound.d/.env", "/usr/mound.d/.env1")
+	godotenv.Load(".env")
 	//router.HandleFunc("/send", doSomeSend).Methods("POST")
 	router.HandleFunc("/oauth", getOAUTHLink).Methods("GET")
 	router.HandleFunc("/oauth", miniproxy(setOAUTHToken, db)).Methods("POST")
+	router.HandleFunc("/sendEmail", sendEmail).Methods("POST")
+	router.HandleFunc("/sendTeamsMessage", sendTeamsMessage).Methods("POST")
 	log.Fatal(http.ListenAndServe(":80", router))
 }
