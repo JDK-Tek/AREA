@@ -106,7 +106,24 @@ services:
       - ${WEB_PORT}:3000
     networks:
       - web
+    depends_on:
+      - server
+      - client_mobile
+    volumes:
+      - apk_volume:/apk_volume
+
+  client_mobile:
+    build:
+      context: ./mobile
+    volumes:
+      - apk_volume:/apk_volume
+    container_name: area-client-mobile
+    networks:
+      - web
 
 networks:
   web:
     external: false
+
+volumes:
+  apk_volume:
