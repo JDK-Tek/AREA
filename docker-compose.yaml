@@ -110,7 +110,7 @@ services:
       - server
       - client_mobile
     volumes:
-      - apk_volume:/apk_volume
+      - apk_volume:/app/src/apk
 
   client_mobile:
     build:
