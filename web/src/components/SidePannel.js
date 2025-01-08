@@ -8,6 +8,8 @@
 import { useEffect, useRef, useState } from "react";
 import FindService from "./Service/FindService";
 import FindFeature from "./Feature/FindFeature";
+import ServiceFeatureConfiguration from "./ServiceFeatureConfiguration";
+
 import Button from "./Button";
 import { Undo2 } from 'lucide-react';
 
@@ -86,7 +88,7 @@ export default function SidePannel({ title, open, setOpen }) {
             <div className="p-5" style={{ height: 'calc(95vh - 4rem - 64px)' }}>
                 {
                 feature ?
-                    (<div>configuration</div>)
+                    <ServiceFeatureConfiguration />
                     :
                 service ?
                     <FindFeature dark={true} setFeature={setFeature} />
