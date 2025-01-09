@@ -387,6 +387,78 @@ func checkEmail(w http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(w).Encode(emailList)
 }
 
+func checkTeamsMessages(w http.ResponseWriter, req *http.Request) {
+	var teamsContent TeamsContent
+	decoder := json.NewDecoder(req.Body)
+	err := decoder.Decode(&teamsContent)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+		return
+	}
+
+	token := os.Getenv("OUTLOOK_TOKEN")
+	if token == "" {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "{ \"error\": \"token is missing\" }\n")
+		return
+	}
+
+	teamsMessageURL := fmt.Sprintf("https://graph.microsoft.com/v1.0/teams/%s/channels/%s/messages?$top=5&$orderby=createdDateTime desc", teamsContent.TeamID, teamsContent.ChannelID)
+
+	reqTeams, err := http.NewRequest("GET", teamsMessageURL, nil)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+		return
+	}
+
+	reqTeams.Header.Set("Authorization", "Bearer "+token)
+	client := &http.Client{}
+	resp, err := client.Do(reqTeams)
+	if err != nil {
+		w.WriteHeader(http.StatusBadGateway)
+		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "{ \"error\": \"Failed to fetch Teams messages\" }\n")
+		return
+	}
+
+	var response map[string]interface{}
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+		return
+	}
+
+	messages, ok := response["value"].([]interface{})
+	if !ok {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "{ \"error\": \"Failed to parse messages\" }\n")
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	messageList := make([]map[string]interface{}, len(messages))
+	for i, message := range messages {
+		messageData, _ := message.(map[string]interface{})
+		messageList[i] = map[string]interface{}{
+			"message":   messageData["body"],
+			"from":      messageData["from"],
+			"createdAt": messageData["createdDateTime"],
+		}
+	}
+	json.NewEncoder(w).Encode(messageList)
+}
+
+
 func main() {
 	db, err := connectToDatabase()
 	if err != nil {
@@ -401,5 +473,6 @@ func main() {
 	router.HandleFunc("/sendEmail", sendEmail).Methods("POST")
 	router.HandleFunc("/sendTeamsMessage", sendTeamsMessage).Methods("POST")
 	router.HandleFunc("/checkEmail", checkEmail).Methods("GET")
+	router.HandleFunc("/checkTeamsMessages", checkTeamsMessages).Methods("POST")
 	log.Fatal(http.ListenAndServe(":80", router))
 }
