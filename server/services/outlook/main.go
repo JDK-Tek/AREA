@@ -325,6 +325,68 @@ func miniproxy(f func(http.ResponseWriter, *http.Request, *sql.DB), c *sql.DB) f
 	}
 }
 
+func checkEmail(w http.ResponseWriter, req *http.Request) {
+	token := os.Getenv("OUTLOOK_TOKEN")
+	if token == "" {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "{ \"error\": \"token is missing\" }\n")
+		return
+	}
+
+	emailAPI := "https://graph.microsoft.com/v1.0/me/messages?$top=5&$orderby=receivedDateTime desc"
+
+	reqEmail, err := http.NewRequest("GET", emailAPI, nil)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+		return
+	}
+
+	reqEmail.Header.Set("Authorization", "Bearer "+token)
+	client := &http.Client{}
+	resp, err := client.Do(reqEmail)
+	if err != nil {
+		w.WriteHeader(http.StatusBadGateway)
+		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "{ \"error\": \"Failed to fetch emails\" }\n")
+		return
+	}
+
+	var response map[string]interface{}
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+		return
+	}
+
+	emails, ok := response["value"].([]interface{})
+	if !ok {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "{ \"error\": \"Failed to parse emails\" }\n")
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	emailList := make([]map[string]interface{}, len(emails))
+	for i, email := range emails {
+		emailData, _ := email.(map[string]interface{})
+		emailList[i] = map[string]interface{}{
+			"subject": emailData["subject"],
+			"from":    emailData["from"],
+			"received": emailData["receivedDateTime"],
+		}
+	}
+	json.NewEncoder(w).Encode(emailList)
+}
+
 func main() {
 	db, err := connectToDatabase()
 	if err != nil {
@@ -338,5 +400,6 @@ func main() {
 	router.HandleFunc("/oauth", miniproxy(setOAUTHToken, db)).Methods("POST")
 	router.HandleFunc("/sendEmail", sendEmail).Methods("POST")
 	router.HandleFunc("/sendTeamsMessage", sendTeamsMessage).Methods("POST")
+	router.HandleFunc("/checkEmail", checkEmail).Methods("GET")
 	log.Fatal(http.ListenAndServe(":80", router))
 }

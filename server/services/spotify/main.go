@@ -59,94 +59,101 @@ type UserResult struct {
 }
 
 func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
-	var res Result
-	var tok TokenResult
-	var user UserResult
-	var tokid int
-	var owner = -1
+    var res Result
+    var tok TokenResult
+    var user UserResult
+    var tokid int
+    var owner = -1
 
-	clientid := os.Getenv("SPOTIFY_CLIENT_ID")
-	clientsecret := os.Getenv("SPOTIFY_CLIENT_SECRET")
-	data := url.Values{}
-	err := json.NewDecoder(req.Body).Decode(&res)
-	if err != nil {
-		fmt.Fprintln(w, "decode", err.Error())
-		return
-	}
-	data.Set("client_id", clientid)
-	data.Set("client_secret", clientsecret)
-	data.Set("grant_type", "authorization_code")
-	data.Set("code", res.Code)
-	data.Set("redirect_uri", os.Getenv("REDIRECT"))
-	rep, err := http.PostForm(API_OAUTH_SPOTIFY, data)
-	if err != nil {
-		fmt.Fprintln(w, "postform: ", err.Error())
-		return
-	}
-	defer rep.Body.Close()
-	err = json.NewDecoder(rep.Body).Decode(&tok)
-	if err != nil {
-		fmt.Fprintln(w, "decode: ", err.Error())
-		return
-	}
-	if tok.Token == "" || tok.Refresh == "" {
-		fmt.Fprintln(w, "error: token is empty")
-	}
-	
-	// make the request for the user
-	req, err = http.NewRequest("GET", API_USER_SPOTIFY, nil)
-	if err != nil {
-		fmt.Fprintln(w, "request error", err.Error())
-		return
-	}
-	req.Header.Set("Authorization", "Bearer " + tok.Token)
-	client := &http.Client{}
-	rep, err = client.Do(req)
-	if err != nil {
-		fmt.Fprintln(w, "client do", err.Error())
-		return
-	}
-	defer rep.Body.Close()
-	err = json.NewDecoder(rep.Body).Decode(&user)
-	if err != nil {
-		fmt.Fprintln(w, "decode", err.Error())
-		return
-	}
+    clientid := os.Getenv("SPOTIFY_CLIENT_ID")
+    clientsecret := os.Getenv("SPOTIFY_CLIENT_SECRET")
+    data := url.Values{}
+    
+    err := json.NewDecoder(req.Body).Decode(&res)
+    if err != nil {
+        fmt.Fprintln(w, "decode", err.Error())
+        return
+    }
 
-	err = db.QueryRow("select id, owner from tokens where userid = $1", user.ID).Scan(&tokid, &owner)
-	if err != nil {
-		err = db.QueryRow("insert into tokens (service, token, refresh, userid) values ($1, $2, $3, $4) returning id",
-			"spotify",
-			tok.Token,
-			tok.Refresh,
-			user.ID,
-		).Scan(&tokid)
-		if err != nil {
-			fmt.Fprintln(w, "db insert", err.Error())
-			return
-		}
-		err = db.QueryRow("insert into users (tokenid) values ($1) returning id", tokid).Scan(&owner)
-		if err != nil {
-			fmt.Fprintln(w, "db insert", err.Error())
-			return
-		}
-		db.Exec("update tokens set owner = $1 where id = $2", owner, tokid)
-	}
+    data.Set("client_id", clientid)
+    data.Set("client_secret", clientsecret)
+    data.Set("grant_type", "authorization_code")
+    data.Set("code", res.Code)
+    data.Set("redirect_uri", os.Getenv("REDIRECT"))
 
-	// create the token
-	secretBytes := []byte(os.Getenv("BACKEND_KEY"))
-	claims := jwt.MapClaims{
-		"id":  owner,
-		"exp": time.Now().Add(time.Second * EXPIRATION).Unix(),
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenStr, err := token.SignedString(secretBytes)
-	if err != nil {
-		fmt.Fprintln(w, "sign", err.Error())
-		return
-	}
-	fmt.Fprintf(w, `{"token": "%s"}\n`, tokenStr)
+    resp, err := http.PostForm(API_OAUTH_SPOTIFY, data)
+    if err != nil {
+        fmt.Fprintln(w, "postform: ", err.Error())
+        return
+    }
+    defer resp.Body.Close()
+
+    err = json.NewDecoder(resp.Body).Decode(&tok)
+    if err != nil {
+        fmt.Fprintln(w, "decode: ", err.Error())
+        return
+    }
+
+    if tok.Token == "" || tok.Refresh == "" {
+        fmt.Fprintln(w, "error: token is empty")
+        return
+    }
+    
+    req, err = http.NewRequest("GET", API_USER_SPOTIFY, nil)
+    if err != nil {
+        fmt.Fprintln(w, "request error", err.Error())
+        return
+    }
+    req.Header.Set("Authorization", "Bearer " + tok.Token)
+    client := &http.Client{}
+    resp, err = client.Do(req)
+    if err != nil {
+        fmt.Fprintln(w, "client do", err.Error())
+        return
+    }
+    defer resp.Body.Close()
+
+    err = json.NewDecoder(resp.Body).Decode(&user)
+    if err != nil {
+        fmt.Fprintln(w, "decode", err.Error())
+        return
+    }
+
+    err = db.QueryRow("select id, owner from tokens where userid = $1", user.ID).Scan(&tokid, &owner)
+    if err != nil {
+        err = db.QueryRow("insert into tokens (service, token, refresh, userid) values ($1, $2, $3, $4) returning id",
+            "spotify",
+            tok.Token,
+            tok.Refresh,
+            user.ID,
+        ).Scan(&tokid)
+        if err != nil {
+            fmt.Fprintln(w, "db insert", err.Error())
+            return
+        }
+        err = db.QueryRow("insert into users (tokenid) values ($1) returning id", tokid).Scan(&owner)
+        if err != nil {
+            fmt.Fprintln(w, "db insert", err.Error())
+            return
+        }
+        db.Exec("update tokens set owner = $1 where id = $2", owner, tokid)
+    }
+
+    secretBytes := []byte(os.Getenv("BACKEND_KEY"))
+    claims := jwt.MapClaims{
+        "id":  owner,
+        "exp": time.Now().Add(time.Second * EXPIRATION).Unix(),
+    }
+    token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+    tokenStr, err := token.SignedString(secretBytes)
+    if err != nil {
+        fmt.Fprintln(w, "sign", err.Error())
+        return
+    }
+
+    fmt.Fprintf(w, `{"token": "%s"}\n`, tokenStr)
 }
+
 
 func connectToDatabase() (*sql.DB, error) {
 	dbPassword := os.Getenv("DB_PASSWORD")
