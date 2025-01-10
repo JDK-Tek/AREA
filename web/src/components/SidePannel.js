@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import FindService from "./Service/FindService";
 import FindFeature from "./Feature/FindFeature";
 import ServiceFeatureConfiguration from "./ServiceFeatureConfiguration";
+import Notification from "./Notification";
 
 import Button from "./Button";
 import { Undo2 } from 'lucide-react';
@@ -19,6 +20,8 @@ export default function SidePannel({ title, open, setOpen }) {
     const [service, setService] = useState(null);
     const [feature, setFeature] = useState(null);
     const isResizing = useRef(false);
+    const [error, setError] = useState(false);
+    const [errorMsg, setErrorMsg] = useState("");
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -62,9 +65,10 @@ export default function SidePannel({ title, open, setOpen }) {
             ref={panelRef}
             style={{ width: `${width}px` }}
             className={`
-                absolute left-0 h-[calc(100vh-4rem)] bg-chartgray-300 text-white z-10 shadow-lg
+                absolute left-0 h-[calc(100.4vh-6rem)] bg-chartgray-300 text-white z-10 shadow-lg
                 transition-transform duration-300 ease-in-out ${open ? "translate-x-0" : "-translate-x-full"}`}
         >
+            {error && <Notification error={true} msg={errorMsg} setError={setError}/>}
             <div className="ml-5 mr-5 mt-3 flex flex-wrap justify-center items-center border-b-[1px] border-chartgray-200">
                 {service &&
                     <div className="absolute left-0">
@@ -78,7 +82,7 @@ export default function SidePannel({ title, open, setOpen }) {
                         />
                     </div>
                 }
-                <p className="p-3 font-spartan font-bold text-xl">{title}</p>
+                <p className="p-3 font-spartan font-bold text-2xl">{title}</p>
                 <div
                     onMouseDown={() => (isResizing.current = true)}
                     style={{ cursor: "ew-resize" }}
@@ -88,10 +92,10 @@ export default function SidePannel({ title, open, setOpen }) {
             <div className="p-5" style={{ height: 'calc(95vh - 4rem - 64px)' }}>
                 {
                 feature ?
-                    <ServiceFeatureConfiguration />
+                    <ServiceFeatureConfiguration color={service.color} setError={setError} setErrorMsg={setErrorMsg}/>
                     :
                 service ?
-                    <FindFeature dark={true} setFeature={setFeature} />
+                    <FindFeature dark={true} setFeature={setFeature} color={service.color} />
                     :
                     <FindService dark={true} setService={setService} />
                 }

@@ -25,7 +25,7 @@ export default function HeaderBar({ activeBackground = false }) {
             link: "/stories"
         },
         {
-            title: "My Applets",
+            title: (isLogged ? "My Applets" : "Login"),
             link: (isLogged ? listRoutes.myApplets : listRoutes.login)
         }
     ]

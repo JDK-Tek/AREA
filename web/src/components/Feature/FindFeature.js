@@ -13,7 +13,7 @@ import SearchInput from '../SearchInputBox'
 import FeaturesKit from "./FeaturesKit";
 import Notification from '../Notification'
 
-export default function FindFeature({ dark, setFeature }) {
+export default function FindFeature({ dark, setFeature, color }) {
     const [features, setFeatures] = useState({
         color: "",
         colorHover: "",
@@ -46,8 +46,8 @@ export default function FindFeature({ dark, setFeature }) {
 
     useEffect(() => {
         setFeatures({
-            color: "#05b348",
-            colorHover: "#038a2b",
+            color: color.normal,
+            colorHover: color.hover,
             feat: [
                 { title: "When a new song is added to a playlist"},
                 { title: "When a new song is played on a playlist"},

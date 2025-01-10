@@ -18,12 +18,12 @@ export default function DropdownBox({ options, selected, onSelect }) {
     return (
         <div className="relative w-64">
             <button
-                className="w-full bg-gray-200 text-chartgray-200 px-4 py-2 rounded-md shadow-md
+                className="bg-gray-200 text-chartgray-200 px-4 py-2 rounded-md shadow-md
                         focus:outline-none focus:ring-2 focus:ring-chartpurple-100
                         flex justify-between items-center"
                 onClick={() => setIsOpen(!isOpen)}
             >
-                <span>{selected || "Select an option"}</span>
+                <span className="mr-5">{selected || "Select an option"}</span>
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     className="h-5 w-5 text-gray-500"
