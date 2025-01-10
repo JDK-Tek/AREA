@@ -12,6 +12,7 @@ import { Trash2 } from "lucide-react";
 import HeaderBar from "../../components/Header/HeaderBar"
 import SidePannel from "../../components/SidePannel"
 import Button from "../../components/Button";
+import InputBox from "../../components/spices/InputBox";
 
 function Triger({title, color, onClick}) {
     return (
@@ -34,6 +35,7 @@ function Triger({title, color, onClick}) {
 export default function CreateArea() {
     const [open, setOpen] = useState(false);
     const [configAction, setConfigAction] = useState(true);
+    const [name, setName] = useState("");
     const [area, setArea] = useState({
         name: "",
         actions: [],
@@ -44,8 +46,20 @@ export default function CreateArea() {
         <div className="relative">
             <HeaderBar activeBackground={true} />
 
+            <SidePannel action={configAction} setOpen={setOpen} open={open} setArea={setArea}/>
             <div className="relative">
-                <SidePannel action={configAction} setOpen={setOpen} open={open} setArea={setArea}/>
+                <label 
+                    className="block text-4xl font-bold font-spartan text-chartgray-300 text-center p-5 mt-10"
+                >Create a new AREA</label>
+
+                <div className="flex justify-center">
+                    <InputBox
+                        value={name}
+                        setValue={setName}
+                        placeholder={"Enter the name of the new AREA"}
+                        full={false}
+                    />
+                </div>
 
                 <div className="p-10 overflow-y-auto max-h-[calc(100vh-4rem-64px)]">
                     <div className="mb-10">
@@ -61,14 +75,14 @@ export default function CreateArea() {
                             <label className="block text-2xl font-bold font-spartan text-chartpurple-200">Configurate an action</label>
                         </div>
                         <div className="p-5">
-                            {area.actions.map((action) =>
+                            {area.actions.map((action, index) =>
                                 <Triger
                                     title={action.title}
                                     color={action.color}
                                     onClick={() => {
                                         setArea((prevArea) => ({
                                             ...prevArea,
-                                            actions: prevArea.actions.filter((a) => a.title !== action.title),
+                                            actions: prevArea.actions.filter((a, i) => index !== i),
                                         }));
                                     }}
                                 />)
@@ -102,6 +116,15 @@ export default function CreateArea() {
                             }
                         </div>
                     </div>
+                <div className="flex justify-center mt-10">
+                    <Button
+                        text="Create the new AREA"
+                        styleClolor="bg-chartpurple-200 hover:bg-chartpurple-100 text-white"
+                        onClick={() => {
+
+                        }}
+                    />
+                </div>
                 </div>
             </div>
         </div>

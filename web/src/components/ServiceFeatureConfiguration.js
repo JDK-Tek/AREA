@@ -82,8 +82,8 @@ export default function ServiceFeatureConfiguration({ action, color, setError, s
 
     const renderInput = (spice) => {
         const { type, name, values } = spice;
-        const value = request[name] || "";
-
+        const value = request[name] || (type === "dropdown" ? values[0] : "");
+    
         switch (type) {
             case "text":
                 return (
@@ -102,12 +102,11 @@ export default function ServiceFeatureConfiguration({ action, color, setError, s
                     />
                 );
             case "dropdown":
-                request[name] = values[0];
                 return (
                     <DropdownBox
                         key={name}
                         options={values}
-                        selected={values[0]}
+                        selected={value}
                         onSelect={(val) => handleValueChange(name, val)}
                     />
                 );
@@ -138,7 +137,7 @@ export default function ServiceFeatureConfiguration({ action, color, setError, s
             default:
                 return null;
         }
-    };
+    };    
 
     return (
         <div className="p-5 h-full flex flex-col justify-start bg-[#1d1d1d] overflow-auto font-spartan">
@@ -160,7 +159,7 @@ export default function ServiceFeatureConfiguration({ action, color, setError, s
             ))}
             <div className="">
                 <Button
-                    text="Add the new action"
+                    text={"Add the new " + (action ? "action" : "reaction")}
                     onClick={() => {
                         const requestCheck = checkRequest(simulatedConfiguration, request);
                         
