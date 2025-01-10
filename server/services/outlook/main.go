@@ -55,7 +55,7 @@ func getOAUTHLink(w http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(w, "{ \"error\": \"missing\" }\n")
 		return
 	}
-	x := url.QueryEscape(redirect)
+	x := url.QueryEscape(os.Getenv("REDIRECT"))
 	str += "client_id=" + os.Getenv("OUTLOOK_CLIENT_ID")
 	str += "&response_type=code"
 	str += "&redirect_uri=" + x
