@@ -14,7 +14,7 @@ import Notification from "./Notification";
 import Button from "./Button";
 import { Undo2 } from 'lucide-react';
 
-export default function SidePannel({ title, open, setOpen }) {
+export default function SidePannel({ action, open, setOpen, setArea }) {
     const panelRef = useRef(null);
     const [width, setWidth] = useState(540);
     const [service, setService] = useState(null);
@@ -82,7 +82,7 @@ export default function SidePannel({ title, open, setOpen }) {
                         />
                     </div>
                 }
-                <p className="p-3 font-spartan font-bold text-2xl">{title}</p>
+                <p className="p-3 font-spartan font-bold text-2xl">{action ? "Configurate an action" : "Configurate a reaction"}</p>
                 <div
                     onMouseDown={() => (isResizing.current = true)}
                     style={{ cursor: "ew-resize" }}
@@ -92,12 +92,30 @@ export default function SidePannel({ title, open, setOpen }) {
             <div className="p-5" style={{ height: 'calc(95vh - 4rem - 64px)' }}>
                 {
                 feature ?
-                    <ServiceFeatureConfiguration color={service.color} setError={setError} setErrorMsg={setErrorMsg}/>
+                    <ServiceFeatureConfiguration
+                        action={action}
+                        color={service.color}
+                        setError={setError}
+                        setErrorMsg={setErrorMsg}
+                        setArea={setArea}
+                        reset={() => {
+                            setOpen(false);
+                            setFeature(null);
+                            setService(null);
+                        }}
+                    />
                     :
                 service ?
-                    <FindFeature dark={true} setFeature={setFeature} color={service.color} />
+                    <FindFeature
+                        dark={true}
+                        setFeature={setFeature}
+                        color={service.color}
+                    />
                     :
-                    <FindService dark={true} setService={setService} />
+                    <FindService
+                        dark={true}
+                        setService={setService}
+                    />
                 }
             </div>
         </div>

@@ -70,7 +70,7 @@ function checkRequest(config, request) {
     return missingParameters;
 }
 
-export default function ServiceFeatureConfiguration({ color, setError, setErrorMsg }) {
+export default function ServiceFeatureConfiguration({ action, color, setError, setErrorMsg, setArea, reset }) {
     const [request, setRequest] = useState({});
 
     const handleValueChange = (name, value) => {
@@ -102,6 +102,7 @@ export default function ServiceFeatureConfiguration({ color, setError, setErrorM
                     />
                 );
             case "dropdown":
+                request[name] = values[0];
                 return (
                     <DropdownBox
                         key={name}
@@ -172,14 +173,28 @@ export default function ServiceFeatureConfiguration({ color, setError, setErrorM
                             });
                             setErrorMsg(msg);
                             return;
+                        } else {
+                            if (action) {
+                                setArea((prevArea) => ({
+                                    ...prevArea,
+                                    actions: [...prevArea.actions, {title: simulatedConfiguration.name, color: color.normal, spices: request}],
+                                }));
+                            } else {
+                                setArea((prevArea) => ({
+                                    ...prevArea,
+                                    reactions: [...prevArea.reactions, {title: simulatedConfiguration.name, color: color.normal, spices: request}],
+                                }));
+                            }
+
+                            setError(false);
+                            setErrorMsg("");
+                            reset();
                         }
                     }}
                     styleClolor="bg-chartpurple-200 hover:bg-chartpurple-100 text-white"
                 />
+                {/* JSON.stringify(request, null, 2) */}
             </div>
-            <pre className="mt-4 bg-gray-100 text-black p-4 rounded-md">
-                {JSON.stringify(request, null, 2)}
-            </pre>
         </div>
     );
     
