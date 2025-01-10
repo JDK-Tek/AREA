@@ -49,7 +49,7 @@ type EmailContent struct {
 
 func getOAUTHLink(w http.ResponseWriter, req *http.Request) {
 	str := "https://login.microsoftonline.com/common/oauth2/v2.0/authorize?"
-	x := "&redirect_uri=" + url.QueryEscape(os.Getenv("REDIRECT"))
+	x := url.QueryEscape(os.Getenv("REDIRECT"))
 	str += "client_id=" + os.Getenv("OUTLOOK_CLIENT_ID")
 	str += "&response_type=code"
 	str += "&redirect_uri=" + x
