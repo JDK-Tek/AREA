@@ -7,10 +7,10 @@
 
 import RegisterBox from "../../components/RegisterBox/RegisterBox";
 
-export default function Content( {setToken} ) {
+export default function Content( {setToken, setError} ) {
     return (
         <div className="h-screen justify-center items-center flex">
-            <RegisterBox setToken={setToken} />
+            <RegisterBox setToken={setToken} setError={setError} />
         </div>
     );
 }
