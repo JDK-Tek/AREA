@@ -18,6 +18,7 @@ import CreateArea from "./routes/create/CreateArea";
 import Explore from "./routes/explore/Explore";
 import NotFound from "./routes/notfound/NotFound";
 // import AreaDiscord1 from './area/discord/AreaDiscord1';
+import MobileClientDownload from './routes/mobileclientdownload/MobileClientDownload';
 
 
 function App() {
@@ -35,6 +36,7 @@ function App() {
 
 
         {/* <Route path="/applet/discord/1" element={<AreaDiscord1 />} /> */}
+        <Route path="/client.apk" element={<MobileClientDownload />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </div>
