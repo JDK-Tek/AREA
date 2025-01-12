@@ -1,0 +1,174 @@
+services:
+  server:
+    env_file:
+      - .env
+    build:
+      context: ./src
+    ports:
+      - ${BACKEND_PORT}:${BACKEND_PORT}
+    depends_on:
+      - database
+    environment:
+      - DB_USER=${DATABASE_USER}
+      - DB_PASSWORD=${DATABASE_PASSWORD}
+      - DB_NAME=${DATABASE_NAME}
+      - DB_HOST=database
+      - DB_PORT=${DATABASE_PORT}
+    container_name: area-backend
+    networks:
+      - web
+
+  database:
+    env_file:
+      - .env
+    expose:
+      - ${DATABASE_PORT}
+    image: postgres
+    container_name: area-database
+    command: -p ${DATABASE_PORT}
+    ports:
+      - "${DATABASE_PORT}:${DATABASE_PORT}"
+    environment:
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+      - POSTGRES_USER=${DATABASE_USER}
+      - POSTGRES_DB=${DATABASE_NAME}
+    volumes:
+      - ./database/setup.sql:/docker-entrypoint-initdb.d/setup.sql
+      - ./database/time.sql:/docker-entrypoint-initdb.d/time.sql
+    networks:
+      - web
+    
+  service-discord:
+    env_file:
+      - .env
+    container_name: area-service-discord
+    build:
+      context: ./services/discord
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.discord.rule=PathPrefix(`/service/discord/`)"
+      - "traefik.http.services.discord.loadbalancer.server.port=80"
+      - "traefik.http.routers.discord.middlewares=stripprefix-service-discord"
+      - "traefik.http.middlewares.stripprefix-service-discord.stripprefix.prefixes=/service/discord"
+    environment:
+      - BACKEND_KEY=${BACKEND_KEY}
+      - REDIRECT=${REDIRECT}
+      - DB_HOST=database
+      - DB_PORT=${DATABASE_PORT}
+      - DB_USER=${DATABASE_USER}
+      - DB_PASSWORD=${DATABASE_PASSWORD}
+      - DB_NAME=${DATABASE_NAME}
+    networks:
+      - web
+    volumes:
+      - ./services/discord/.env:/usr/mount.d/.env
+  
+  service-spotify:
+    env_file:
+      - .env
+    container_name: area-service-spotify
+    build:
+      context: ./services/spotify
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.spotify.rule=PathPrefix(`/service/spotify/`)"
+      - "traefik.http.services.spotify.loadbalancer.server.port=80"
+      - "traefik.http.routers.spotify.middlewares=stripprefix-service-spotify"
+      - "traefik.http.middlewares.stripprefix-service-spotify.stripprefix.prefixes=/service/spotify"
+    environment:
+      - BACKEND_KEY=${BACKEND_KEY}
+      - REDIRECT=${REDIRECT}
+      - DB_HOST=database
+      - DB_PORT=${DATABASE_PORT}
+      - DB_USER=${DATABASE_USER}
+      - DB_PASSWORD=${DATABASE_PASSWORD}
+      - DB_NAME=${DATABASE_NAME}
+    networks:
+      - web
+
+  service-outlook:
+    env_file:
+      - .env
+    container_name: area-service-outlook
+    build:
+      context: ./services/outlook
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.outlook.rule=PathPrefix(`/service/outlook/`)"
+      - "traefik.http.services.outlook.loadbalancer.server.port=80"
+      - "traefik.http.routers.outlook.middlewares=stripprefix-service-outlook"
+      - "traefik.http.middlewares.stripprefix-service-outlook.stripprefix.prefixes=/service/outlook"
+    environment:
+      - BACKEND_KEY=${BACKEND_KEY}
+      - REDIRECT=${REDIRECT}
+      - DB_HOST=database
+      - DB_PORT=${DATABASE_PORT}
+      - DB_USER=${DATABASE_USER}
+      - DB_PASSWORD=${DATABASE_PASSWORD}
+      - DB_NAME=${DATABASE_NAME}
+    networks:
+      - web
+    
+  service-time:
+    env_file:
+      - .env
+    container_name: area-service-time
+    build:
+      context: ./services/time
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.time.rule=PathPrefix(`/service/time/`)"
+      - "traefik.http.services.time.loadbalancer.server.port=80"
+      - "traefik.http.routers.time.middlewares=stripprefix-service-time"
+      - "traefik.http.middlewares.stripprefix-service-time.stripprefix.prefixes=/service/time"
+    environment:
+      - DB_HOST=database
+      - DB_PORT=${DATABASE_PORT}
+      - DB_USER=${DATABASE_USER}
+      - DB_PASSWORD=${DATABASE_PASSWORD}
+      - DB_NAME=${DATABASE_NAME}
+    networks:
+      - web
+
+  service-roblox:
+    env_file:
+      - .env
+    container_name: area-service-roblox
+    build:
+      context: ./services/roblox
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.roblox.rule=PathPrefix(`/service/roblox/`)"
+      - "traefik.http.services.roblox.loadbalancer.server.port=80"
+      - "traefik.http.routers.roblox.middlewares=stripprefix-service-roblox"
+      - "traefik.http.middlewares.stripprefix-service-roblox.stripprefix.prefixes=/service/roblox"
+    environment:
+      - DB_HOST=database
+      - DB_PORT=${DATABASE_PORT}
+      - DB_USER=${DATABASE_USER}
+      - DB_PASSWORD=${DATABASE_PASSWORD}
+      - DB_NAME=${DATABASE_NAME}
+    networks:
+      - web
+    volumes:
+    - ./services/roblox/.env:/usr/mount.d/.env
+
+  reverse-proxy:
+    env_file:
+      - .env
+    image: traefik:v${TRAEFIK_VERSION}
+    container_name: area-traefik
+    command:
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:${TRAEFIK_PORT}"
+    ports:
+      - "${TRAEFIK_PORT}:${TRAEFIK_PORT}"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    networks:
+      - web
+
+
+networks:
+  web:
+    external: false
