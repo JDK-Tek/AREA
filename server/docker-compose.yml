@@ -1,5 +1,5 @@
 services:
-  server:
+  backend:
     env_file:
       - .env
     build:
@@ -9,7 +9,7 @@ services:
     depends_on:
       - database
     environment:
-      - REDIRECT=${REDIRECT}
+      - FRONTEND=${FRONTEND}
       - DB_USER=${DATABASE_USER}
       - DB_PASSWORD=${DATABASE_PASSWORD}
       - DB_NAME=${DATABASE_NAME}

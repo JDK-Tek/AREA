@@ -211,10 +211,12 @@ func masterThread(db *sql.DB) {
 			req, err := http.NewRequest("PUT", url, bytes.NewBuffer(obj))
 			fmt.Println("object is", string(obj))
 			if err != nil {
+				fmt.Println(err.Error())
 				continue
 			}
 			rep, err := client.Do(req)
 			if err != nil {
+				fmt.Println(err.Error())
 				continue
 			}
 			rep.Body.Close()
