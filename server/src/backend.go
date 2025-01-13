@@ -68,6 +68,7 @@ func onUpdate(a area.AreaRequest) {
 	err = a.Area.Database.
 		QueryRow("select service, name, spices from reactions where id = $1", reactid).
 		Scan(&service, &name, &message.Spices)
+	fmt.Println("bar")
 	if err != nil {
 		a.Error(err, http.StatusInternalServerError)
 		return
@@ -77,12 +78,14 @@ func onUpdate(a area.AreaRequest) {
 		a.Error(err, http.StatusInternalServerError)
 		return
 	}
+	fmt.Println("test")
 	url := fmt.Sprintf("http://reverse-proxy:42002/service/%s/%s", service, name)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(obj))
 	if err != nil {
 		a.Error(err, http.StatusBadGateway)
 		return
 	}
+	fmt.Println("foo")
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 	client := http.Client{}
@@ -211,7 +214,7 @@ func getAllServices(a area.AreaRequest) {
 func createTheAbout(a area.AreaRequest) {
 	x := About{
 		Client: AboutClient{
-			Host: os.Getenv("REDIRECT"),
+			Host: os.Getenv("FRONTEND"),
 		},
 		Server: AboutServer{
 			CurrentTime: time.Now().Unix(),

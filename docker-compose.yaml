@@ -1,5 +1,5 @@
 services:
-  backend:
+  server:
     image: docker:latest
     command: ["sh", "-c", "cd /server && docker-compose up --build"]
     volumes:
