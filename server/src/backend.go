@@ -179,7 +179,7 @@ func codeCallback(a area.AreaRequest) {
 	}, http.StatusOK)
 }
 
-// about + 
+// about + services
 
 type AboutSomething struct {
 	Name string `json:"name"`
@@ -264,10 +264,10 @@ type MessageWithID struct {
 func doctor(a area.AreaRequest) {
 	id, err := a.AssertToken()
 	if err != nil {
-		a.Reply(Message{Message: "i'm ok", Authentificated: false}, http.StatusOK)
+		a.Reply(Message{Message: "i'm ok thanks", Authentificated: false}, http.StatusOK)
 		return
 	}
-	a.Reply(MessageWithID{Message: "i'm ok", Authentificated: true, ID: id}, http.StatusOK)
+	a.Reply(MessageWithID{Message: "i'm ok thanks", Authentificated: true, ID: id}, http.StatusOK)
 }
 
 func main() {
@@ -349,6 +349,7 @@ func main() {
 	router.HandleFunc("/api/services", newProxy(&a, getAllServices)).Methods("GET")
 	router.HandleFunc("/api/services/{service}", newProxy(&a, getRoutes)).Methods("GET")
     router.HandleFunc("/api/doctor", newProxy(&a, doctor)).Methods("GET")
+    router.HandleFunc("/api/change", newProxy(&a, auth.DoSomeChangePassword)).Methods("PUT")
     router.HandleFunc("/about.json", newProxy(&a, createTheAbout)).Methods("GET")
 
     fmt.Println("=> server listens on port ", portString)
