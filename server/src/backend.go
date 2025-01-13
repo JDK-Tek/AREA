@@ -5,17 +5,18 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"html"
+	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"time"
-	"html"
-	"net/url"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+
 	// "github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 
@@ -91,7 +92,7 @@ func onUpdate(a area.AreaRequest) {
 		return
 	}
 	defer rep.Body.Close()
-	body, err := ioutil.ReadAll(rep.Body)
+	body, err := io.ReadAll(rep.Body)
 	if err != nil {
 		a.Error(err, http.StatusBadGateway)
 		return
@@ -121,7 +122,7 @@ func oauthGetter(a area.AreaRequest) {
 		}, rep.StatusCode)
 		return
 	}
-	data, err := ioutil.ReadAll(rep.Body)
+	data, err := io.ReadAll(rep.Body)
     if err != nil {
         a.Error(err, http.StatusBadGateway)
     }
@@ -155,7 +156,7 @@ func oauthSetter(a area.AreaRequest) {
 		return
 	}
 	defer rep.Body.Close()
-	body, err := ioutil.ReadAll(rep.Body)
+	body, err := io.ReadAll(rep.Body)
 	if err != nil {
 		a.Error(err, http.StatusBadGateway)
 		return
@@ -175,20 +176,49 @@ func codeCallback(a area.AreaRequest) {
 	}, http.StatusOK)
 }
 
-type Foo struct {
+// about + 
+
+type AboutSomething struct {
 	Name string `json:"name"`
-	IconUrl string `json:"icon_url"`
+	Description string `json:"description"`
+}
+
+type AboutClient struct {
+	Host string `json:"host"`
+}
+
+type AboutSevice struct {
+	Name string `json:"name"`
+	Icon string `json:"icon"`
+	Actions []AboutSomething `json:"actions"`
+	Reactions []AboutSomething `json:"reactions"`
+}
+
+type AboutServer struct {
+	CurrentTime int64 `json:"current_time"`
+	Services []AboutSevice `json:"services"`
+}
+
+type About struct {
+	Client AboutClient `json:"client"`
+	Server AboutServer `json:"server"`
 }
 
 func getAllServices(a area.AreaRequest) {
-	var list = []Foo{
-		Foo{Name: "Time"},
-		Foo{Name: "Discord"},
-		Foo{Name: "Roblox"},
-		Foo{Name: "Outlook"},
-		Foo{Name: "Spotify"},
+	a.Reply(a.Area.Services, http.StatusOK)
+}
+
+func createTheAbout(a area.AreaRequest) {
+	x := About{
+		Client: AboutClient{
+			Host: os.Getenv("REDIRECT"),
+		},
+		Server: AboutServer{
+			CurrentTime: time.Now().Unix(),
+			Services: []AboutSevice{},
+		},
 	}
-	a.Reply(list, http.StatusOK)
+	a.Reply(x, http.StatusOK)
 }
 
 func getRoutes(a area.AreaRequest) {
@@ -204,7 +234,7 @@ func getRoutes(a area.AreaRequest) {
 		return
 	}
 	defer rep.Body.Close()
-	body, err := ioutil.ReadAll(rep.Body)
+	body, err := io.ReadAll(rep.Body)
 	if err != nil {
 		a.Error(err, http.StatusBadGateway)
 		return
@@ -241,6 +271,7 @@ func main() {
     router := mux.NewRouter()
     var err error
     var dbPassword, dbUser, dbName, dbHost, dbPort string
+	var servicePath string
     var connectStr string
     var portString string
     var a area.Area
@@ -290,6 +321,14 @@ func main() {
         time.Sleep(time.Second)
         err = a.Database.Ping()
     }
+	if servicePath = os.Getenv("SERVICES_PATH"); servicePath == "" {
+        log.Fatal("BACKEND_KEY not found")
+    }
+	err = a.ObserveServices(servicePath)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	fmt.Println(a.Services[0])
     corsMiddleware := handlers.CORS(
         handlers.AllowedOrigins([]string{"*"}),
         handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE"}),
@@ -307,6 +346,7 @@ func main() {
 	router.HandleFunc("/api/services", newProxy(&a, getAllServices)).Methods("GET")
 	router.HandleFunc("/api/services/{service}", newProxy(&a, getRoutes)).Methods("GET")
     router.HandleFunc("/api/doctor", newProxy(&a, doctor)).Methods("GET")
+    router.HandleFunc("/about.json", newProxy(&a, createTheAbout)).Methods("GET")
 
     fmt.Println("=> server listens on port ", portString)
     log.Fatal(http.ListenAndServe(":"+portString, corsMiddleware(router)))
