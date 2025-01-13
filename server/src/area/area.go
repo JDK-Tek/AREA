@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"os"
 
 	"github.com/dgrijalva/jwt-go"
 )
@@ -16,6 +17,19 @@ const expiration = 60 * 30
 type Area struct {
 	Database *sql.DB
 	Key string
+	Services []string
+}
+
+func (it *Area) ObserveServices(where string) error {
+	entries, err := os.ReadDir(where)
+	it.Services = make([]string, len(entries))
+    if err != nil {
+        return err
+    }
+    for n, e := range entries {
+        it.Services[n] = e.Name()
+    }
+	return nil
 }
 
 func (it *Area) NewToken(id int) (string, error) {
