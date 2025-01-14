@@ -14,12 +14,7 @@ class AppletPageState extends State<AppletsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final List<String> dest = [
-      "/applets",
-      "/create",
-      "/services",
-      "/developers"
-    ];
+    final List<String> dest = ["/applets", "/create", "/services", "/plus"];
     return SafeArea(
         child: Scaffold(
       bottomNavigationBar: NavigationBar(
@@ -58,22 +53,19 @@ class AppletPageState extends State<AppletsPage> {
 
 class Applet extends StatelessWidget {
   final String nameService;
-  final IconData icon1;
-  final IconData icon2;
+  final String icon1;
+  final String icon2;
   final String nameAREA;
-  final String route;
   final VoidCallback press;
-  final Color color;
 
-  const Applet(
-      {super.key,
-      required this.icon1,
-      required this.icon2,
-      required this.nameService,
-      required this.nameAREA,
-      required this.route,
-      required this.press,
-      required this.color});
+  const Applet({
+    super.key,
+    required this.icon1,
+    required this.icon2,
+    required this.nameService,
+    required this.nameAREA,
+    required this.press,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -92,7 +84,6 @@ class Applet extends StatelessWidget {
               press();
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: color,
               padding: const EdgeInsets.all(9),
               shape: const RoundedRectangleBorder(
                 borderRadius: BorderRadius.all(Radius.elliptical(15, 15)),
@@ -107,18 +98,18 @@ class Applet extends StatelessWidget {
                         alignment: Alignment.topLeft,
                         child: Row(
                           children: [
-                            Icon(
+                            Image.network(
                               icon1,
                               color: Colors.white,
-                              size: MediaQuery.of(context).size.width <
+                              width: MediaQuery.of(context).size.width <
                                       MediaQuery.of(context).size.height
                                   ? MediaQuery.of(context).size.width * 0.1
                                   : MediaQuery.of(context).size.width * 0.06,
                             ),
-                            Icon(
+                            Image.network(
                               icon2,
                               color: Colors.white,
-                              size: MediaQuery.of(context).size.width <
+                              width: MediaQuery.of(context).size.width <
                                       MediaQuery.of(context).size.height
                                   ? MediaQuery.of(context).size.width * 0.1
                                   : MediaQuery.of(context).size.width * 0.06,
@@ -171,10 +162,8 @@ class AppletSection extends StatelessWidget {
     Applet(
       nameService: "Discord",
       nameAREA: "In 10sec receive message on Discord",
-      icon1: Icons.discord,
-      icon2: Icons.timer,
-      color: const Color(0xff7289da),
-      route: "/discordarea",
+      icon1: "https://img.icons8.com/ios/452/discord.png",
+      icon2: "https://img.icons8.com/ios/452/timer.png",
       press: () {},
     ),
   ];
@@ -221,14 +210,11 @@ class AppletSection extends StatelessWidget {
 
   Widget _buildAppletCard(BuildContext context, Applet applet) {
     return Applet(
-        nameService: applet.nameService,
-        nameAREA: applet.nameAREA,
-        icon1: applet.icon1,
-        icon2: applet.icon2,
-        color: applet.color,
-        press: () {
-          context.go(applet.route);
-        },
-        route: applet.route);
+      nameService: applet.nameService,
+      nameAREA: applet.nameAREA,
+      icon1: applet.icon1,
+      icon2: applet.icon2,
+      press: () {},
+    );
   }
 }

@@ -16,7 +16,7 @@ class IPState extends ChangeNotifier {
 
   String get ip => _ip;
 
-  void setIP(String token) {
+  void setIP(String ip) {
     _ip = ip;
     notifyListeners();
   }

@@ -2,7 +2,6 @@ import 'package:area/tools/login_button.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:area/pages/servicepage.dart';
 import 'package:area/pages/appletspage.dart';
 
 List<Color> predefinedColors = [
@@ -29,7 +28,7 @@ class HomePageState extends State<HomePage> {
       "/applets",
       "/create",
       "/services",
-      "/developers"
+      "/plus"
     ];
 
     return SafeArea(
@@ -64,7 +63,7 @@ class HomePageState extends State<HomePage> {
           children: [
             const HeaderSection(),
             AppletSection(),
-            const ServiceSection()
+            // const ServiceSection()
           ],
         ),
       ),

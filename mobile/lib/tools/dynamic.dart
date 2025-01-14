@@ -10,7 +10,7 @@ class Dynamic extends StatefulWidget {
 
   final String title;
   final Map<String, dynamic>? extraParams;
-  final Function(String key, dynamic value) onValueChanged;
+  final Function(String key, String value) onValueChanged;
 
   @override
   State<Dynamic> createState() => _DynamicState();
@@ -31,6 +31,14 @@ class _DynamicState extends State<Dynamic> {
     }
   }
 
+  final FocusNode _focusNode = FocusNode();
+  final TextEditingController textController = TextEditingController();
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final extraParams = widget.extraParams ?? {};
@@ -40,6 +48,8 @@ class _DynamicState extends State<Dynamic> {
         return SizedBox(
           width: 200,
           child: TextField(
+            controller: textController,
+            focusNode: _focusNode,
             decoration: InputDecoration(
               labelText: "Enter ${widget.title}",
               border: const OutlineInputBorder(),
@@ -86,15 +96,13 @@ class _DynamicState extends State<Dynamic> {
             setState(() {
               dropdownValue = newValue ?? dropdownValue;
             });
-            widget.onValueChanged(
-                widget.title, dropdownValue);
+            widget.onValueChanged(widget.title, dropdownValue);
           },
           items: (extraParams['items'] as List<dynamic>)
               .map<DropdownMenuItem<String>>((dynamic value) {
             return DropdownMenuItem<String>(
               value: value.toString(),
-              child: Text(
-                  value.toString()),
+              child: Text(value.toString()),
             );
           }).toList(),
         );
@@ -153,6 +161,7 @@ class _DynamicState extends State<Dynamic> {
         return SizedBox(
           height: 200,
           child: ListView.builder(
+            physics: const NeverScrollableScrollPhysics(),
             itemCount: items.length,
             itemBuilder: (context, index) {
               return ListTile(
