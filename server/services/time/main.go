@@ -238,6 +238,7 @@ func masterThread(db *sql.DB) {
 type Spice struct {
 	Name string `json:"name"`
 	Type string `json:"type"`
+	Desc string `json:"description"`
 	Extra []string `json:"extraParams"`
 }
 
@@ -256,10 +257,12 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 				{
 					Name: "howmuch",
 					Type: "number",
+					Desc: "How much time to wait.",
 				},
 				{
 					Name: "unit",
 					Type: "dropdown",
+					Desc: "The unit to wait.",
 					Extra: []string{
 						"weeks",
 						"days",
@@ -293,6 +296,6 @@ func main() {
 	fmt.Println("time microservice container is running !")
 	router := mux.NewRouter()
 	router.HandleFunc("/in", miniProxy(timeIn, db)).Methods("POST")
-	router.HandleFunc("/routes", getRoutes).Methods("GET")
+	router.HandleFunc("/", getRoutes).Methods("GET")
 	log.Fatal(http.ListenAndServe(":80", router))
 }

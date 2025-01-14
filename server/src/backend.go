@@ -228,7 +228,7 @@ func getRoutes(a area.AreaRequest) {
 	vars := mux.Vars(a.Request)
     service := vars["service"]
 	url := fmt.Sprintf(
-		"http://reverse-proxy:42002/service/%s/routes",
+		"http://reverse-proxy:42002/service/%s",
 		service,
 	)
 	rep, err := http.Get(url)

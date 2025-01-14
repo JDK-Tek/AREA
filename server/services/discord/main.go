@@ -241,6 +241,7 @@ func miniproxy(f func(http.ResponseWriter, *http.Request, *sql.DB), c *sql.DB) f
 type Spice struct {
 	Name string `json:"name"`
 	Type string `json:"type"`
+	Description string `json:"description"`
 }
 
 type Route struct {
@@ -258,10 +259,12 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 				{
 					Name: "channel",
 					Type: "number",
+					Description: "The discord channel id.",
 				},
 				{
 					Name: "message",
 					Type: "text",
+					Description: "The message you want to send.",
 				},
 			},
 		},
@@ -290,6 +293,6 @@ func main() {
 	router.HandleFunc("/send", doSomeSend).Methods("POST")
 	router.HandleFunc("/oauth", getOAUTHLink).Methods("GET")
 	router.HandleFunc("/oauth", miniproxy(setOAUTHToken, db)).Methods("POST")
-	router.HandleFunc("/routes", getRoutes).Methods("GET")
+	router.HandleFunc("/", getRoutes).Methods("GET")
 	log.Fatal(http.ListenAndServe(":80", router))
 }
