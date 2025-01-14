@@ -1,12 +1,4 @@
 services:
-  server:
-    image: docker:latest
-    command: ["sh", "-c", "cd /server && docker-compose up --build"]
-    volumes:
-      - ./server:/server
-      - /var/run/docker.sock:/var/run/docker.sock
-    container_name: backend
-
   client_web:
     env_file:
       - ./.env
@@ -19,6 +11,7 @@ services:
       - web
     depends_on:
       - client_mobile
+      - backend
     volumes:
       - apk_volume:/app/src/apk
 
