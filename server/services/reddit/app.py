@@ -380,6 +380,54 @@ def reply_post():
     return jsonify({"status": "Reply submitted"}), 200
 
 
+# Reply to a message
+@app.route('/reply-message', methods=["POST"])
+def reply_message():
+    app.logger.info("reply-message endpoint hit")
+    user = retrieve_token(get_beared_token(request))
+    if not user:
+        app.logger.error("Invalid area token")
+        return jsonify({"error": "Invalid area token"}), 401
+
+    access_token = retrieve_user_token(user.get("id"))
+    if not access_token:
+        app.logger.error("Invalid reddit token")
+        return jsonify({"error": "Invalid reddit token"}), 401
+
+    if not request.is_json:
+        app.logger.error("Request is not valid JSON")
+        return jsonify({"error": "Invalid JSON"}), 400
+
+    spices = request.json.get("spices", {})
+    message_id = spices.get("message_id")
+    reply_msg = spices.get("reply_msg")
+
+    if not message_id or not reply_msg:
+        app.logger.error("Missing required fields: message_id=%s, reply_msg=%s", message_id, reply_msg)
+        return jsonify({"error": "Missing required fields"}), 400
+
+    reddit_submit_url = "https://oauth.reddit.com/api/comment"
+    headers = {
+        "User-Agent": "area/1.0",
+        "Authorization": f"Bearer {access_token}",
+    }
+    body = {
+        "api_type": "json",
+        "thing_id": message_id,
+        "text": reply_msg,
+    }
+
+    res = requests.post(reddit_submit_url, headers=headers, data=body)
+
+    if res.status_code != 200:
+        app.logger.error("Failed to submit reply: %s", res.json())
+        return jsonify({
+            "error": "Failed to submit reply",
+            "details": res.json()
+        }), res.status_code
+
+    app.logger.info(f"User {user.get('id')} replied to message '{message_id}': {reply_msg}")
+    return jsonify({"status": "Reply submitted"}), 200
 
 
 
@@ -448,6 +496,23 @@ def info():
 					{
 						"title": "Post id (e.g. t3_<id>)",
 						"name": "post_id",
+						"type": "input"
+					},
+					{
+						"title": "Reply message",
+						"name": "reply_msg",
+						"type": "text"
+					}
+				]
+			},
+			{
+				"name": "reply-message",
+				"type": "reaction",
+				"description": "Reply to a private message",
+				"spices": [
+					{
+						"title": "Post id (e.g. t4_<id>)",
+						"name": "message_id",
 						"type": "input"
 					},
 					{
