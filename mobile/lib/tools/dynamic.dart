@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 
 class Dynamic extends StatefulWidget {
-  const Dynamic({super.key, required this.title, this.extraParams});
+  const Dynamic({
+    super.key,
+    required this.title,
+    this.extraParams,
+    required this.onValueChanged,
+  });
+
   final String title;
   final Map<String, dynamic>? extraParams;
+  final Function(String key, String value) onValueChanged;
 
   @override
   State<Dynamic> createState() => _DynamicState();
@@ -11,175 +18,169 @@ class Dynamic extends StatefulWidget {
 
 class _DynamicState extends State<Dynamic> {
   String dropdownValue = 'Option 1';
-  bool switchValue = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final extraParams = widget.extraParams ?? {};
+    List<String> items = extraParams['items'] ?? [];
+    if (items.isNotEmpty) {
+      dropdownValue = extraParams['currentValue'] ?? items[0];
+    } else {
+      dropdownValue = '';
+    }
+  }
+
+  final FocusNode _focusNode = FocusNode();
+  final TextEditingController textController = TextEditingController();
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final extraParams = widget.extraParams ?? {};
 
-    if (widget.title == "textfield") {
-      TextInputType key = ((extraParams["keyboardType"] ?? "text") == "number"
-          ? TextInputType.number
-          : TextInputType.text);
-      return SizedBox(
-        width: 200,
+    final widgetMap = {
+      "text": () {
+        return SizedBox(
+          width: 200,
           child: TextField(
-        decoration: InputDecoration(
-          labelText: extraParams['labelText'] ?? "Entrez du texte",
-          border: const OutlineInputBorder(),
-        ),
-        keyboardType: key,
-      ));
-    } else if (widget.title == "timestamp") {
-      return TimePickerDialog(
-          initialTime: extraParams['initialTime'] ?? TimeOfDay.now());
-    } else if (widget.title == "button") {
-      return ElevatedButton(
-        onPressed: extraParams['onPressed'] ??
-            () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Bouton pressé")),
-              );
+            controller: textController,
+            focusNode: _focusNode,
+            decoration: InputDecoration(
+              labelText: "Enter ${widget.title}",
+              border: const OutlineInputBorder(),
+            ),
+            onChanged: (value) {
+              widget.onValueChanged(widget.title, value);
             },
-        child: Text(extraParams['buttonText'] ?? "Cliquez Moi"),
-      );
-    } else if (widget.title == "switch") {
-      return SwitchListTile(
-        title: Text(extraParams['title'] ?? "Activer/Désactiver"),
-        value: switchValue,
-        onChanged: (bool value) {
-          setState(() {
-            switchValue = value;
-          });
-        },
-      );
-    } else if (widget.title == "dropdown") {
-      dropdownValue = extraParams['initialValue'] ?? dropdownValue;
-      List<DropdownMenuItem<String>> items = (extraParams['items']
-                  as List<String>?)
-              ?.map((item) => DropdownMenuItem(value: item, child: Text(item)))
-              .toList() ??
-          const [
-            DropdownMenuItem(value: 'Option 1', child: Text('Option 1')),
-            DropdownMenuItem(value: 'Option 2', child: Text('Option 2')),
-            DropdownMenuItem(value: 'Option 3', child: Text('Option 3')),
-          ];
-      return DropdownButton<String>(
-        value: dropdownValue,
-        items: items,
-        onChanged: (String? newValue) {
-          setState(() {
-            if (newValue != null) dropdownValue = newValue;
-          });
-        },
-      );
-    } else if (widget.title == "slider") {
-      double sliderValue = extraParams['initialValue'] ?? 0.5;
-      return StatefulBuilder(
-        builder: (context, setState) => Slider(
-          value: sliderValue,
-          min: extraParams['min'] ?? 0.0,
-          max: extraParams['max'] ?? 1.0,
-          divisions: extraParams['divisions'] ?? 10,
-          label: extraParams['label']?.call(sliderValue) ??
-              "${(sliderValue * 100).toStringAsFixed(0)}%",
-          onChanged: (value) {
+          ),
+        );
+      },
+      "number": () {
+        return SizedBox(
+          width: 200,
+          child: TextField(
+              decoration: InputDecoration(
+                labelText: "Enter ${widget.title}",
+                border: const OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.number,
+              onChanged: (value) {
+                widget.onValueChanged(widget.title, value);
+              }),
+        );
+      },
+      "email": () {
+        return SizedBox(
+          width: 200,
+          child: TextField(
+            decoration: InputDecoration(
+              labelText: "Enter ${widget.title}",
+              border: const OutlineInputBorder(),
+            ),
+            keyboardType: TextInputType.emailAddress,
+            onChanged: (value) {
+              widget.onValueChanged(widget.title, value);
+            },
+          ),
+        );
+      },
+      "dropdown": () {
+        return DropdownButton<String>(
+          value: dropdownValue,
+          onChanged: (String? newValue) {
             setState(() {
-              sliderValue = value;
+              dropdownValue = newValue ?? dropdownValue;
             });
+            widget.onValueChanged(widget.title, dropdownValue);
           },
-        ),
-      );
-    } else if (widget.title == "date_picker") {
-      return ElevatedButton(
-        onPressed: () async {
-          DateTime? pickedDate = await showDatePicker(
-            context: context,
-            initialDate: extraParams['initialDate'] ?? DateTime.now(),
-            firstDate: extraParams['firstDate'] ?? DateTime(2000),
-            lastDate: extraParams['lastDate'] ?? DateTime(2100),
-          );
-          if (!context.mounted) return;
-          if (pickedDate != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                  content: Text("Date sélectionnée: ${pickedDate.toLocal()}")),
+          items: (extraParams['items'] as List<dynamic>)
+              .map<DropdownMenuItem<String>>((dynamic value) {
+            return DropdownMenuItem<String>(
+              value: value.toString(),
+              child: Text(value.toString()),
             );
-          }
-        },
-        child: Text(extraParams['buttonText'] ?? "Choisir une date"),
-      );
-    } else if (widget.title == "checkbox") {
-      bool checkboxValue = extraParams['initialValue'] ?? false;
-      return StatefulBuilder(
-        builder: (context, setState) => CheckboxListTile(
-          title: Text(extraParams['title'] ?? "Activer l'option"),
-          value: checkboxValue,
-          onChanged: (bool? value) {
-            if (value != null) {
-              setState(() {
-                checkboxValue = value;
-              });
+          }).toList(),
+        );
+      },
+      "date_picker": () {
+        return ElevatedButton(
+          onPressed: () async {
+            DateTime? pickedDate = await showDatePicker(
+              context: context,
+              initialDate: DateTime.now(),
+              firstDate: DateTime(2000),
+              lastDate: DateTime(2100),
+            );
+            if (!context.mounted) return;
+            if (pickedDate != null) {
+              widget.onValueChanged(widget.title, pickedDate.toIso8601String());
             }
           },
-        ),
-      );
-    } else if (widget.title == "listview") {
-      List<String> items = extraParams['items'] ??
-          List.generate(10, (index) => "Élément $index");
-      return SizedBox(
-        height: 200,
-        child: ListView.builder(
-          itemCount: items.length,
-          itemBuilder: (context, index) {
-            return ListTile(
-              leading: const Icon(Icons.star),
-              title: Text(items[index]),
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                      content: Text("Vous avez cliqué sur ${items[index]}")),
-                );
-              },
-            );
-          },
-        ),
-      );
-    } else if (widget.title == "dialog") {
-      return ElevatedButton(
-        onPressed: () {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text(extraParams['title'] ?? "Exemple de Dialog"),
-              content: Text(extraParams['content'] ??
-                  "Ceci est une boîte de dialogue simple"),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text(extraParams['cancelText'] ?? "Annuler"),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    if (extraParams['onConfirm'] != null) {
-                      extraParams['onConfirm']();
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Action confirmée")),
-                      );
-                    }
-                  },
-                  child: Text(extraParams['confirmText'] ?? "Confirmer"),
-                ),
-              ],
+          child: const Text("Select a date"),
+        );
+      },
+      "phonenumber": () {
+        return SizedBox(
+          width: 200,
+          child: TextField(
+            decoration: InputDecoration(
+              labelText: "Enter ${widget.title}",
+              border: const OutlineInputBorder(),
             ),
-          );
-        },
-        child: Text(extraParams['buttonText'] ?? "Afficher le Dialog"),
-      );
+            keyboardType: TextInputType.phone,
+            onChanged: (value) {
+              widget.onValueChanged(widget.title, value);
+            },
+          ),
+        );
+      },
+      "url": () {
+        return SizedBox(
+          width: 200,
+          child: TextField(
+            decoration: InputDecoration(
+              labelText: "Enter ${widget.title}",
+              border: const OutlineInputBorder(),
+            ),
+            keyboardType: TextInputType.url,
+            onChanged: (value) {
+              widget.onValueChanged(widget.title, value);
+            },
+          ),
+        );
+      },
+      "listview": () {
+        List<String> items = extraParams['items'] ??
+            List.generate(10, (index) => "Element $index");
+
+        return SizedBox(
+          height: 200,
+          child: ListView.builder(
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: items.length,
+            itemBuilder: (context, index) {
+              return ListTile(
+                title: Text(items[index]),
+                onTap: () {
+                  widget.onValueChanged(widget.title, items[index]);
+                },
+              );
+            },
+          ),
+        );
+      },
+    };
+
+    final widgetBuilder = widgetMap[widget.title];
+    if (widgetBuilder != null) {
+      return widgetBuilder();
     } else {
-      return Text(widget.title);
+      return Text("Unsupported widget type: ${widget.title}");
     }
   }
 }

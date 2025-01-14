@@ -34,7 +34,7 @@ class _UserBox extends State<UserBox> {
       controller: widget.nameController,
       autofocus: true,
       textInputAction: TextInputAction.next,
-      keyboardType: TextInputType.name,
+      keyboardType: TextInputType.emailAddress,
       obscureText: widget.obscureText,
       //focusNode: widget.focusNode,
       style: const TextStyle(color: Colors.white),

@@ -1,8 +1,10 @@
 import 'dart:convert';
+import 'package:area/tools/providers.dart';
 import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:area/pages/login_page.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:go_router/go_router.dart';
 
@@ -77,7 +79,8 @@ class _SpotifyAuthPageState extends State<SpotifyAuthPage> {
   }
 
   Future<void> _makeDemand(String u) async {
-    final Uri uri = Uri.https("api.area.jepgo.root.sx", u);
+    final Uri uri =
+        Uri.https(Provider.of<IPState>(context, listen: false).ip, u);
     //final Uri uri = Uri.http("172.20.10.3:1234", u);
     late final http.Response rep;
     late String content;
@@ -164,7 +167,8 @@ class _SpotifyAuthPageState extends State<SpotifyAuthPage> {
 
   Future<void> _makeRequest(String a, String u) async {
     final String body = "{ \"code\": \"$a\" }";
-    final Uri uri = Uri.https("api.area.jepgo.root.sx", u);
+    final Uri uri =
+        Uri.https(Provider.of<IPState>(context, listen: false).ip, u);
     //final Uri uri = Uri.http("172.20.10.3:1234", u);
     late final http.Response rep;
     late Map<String, dynamic> content;
@@ -182,6 +186,7 @@ class _SpotifyAuthPageState extends State<SpotifyAuthPage> {
         if (str != null) {
           _token = str;
           if (mounted) {
+            Provider.of<UserState>(context, listen: false).setToken(_token!);
             context.go("/");
           }
         } else {

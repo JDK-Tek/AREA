@@ -10,3 +10,14 @@ class UserState extends ChangeNotifier {
     notifyListeners();
   }
 }
+
+class IPState extends ChangeNotifier {
+  String _ip = "api.area.jepgo.root.sx";
+
+  String get ip => _ip;
+
+  void setIP(String ip) {
+    _ip = ip;
+    notifyListeners();
+  }
+}

@@ -14,12 +14,7 @@ class ServicesPageState extends State<ServicesPage> {
   int currentPageIndex = 2;
   @override
   Widget build(BuildContext context) {
-    final List<String> dest = [
-      "/applets",
-      "/create",
-      "/services",
-      "/developers"
-    ];
+    final List<String> dest = ["/applets", "/create", "/services", "/plus"];
     return SafeArea(
         child: Scaffold(
       bottomNavigationBar: NavigationBar(
@@ -61,16 +56,14 @@ class ServicesPageState extends State<ServicesPage> {
 
 class Service extends StatelessWidget {
   final String serviceName;
-  final IconData icon;
+  final String icon;
   final VoidCallback onPress;
-  final Color color;
 
   const Service({
     super.key,
     required this.serviceName,
     required this.icon,
     required this.onPress,
-    required this.color,
   });
 
   @override
@@ -88,8 +81,9 @@ class Service extends StatelessWidget {
       child: ElevatedButton(
         onPressed: onPress,
         style: ElevatedButton.styleFrom(
-          backgroundColor: color,
           padding: const EdgeInsets.all(10),
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
           ),
@@ -97,13 +91,10 @@ class Service extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            Image.network(
               icon,
-              color: Colors.white,
-              size: MediaQuery.of(context).size.width <
-                      MediaQuery.of(context).size.height
-                  ? MediaQuery.of(context).size.width * 0.08
-                  : MediaQuery.of(context).size.width * 0.05,
+              width: MediaQuery.of(context).size.width <
+                        MediaQuery.of(context).size.height ? MediaQuery.of(context).size.width * 0.2 : MediaQuery.of(context).size.width * 0.08,
             ),
             SizedBox(
                 height: MediaQuery.of(context).size.width <
@@ -116,10 +107,10 @@ class Service extends StatelessWidget {
               style: TextStyle(
                   fontSize: MediaQuery.of(context).size.width <
                           MediaQuery.of(context).size.height
-                      ? MediaQuery.of(context).size.width * 0.04
+                      ? MediaQuery.of(context).size.width * 0.038
                       : MediaQuery.of(context).size.width * 0.025,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  color: Colors.black,
                   fontFamily: 'Nunito-Bold'),
             ),
           ],
@@ -136,19 +127,16 @@ class ServiceSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final List<Map<String, dynamic>> services = [
       {
-        'name': 'Discord',
-        'icon': Icons.discord,
-        'color': Colors.blueAccent,
+        "label": "Discord",
+        "icon_url": "https://upload.wikimedia.org/wikipedia/fr/8/80/Logo_Discord_2015.png",
       },
       {
-        'name': 'Weather',
-        'icon': Icons.cloud,
-        'color': Colors.lightBlue,
+        "label": "Discord",
+        "icon_url": "https://img.icons8.com/ios/452/discord.png",
       },
       {
-        'name': 'Time',
-        'icon': Icons.timer,
-        'color': Colors.green,
+        "label": "Discord",
+        "icon_url": "https://img.icons8.com/ios/452/discord.png",
       },
     ];
 
@@ -172,9 +160,8 @@ class ServiceSection extends StatelessWidget {
             children: services
                 .map(
                   (service) => Service(
-                    serviceName: service['name'],
-                    icon: service['icon'],
-                    color: service['color'],
+                    serviceName: service['label'],
+                    icon: service['icon_url'],
                     onPress: () {
                       print("Service ${service['name']} pressed");
                     },
