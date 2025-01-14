@@ -87,17 +87,51 @@ def retrieve_user_token(id):
 
 app = Flask(__name__)
 
+PERMISSIONS_REQUIRED = [
+	"creddits",
+	"modnote",
+	"modcontributors",
+	"modmail",
+	"modconfig",
+	"subscribe",
+	"structuredstyles",
+	"vote",
+	"wikiedit",
+	"mysubreddits",
+	"submit",
+	"modlog",
+	"modposts",
+	"modflair",
+	"announcements",
+	"save",
+	"modothers",
+	"read",
+	"privatemessages",
+	"report",
+	"identity",
+	"livemanage",
+	"account",
+	"modtraffic",
+	"wikiread",
+	"edit",
+	"modwiki",
+	"modself",
+	"history",
+	"flair"
+]
+
 ##
 ## OAUTH2
 ##
 @app.route('/oauth', methods=["GET", "POST"])
 def oauth():
 	# get the URL of the oauth2 reddit
+	scopes = "%20".join(PERMISSIONS_REQUIRED)
 	if request.method == "GET":
 		reddit_auth_url = (
 			f"{REDDIT_AUTH_URL}"
 			f"client_id={API_CLIENT_ID_TOKEN}&response_type=code&state=random_string"
-			f"&redirect_uri={REDIRECT_URI}&duration=permanent&scope=identity%20read%20submit%20vote%20privatemessages%20save"
+			f"&redirect_uri={REDIRECT_URI}&duration=permanent&scope={scopes}"
 		)
 		return reddit_auth_url
 
@@ -296,6 +330,62 @@ def submit_new_link():
     return jsonify({"status": "Link submitted"}), 200
 
 
+# Reply to a post
+@app.route('/reply-post', methods=["POST"])
+def reply_post():
+    app.logger.info("reply-post endpoint hit")
+    user = retrieve_token(get_beared_token(request))
+    if not user:
+        app.logger.error("Invalid area token")
+        return jsonify({"error": "Invalid area token"}), 401
+
+    access_token = retrieve_user_token(user.get("id"))
+    if not access_token:
+        app.logger.error("Invalid reddit token")
+        return jsonify({"error": "Invalid reddit token"}), 401
+
+    if not request.is_json:
+        app.logger.error("Request is not valid JSON")
+        return jsonify({"error": "Invalid JSON"}), 400
+
+    spices = request.json.get("spices", {})
+    post_id = spices.get("post_id")
+    reply_msg = spices.get("reply_msg")
+
+    if not post_id or not reply_msg:
+        app.logger.error("Missing required fields: post_id=%s, reply_msg=%s", post_id, reply_msg)
+        return jsonify({"error": "Missing required fields"}), 400
+
+    reddit_submit_url = "https://oauth.reddit.com/api/comment"
+    headers = {
+        "User-Agent": "area/1.0",
+        "Authorization": f"Bearer {access_token}",
+    }
+    body = {
+        "api_type": "json",
+		"thing_id": post_id,
+		"text": reply_msg
+    }
+
+    res = requests.post(reddit_submit_url, headers=headers, data=body)
+
+    if res.status_code != 200:
+        app.logger.error("Failed to submit link: %s", res.json())
+        return jsonify({
+            "error": "Failed to submit link",
+            "details": res.json()
+        }), res.status_code
+
+    app.logger.info(f"User {user.get('id')} reply to the '{post_id}': {reply_msg}")
+    return jsonify({"status": "Reply submitted"}), 200
+
+
+
+
+
+
+
+
 
 ##
 ## INFORMATIONS ABOUT ACTION/REACTION OF REDDIT SERVICE
@@ -324,6 +414,45 @@ def info():
 					{
 						"title": "Content of the post",
 						"name": "content",
+						"type": "text"
+					}
+				]
+			},
+			{
+				"name": "submit-new-link",
+				"type": "reaction",
+				"description": "Submit a new link on a subreddit",
+				"spices": [
+					{
+						"title": "Title of the post",
+						"name": "title",
+						"type": "input"
+					},
+					{
+						"title": "Subreddit where to post without the r/",
+						"name": "subreddit",
+						"type": "input"
+					},
+					{
+						"title": "The url to post",
+						"name": "url",
+						"type": "text"
+					}
+				]
+			},
+			{
+				"name": "reply-post",
+				"type": "reaction",
+				"description": "Reply to a post on a subreddit",
+				"spices": [
+					{
+						"title": "Post id (e.g. t3_<id>)",
+						"name": "post_id",
+						"type": "input"
+					},
+					{
+						"title": "Reply message",
+						"name": "reply_msg",
 						"type": "text"
 					}
 				]
