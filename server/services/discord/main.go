@@ -11,6 +11,7 @@ import (
 	"os"
 	"strconv"
 	"time"
+	"io"
 
 	// "io/ioutil"
 
@@ -69,6 +70,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	var user UserResult
 	var tokid int
 	var owner = -1
+	var responseData map[string]interface{}
 
 	// make the request to discord api
 	clientid := os.Getenv("DISCORD_ID")
@@ -90,11 +92,17 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		return
 	}
 	defer rep.Body.Close()
-	err = json.NewDecoder(rep.Body).Decode(&tok)
+	body, err := io.ReadAll(rep.Body)
 	if err != nil {
-		fmt.Fprintln(w, "decode", err.Error())
+		fmt.Fprintln(w, "read body", err.Error())
 		return
 	}
+	if err := json.Unmarshal(body, &responseData); err != nil {
+		fmt.Fprintln(w, "unmarshal json", err.Error())
+		return
+	}
+	tok.Token = responseData["access_token"].(string)
+	tok.Refresh = responseData["refresh_token"].(string)
 
 	// make the request for the user
 	req, err = http.NewRequest("GET", API_USER, nil)
@@ -117,6 +125,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	}
 	if tok.Token == "" || tok.Refresh == "" {
 		fmt.Fprintln(w, "error: token is empty")
+		return
 	}
 
 	// seelect the user id shit
@@ -238,38 +247,54 @@ func miniproxy(f func(http.ResponseWriter, *http.Request, *sql.DB), c *sql.DB) f
 	}
 }
 
-type Spice struct {
+type InfoSpice struct {
 	Name string `json:"name"`
 	Type string `json:"type"`
+	Title string `json:"title"`
+	Extra []string `json:"extra"`
 }
 
-type Route struct {
+type InfoRoute struct {
 	Type string `json:"type"`
 	Name string `json:"name"`
-	Spices []Spice `json:"spices"`
+	Desc string `json:"description"`
+	Spices []InfoSpice `json:"spices"`
+}
+
+type Infos struct {
+	Color string `json:"color"`
+	Image string `json:"Image"`
+	Routes []InfoRoute `json:"routes"`
 }
 
 func getRoutes(w http.ResponseWriter, req *http.Request) {
-	var list = []Route{
-		Route{
+	var list = []InfoRoute{
+		InfoRoute{
 			Name: "send",
 			Type: "reaction",
-			Spices: []Spice{
+			Desc: "Sends a message in a channel.",
+			Spices: []InfoSpice{
 				{
 					Name: "channel",
 					Type: "number",
+					Title: "The discord channel id.",
 				},
 				{
 					Name: "message",
 					Type: "text",
+					Title: "The message you want to send.",
 				},
 			},
 		},
 	}
+	var infos = Infos{
+		Color: "#ffff0000",
+		Routes: list,
+	}
 	var data []byte
 	var err error
 
-	data, err = json.Marshal(list)
+	data, err = json.Marshal(infos)
 	if err != nil {
 		http.Error(w, `{ "error":  "marshal" }`, http.StatusInternalServerError)
 		return
@@ -279,7 +304,7 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 }
 
 func main() {
-	godotenv.Load("/usr/mount.d/.env")
+	godotenv.Load("/usr/mount.d/.env", ".env")
 	db, err := connectToDatabase()
 	if err != nil {
 		os.Exit(84)
