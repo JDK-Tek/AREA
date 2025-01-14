@@ -3,7 +3,7 @@ services:
     env_file:
       - .env
     build:
-      context: ./server/src
+      context: ./src
     ports:
       - ${BACKEND_PORT}:${BACKEND_PORT}
     depends_on:
@@ -21,7 +21,7 @@ services:
     networks:
       - web
     volumes:
-      - ./server/services:${BACKEND_SERVICES_PATH}
+      - ./services:${BACKEND_SERVICES_PATH}
 
   database:
     env_file:
@@ -38,8 +38,8 @@ services:
       - POSTGRES_USER=${DATABASE_USER}
       - POSTGRES_DB=${DATABASE_NAME}
     volumes:
-      - ./server/database/setup.sql:/docker-entrypoint-initdb.d/setup.sql
-      - ./server/database/time.sql:/docker-entrypoint-initdb.d/time.sql
+      - ./database/setup.sql:/docker-entrypoint-initdb.d/setup.sql
+      - ./database/time.sql:/docker-entrypoint-initdb.d/time.sql
     networks:
       - web
     
@@ -48,7 +48,7 @@ services:
       - .env
     container_name: area-service-discord
     build:
-      context: ./server/services/discord
+      context: ./services/discord
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.discord.rule=PathPrefix(`/service/discord/`)"
@@ -66,14 +66,14 @@ services:
     networks:
       - web
     volumes:
-      - ./server/services/discord/.env:/usr/mount.d/.env
+      - ./services/discord/.env:/usr/mount.d/.env
   
   service-spotify:
     env_file:
       - .env
     container_name: area-service-spotify
     build:
-      context: ./server/services/spotify
+      context: ./services/spotify
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.spotify.rule=PathPrefix(`/service/spotify/`)"
@@ -96,7 +96,7 @@ services:
       - .env
     container_name: area-service-outlook
     build:
-      context: ./server/services/outlook
+      context: ./services/outlook
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.outlook.rule=PathPrefix(`/service/outlook/`)"
@@ -119,7 +119,7 @@ services:
       - .env
     container_name: area-service-time
     build:
-      context: ./server/services/time
+      context: ./services/time
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.time.rule=PathPrefix(`/service/time/`)"
@@ -140,7 +140,7 @@ services:
       - .env
     container_name: area-service-roblox
     build:
-      context: ./server/services/roblox
+      context: ./services/roblox
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.roblox.rule=PathPrefix(`/service/roblox/`)"
@@ -156,7 +156,7 @@ services:
     networks:
       - web
     volumes:
-    - ./server/services/roblox/.env:/usr/mount.d/.env
+    - ./services/roblox/.env:/usr/mount.d/.env
 
   reverse-proxy:
     env_file:
