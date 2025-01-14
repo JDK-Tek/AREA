@@ -243,6 +243,60 @@ def submit_new_post():
     app.logger.info(f"User {user.get('id')} submitted a post on r/{subreddit}: {title}")
     return jsonify({"status": "Post submitted"}), 200
 
+
+# Submit a new link on a subreddit
+@app.route('/submit-new-link', methods=["POST"])
+def submit_new_link():
+    app.logger.info("submit-new-link endpoint hit")
+    user = retrieve_token(get_beared_token(request))
+    if not user:
+        app.logger.error("Invalid area token")
+        return jsonify({"error": "Invalid area token"}), 401
+
+    access_token = retrieve_user_token(user.get("id"))
+    if not access_token:
+        app.logger.error("Invalid reddit token")
+        return jsonify({"error": "Invalid reddit token"}), 401
+
+    if not request.is_json:
+        app.logger.error("Request is not valid JSON")
+        return jsonify({"error": "Invalid JSON"}), 400
+
+    spices = request.json.get("spices", {})
+    subreddit = spices.get("subreddit")
+    title = spices.get("title")
+    url = spices.get("url")
+
+    if not subreddit or not title or not url:
+        app.logger.error("Missing required fields: subreddit=%s, title=%s, url=%s", subreddit, title, url)
+        return jsonify({"error": "Missing required fields"}), 400
+
+    reddit_submit_url = "https://oauth.reddit.com/api/submit"
+    headers = {
+        "User-Agent": "area/1.0",
+        "Authorization": f"Bearer {access_token}",
+    }
+    body = {
+        "kind": "link",
+        "sr": subreddit,
+        "title": title,
+        "url": url,
+    }
+
+    res = requests.post(reddit_submit_url, headers=headers, data=body)
+
+    if res.status_code != 200:
+        app.logger.error("Failed to submit link: %s", res.json())
+        return jsonify({
+            "error": "Failed to submit link",
+            "details": res.json()
+        }), res.status_code
+
+    app.logger.info(f"User {user.get('id')} submitted a link on r/{subreddit}: {title}")
+    return jsonify({"status": "Link submitted"}), 200
+
+
+
 ##
 ## INFORMATIONS ABOUT ACTION/REACTION OF REDDIT SERVICE
 ##
