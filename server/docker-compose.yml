@@ -157,6 +157,29 @@ services:
     volumes:
     - ./services/roblox/.env:/usr/mount.d/.env
 
+  service-reddit:
+    env_file:
+      - .env
+    container_name: area-service-reddit
+    build:
+      context: ./services/reddit
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.reddit.rule=PathPrefix(`/service/reddit/`)"
+      - "traefik.http.services.reddit.loadbalancer.server.port=80"
+      - "traefik.http.routers.reddit.middlewares=stripprefix-service-reddit"
+      - "traefik.http.middlewares.stripprefix-service-reddit.stripprefix.prefixes=/service/reddit"
+    environment:
+      - DB_HOST=database
+      - DB_PORT=${DATABASE_PORT}
+      - DB_USER=${DATABASE_USER}
+      - DB_PASSWORD=${DATABASE_PASSWORD}
+      - DB_NAME=${DATABASE_NAME}
+    networks:
+      - web
+    volumes:
+    - ./services/reddit/.env:/usr/mount.d/.env
+
   reverse-proxy:
     env_file:
       - .env
@@ -171,6 +194,7 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock"
     networks:
       - web
+      
 
 
 networks:
