@@ -241,12 +241,13 @@ func miniproxy(f func(http.ResponseWriter, *http.Request, *sql.DB), c *sql.DB) f
 type Spice struct {
 	Name string `json:"name"`
 	Type string `json:"type"`
-	Description string `json:"description"`
+	Description string `json:"title"`
 }
 
 type Route struct {
 	Type string `json:"type"`
 	Name string `json:"name"`
+	Desc string `json:"description"`
 	Spices []Spice `json:"spices"`
 }
 
@@ -255,6 +256,7 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 		Route{
 			Name: "send",
 			Type: "reaction",
+			Desc: "Sends a message in a channel.",
 			Spices: []Spice{
 				{
 					Name: "channel",

@@ -238,13 +238,14 @@ func masterThread(db *sql.DB) {
 type Spice struct {
 	Name string `json:"name"`
 	Type string `json:"type"`
-	Desc string `json:"description"`
+	Desc string `json:"title"`
 	Extra []string `json:"extraParams"`
 }
 
 type Route struct {
 	Type string `json:"type"`
 	Name string `json:"name"`
+	Desc string `json:"description"`
 	Spices []Spice `json:"spices"`
 }
 
@@ -253,6 +254,7 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 		Route{
 			Name: "in",
 			Type: "action",
+			Desc: "Triggers in some amount of time.",
 			Spices: []Spice{
 				{
 					Name: "howmuch",
