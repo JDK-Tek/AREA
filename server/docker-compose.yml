@@ -39,6 +39,7 @@ services:
     volumes:
       - ./database/setup.sql:/docker-entrypoint-initdb.d/setup.sql
       - ./database/time.sql:/docker-entrypoint-initdb.d/time.sql
+      - ./database/reddit.sql:/docker-entrypoint-initdb.d/reddit.sql
     networks:
       - web
     

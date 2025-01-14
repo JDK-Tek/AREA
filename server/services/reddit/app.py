@@ -45,6 +45,39 @@ while True:
 	except psycopg2.OperationalError:
 		continue
 
+## #
+##
+## UTILS
+##
+##
+
+def get_beared_token(request):
+	token = request.headers.get("Authorization")
+	if not token:
+		return None
+	if token.startswith("Bearer "):
+		return token[7:]
+	return None
+
+def retrieve_token(token):
+	try:
+		data = jwt.decode(token, BACKEND_KEY, algorithms=["HS256"])
+		return data
+	except jwt.ExpiredSignatureError:
+		return None
+	except jwt.InvalidTokenError:
+		return None
+
+def retrieve_user_token(id):
+	try:
+		with db.cursor() as cur:
+			cur.execute("SELECT token FROM tokens WHERE service = 'reddit' AND owner = %s", (id,))
+			rows = cur.fetchone()
+			if not rows:
+				return None
+			return rows[0]
+	except (Exception, psycopg2.Error) as err:
+		return None
 
 ## #
 ##
@@ -64,7 +97,7 @@ def oauth():
 		reddit_auth_url = (
 			f"{REDDIT_AUTH_URL}"
 			f"client_id={API_CLIENT_ID_TOKEN}&response_type=code&state=random_string"
-			f"&redirect_uri={REDIRECT_URI}&duration=permanent&scope=identity"
+			f"&redirect_uri={REDIRECT_URI}&duration=permanent&scope=identity%20read%20submit%20vote%20privatemessages%20save"
 		)
 		return reddit_auth_url
 
@@ -82,7 +115,7 @@ def oauth():
 			"code": code,
 			"redirect_uri": REDIRECT_URI,
 		}
-		headers = {"User-Agent": "YourApp/1.0"}
+		headers = {"User-Agent": "area/1.0"}
 		response = requests.post(REDDIT_TOKEN_URL, data=data, headers=headers, auth=auth)
 
 		if response.status_code != 200:
@@ -108,8 +141,6 @@ def oauth():
 		user_info = user_info_response.json()
 		reddit_user_name = user_info.get("name")
 		reddit_user_id = user_info.get("id")
-	
-		app.logger.info("refresh_token: %s", reddit_refresh_token)
 
 		# create a new user in the bdd
 		try:
@@ -118,21 +149,22 @@ def oauth():
 				cur.execute("SELECT id, owner FROM tokens WHERE userid = %s", (reddit_user_id,))
 				rows = cur.fetchone()
 				if not rows:
-					cur.execute("insert into tokens" \
+					cur.execute("INSERT INTO tokens" \
 						"(service, token, refresh, userid)" \
-						"values (%s, %s, %s, %s)" \
-						"returning id", \
+						"VALUES (%s, %s, %s, %s)" \
+						"RETURNING id", \
 							("reddit", reddit_access_token, reddit_refresh_token, reddit_user_id,)
 					)
 					r = cur.fetchone()
 					if not r:
 						raise Exception("could not fetch")
 					tokenid = r[0]
-					cur.execute("insert into users (tokenid) values (%s) returning id", (tokenid,))
+					cur.execute("INSERT INTO users (tokenid) VALUES (%s) RETURNING id", (tokenid,))
 					r = cur.fetchone()
 					if not r:
 						raise Exception("could not fetch")
 					ownerid = r[0]
+					cur.execute("UPDATE tokens SET owner = %s WHERE id = %s", (ownerid, tokenid))
 					db.commit()
 				else:
 					tokenid, ownerid = rows[0], rows[1]
@@ -148,12 +180,68 @@ def oauth():
 			return jsonify({ "error":  str(err)}), 400
 		return jsonify({ "error": "unexpected end of code"}), 500
 
+##
+## ACTIONS
+##
 
-@app.route('/send', methods=["POST"])
-def send():
-	return jsonify({"status": "caca"}), 200
+# @app.route('/new-post-save-by-me', methods=["POST"])
+# def new_post_save_by_me():
+# 	return jsonify({"status": "caca"}), 200
 
+##
+## REACTIONS
+##
 
+# Submit a new post on a subreddit
+@app.route('/submit-new-post', methods=["POST"])
+def submit_new_post():
+    app.logger.info("submit-new-post endpoint hit")
+    user = retrieve_token(get_beared_token(request))
+    if not user:
+        app.logger.error("Invalid area token")
+        return jsonify({"error": "Invalid area token"}), 401
+
+    access_token = retrieve_user_token(user.get("id"))
+    if not access_token:
+        app.logger.error("Invalid reddit token")
+        return jsonify({"error": "Invalid reddit token"}), 401
+
+    if not request.is_json:
+        app.logger.error("Request is not valid JSON")
+        return jsonify({"error": "Invalid JSON"}), 400
+
+    spices = request.json.get("spices", {})
+    subreddit = spices.get("subreddit")
+    title = spices.get("title")
+    content = spices.get("content")
+
+    if not subreddit or not title or not content:
+        app.logger.error("Missing required fields: subreddit=%s, title=%s, content=%s", subreddit, title, content)
+        return jsonify({"error": "Missing required fields"}), 400
+
+    reddit_submit_url = "https://oauth.reddit.com/api/submit"
+    headers = {
+        "User-Agent": "area/1.0",
+        "Authorization": f"Bearer {access_token}",
+    }
+    body = {
+        "kind": "self",
+        "sr": subreddit,
+        "title": title,
+        "text": content,
+    }
+
+    res = requests.post(reddit_submit_url, headers=headers, data=body)
+
+    if res.status_code != 200:
+        app.logger.info("Failed to submit post: %s", res.json())
+        return jsonify({
+            "error": "Failed to submit post",
+            "details": res.json()
+        }), res.status_code
+
+    app.logger.info(f"User {user.get('id')} submitted a post on r/{subreddit}: {title}")
+    return jsonify({"status": "Post submitted"}), 200
 
 ##
 ## INFORMATIONS ABOUT ACTION/REACTION OF REDDIT SERVICE
@@ -161,18 +249,28 @@ def send():
 @app.route('/', methods=["GET"])
 def info():
 	res = {
-		"color": "#3243423",
+		"color": "#ff4500",
 		"image": "http://link.com",
 		"areas": [
 			{
-				"name": "send-message",
+				"name": "submit-new-post",
 				"type": "reaction",
-				"description": "Send a message",
+				"description": "Submit a new post on a subreddit",
 				"spices": [
 					{
-						"title": "The title of the elem",
-						"name": "the id name",
-						"type": "the type"
+						"title": "Title of the post",
+						"name": "title",
+						"type": "input"
+					},
+					{
+						"title": "Subreddit where to post without the r/",
+						"name": "subreddit",
+						"type": "input"
+					},
+					{
+						"title": "Content of the post",
+						"name": "content",
+						"type": "text"
 					}
 				]
 			}
