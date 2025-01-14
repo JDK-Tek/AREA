@@ -5,7 +5,7 @@ import 'package:area/pages/home_page.dart';
 import 'package:area/pages/appletspage.dart';
 import 'package:http/http.dart' as https;
 import 'dart:convert';
-import 'package:area/tools/userstate.dart';
+import 'package:area/tools/providers.dart';
 import 'package:provider/provider.dart';
 
 class DiscordAreaPage extends StatefulWidget {
@@ -25,8 +25,9 @@ class DiscordAreaPageState extends State<DiscordAreaPage> {
 
   Future<void> _sendRequest(String channelId, String message) async {
     final token = Provider.of<UserState>(context, listen: false).token;
-    print("${token}");
-    final Uri uri = Uri.https("api.area.jepgo.root.sx", "/api/area");
+    print("$token");
+    final Uri uri =
+        Uri.https(Provider.of<IPState>(context, listen: false).ip, "/api/area");
     final Map<String, String> headers = {
       "Authorization": "Bearer $token",
       "Content-Type": "application/json",
@@ -87,12 +88,7 @@ class DiscordAreaPageState extends State<DiscordAreaPage> {
 
   @override
   Widget build(BuildContext context) {
-    final List<String> dest = [
-      "/applets",
-      "/create",
-      "/services",
-      "/developers"
-    ];
+    final List<String> dest = ["/applets", "/create", "/services", "/plus"];
     return SafeArea(
         child: Scaffold(
       bottomNavigationBar: NavigationBar(
@@ -125,13 +121,13 @@ class DiscordAreaPageState extends State<DiscordAreaPage> {
           children: [
             const MiniHeaderSection(),
             Applet(
-                icon1: Icons.discord,
-                icon2: Icons.timer,
-                nameService: "Discord",
-                nameAREA: "In 10 sec receive message on Discord",
-                route: "/discordarea",
-                press: () {},
-                color: const Color(0xff7289da)),
+              icon1:
+                  "https://upload.wikimedia.org/wikipedia/fr/8/80/Logo_Discord_2015.png",
+              icon2: "https://img.icons8.com/ios/452/timer.png",
+              nameService: "Discord",
+              nameAREA: "In 10 sec receive message on Discord",
+              press: () {},
+            ),
             const SizedBox(height: 8),
             TextField(
               controller: channelIdController,

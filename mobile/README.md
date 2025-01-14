@@ -17,14 +17,19 @@ samples, guidance on mobile development, and a full API reference.
 
 # Warning ! Dependencies needed
 
-## Temurin v.17
+# `Temurin v.17`
 
-`install temurin version 17`
+### MacOs
+`brew install --cask temurin@17`
+### Windows
+`winget install EclipseAdoptium.Temurin.17.JDK`
+### Linux
+`apt-get install temurin-17-jdk`
 
-## Generer les icones android et ios
+# Generer les icones android et ios
 
 `dart run flutter_launcher_icons:generate`
 
-## Lancer l'app
+# Lancer l'app
 
 `flutter run --release`

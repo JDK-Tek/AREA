@@ -8,15 +8,18 @@ import 'package:area/pages/register_page.dart';
 import 'package:go_router/go_router.dart';
 import 'package:area/pages/developers.dart';
 import 'package:area/pages/area.dart';
-import 'package:area/tools/userstate.dart';
-// ignore: depend_on_referenced_packages
+import 'package:area/tools/providers.dart';
 import 'package:provider/provider.dart';
+import 'package:area/pages/plus.dart';
+import 'package:area/pages/termsservices.dart';
+import 'package:area/pages/policy.dart';
 
 void main() {
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => UserState()),
+        ChangeNotifierProvider(create: (_) => IPState()),
       ],
       child: MyApp(),
     ),
@@ -52,6 +55,12 @@ class MyApp extends StatelessWidget {
         },
       ),
       GoRoute(
+        path: '/plus',
+        builder: (context, state) {
+          return const PlusPage();
+        },
+      ),
+      GoRoute(
         path: '/services',
         builder: (context, state) {
           return const ServicesPage();
@@ -70,6 +79,18 @@ class MyApp extends StatelessWidget {
               debugPrint("Channel ID : $channelId");
               debugPrint("Template : $messageTemplate");
             },);
+        },
+      ),
+      GoRoute(
+        path: '/termsofservices',
+        builder: (context, state) {
+          return const TermsOfServicesPage();
+        },
+      ),
+      GoRoute(
+        path: '/privacypolicy',
+        builder: (context, state) {
+          return const PrivacyPolicyPage();
         },
       ),
     ],
