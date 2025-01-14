@@ -16,6 +16,7 @@ services:
       - DB_HOST=database
       - DB_PORT=${DATABASE_PORT}
       - SERVICES_PATH=${BACKEND_SERVICES_PATH}
+      - REVERSEPROXY_PORT=${TRAEFIK_PORT}
     container_name: area-backend
     networks:
       - web

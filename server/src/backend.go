@@ -68,7 +68,6 @@ func onUpdate(a area.AreaRequest) {
 	err = a.Area.Database.
 		QueryRow("select service, name, spices from reactions where id = $1", reactid).
 		Scan(&service, &name, &message.Spices)
-	fmt.Println("bar")
 	if err != nil {
 		a.Error(err, http.StatusInternalServerError)
 		return
@@ -78,14 +77,12 @@ func onUpdate(a area.AreaRequest) {
 		a.Error(err, http.StatusInternalServerError)
 		return
 	}
-	fmt.Println("test")
-	url := fmt.Sprintf("http://reverse-proxy:42002/service/%s/%s", service, name)
+	url := fmt.Sprintf("http://reverse-proxy:%s/service/%s/%s", os.Getenv("REVERSEPROXY_PORT"), service, name)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(obj))
 	if err != nil {
 		a.Error(err, http.StatusBadGateway)
 		return
 	}
-	fmt.Println("foo")
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 	client := http.Client{}
@@ -108,7 +105,8 @@ func oauthGetter(a area.AreaRequest) {
     service := vars["service"]
 	redirect := a.Request.URL.Query().Get("redirect")
 	url := fmt.Sprintf(
-		"http://reverse-proxy:42002/service/%s/oauth?redirect=%s",
+		"http://reverse-proxy:%s/service/%s/oauth?redirect=%s",
+		os.Getenv("REVERSEPROXY_PORT"),
 		service,
 		url.QueryEscape(redirect),
 	)
@@ -140,8 +138,8 @@ func oauthSetter(a area.AreaRequest) {
     service := vars["service"]
 	// querry := a.Request.URL.RawQuery
 	url := fmt.Sprintf(
-		// "http://reverse-proxy:42002/service/%s/oauth?%s",
-		"http://reverse-proxy:42002/service/%s/oauth",
+		"http://reverse-proxy:%s/service/%s/oauth",
+		os.Getenv("REVERSEPROXY_PORT"),
 		service,
 		// querry,
 	)
@@ -228,7 +226,8 @@ func getRoutes(a area.AreaRequest) {
 	vars := mux.Vars(a.Request)
     service := vars["service"]
 	url := fmt.Sprintf(
-		"http://reverse-proxy:42002/service/%s",
+		"http://reverse-proxy:%s/service/%s",
+		os.Getenv("REVERSEPROXY_PORT"),
 		service,
 	)
 	rep, err := http.Get(url)
@@ -302,6 +301,9 @@ func main() {
     }
     if a.Key = os.Getenv("BACKEND_KEY"); a.Key == "" {
         log.Fatal("BACKEND_KEY not found")
+    }
+	if x := os.Getenv("REVERSEPROXY_PORT"); x == "" {
+        log.Fatal("REVERSEPROXY_PORT not found")
     }
     if _, err = strconv.Atoi(portString); err != nil {
         log.Fatal("atoi:", err)
