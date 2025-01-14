@@ -150,9 +150,10 @@ func connectToDatabase() (*sql.DB, error) {
 	// 	dbName,
 	// )
 	connectStr := fmt.Sprintf(
-		"postgresql://%s:%s@database:42001/area_database?sslmode=disable",
+		"postgresql://%s:%s@database:%s/area_database?sslmode=disable",
 		dbUser,
 		dbPassword,
+		dbPort,
 	)
 	return sql.Open("postgres", connectStr)
 }
@@ -171,7 +172,11 @@ func masterThread(db *sql.DB) {
 	var msg Message
 
 	client := http.Client{}
-	url := "http://backend:42000/api/orchestrator"
+	backendPort := os.Getenv("BACKEND_PORT")
+	if backendPort == "" {
+		log.Fatal("BACKEND_PORT not found")
+	}
+	url := fmt.Sprintf("http://backend:%s/api/orchestrator", backendPort)
 	for {
 		var bridges []int
 		var n int
@@ -211,10 +216,12 @@ func masterThread(db *sql.DB) {
 			req, err := http.NewRequest("PUT", url, bytes.NewBuffer(obj))
 			fmt.Println("object is", string(obj))
 			if err != nil {
+				fmt.Println(err.Error())
 				continue
 			}
 			rep, err := client.Do(req)
 			if err != nil {
+				fmt.Println(err.Error())
 				continue
 			}
 			rep.Body.Close()

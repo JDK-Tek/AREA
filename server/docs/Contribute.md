@@ -4,6 +4,8 @@ First, create a folder in the `services` folder, with the name of your service.
 
 Then make a web serer that listens on the port **80**.
 
+## OAUTH
+
 This server can have the route `oauth` for oauth login, that can be
 - `GET` to get the oauth link
 - `POST` to register with oauth
@@ -14,7 +16,7 @@ When you register successfully with oauth, you shall send something like that:
 ```
 ```json
 {
-    "token": "<the token>"
+    "token": "<the token>" // (1)
 }
 ```
 
@@ -28,31 +30,31 @@ Otherwise:
 }
 ```
 
-Generate a JWT that contains
+`(1)` Generate a JWT that contains
 - the userid `id` of the client.
 - the expiration `exp` which is the token expiration.
 
 Use the BACKEND_KEY environnement variable to encrypt the token.
 
+## Deployment
+
 Once everything is done, please add in the docker-compose the following rule:
 ```yml
-  service-<service name>:
+  service-<your-service-name>:
     env_file:
-      - ./services/<service name>/.env
       - .env
-    volumes:
-      - ./services/<service name>/.env:/usr/mount.d/.env
-      - ./.env:/usr/mount.d/.env1
-    container_name: area-service-<service name>
+    container_name: area-service-<your-service-name>
     build:
-      context: ./services/<service name>
+      context: ./services/<your-service-name>
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.<service name>.rule=PathPrefix(`/service/<service name>/`)"
-      - "traefik.http.services.<service name>.loadbalancer.server.port=80"
-      - "traefik.http.routers.<service name>.middlewares=stripprefix-service-<service name>"
-      - "traefik.http.middlewares.stripprefix-service-<service name>.stripprefix.prefixes=/service/<service name>"
+      - "traefik.http.routers.<your-service-name>.rule=PathPrefix(`/service/<your-service-name>/`)"
+      - "traefik.http.services.<your-service-name>.loadbalancer.server.port=80"
+      - "traefik.http.routers.<your-service-name>.middlewares=stripprefix-service-<your-service-name>"
+      - "traefik.http.middlewares.stripprefix-service-<your-service-name>.stripprefix.prefixes=/service/<your-service-name>"
     environment:
+      - BACKEND_KEY=${BACKEND_KEY}
+      - REDIRECT=${REDIRECT}
       - DB_HOST=database
       - DB_PORT=${DATABASE_PORT}
       - DB_USER=${DATABASE_USER}
@@ -61,6 +63,6 @@ Once everything is done, please add in the docker-compose the following rule:
     networks:
       - web
 ```
-Replace all `<service name>` by your actual service name.
+Replace all `<your-service-name>` by your actual service name.
 
 Now it should work fine.
