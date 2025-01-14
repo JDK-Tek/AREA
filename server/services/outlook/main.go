@@ -65,6 +65,7 @@ type Result struct {
 
 type TokenResult struct {
 	Token string `json:"access_token"`
+	Refresh string `json:"refresh_token"`
 }
 
 type UserResult struct {
@@ -108,7 +109,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		fmt.Fprintln(w, "request error", err.Error())
 		return
 	}
-	req.Header.Set("Authorization", "Bearer " + tok.Token)
+	req.Header.Set("Authorization", "Bearer " +tok.Token)
 	client := &http.Client{}
 	rep, err = client.Do(req)
 	if err != nil {
@@ -122,11 +123,15 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		return
 	}
 
+	if tok.Token == "" || tok.Refresh == "" {
+		fmt.Fprintln(w, "error: token is empty")
+	}
 	err = db.QueryRow("select id, owner from tokens where userid = $1", user.ID).Scan(&tokid, &owner)
 	if err != nil {
 		err = db.QueryRow("insert into tokens (service, token, userid) values ($1, $2, $3) returning id",
 			"outlook",
 			tok.Token,
+			tok.Refresh,
 			user.ID,
 		).Scan(&tokid)
 		if err != nil {
