@@ -306,9 +306,12 @@ func connectToDatabase() (*sql.DB, error) {
 		log.Fatal("DB_PORT not found")
 	}
 	connectStr := fmt.Sprintf(
-		"postgresql://%s:%s@database:5432/area_database?sslmode=disable",
+		"postgresql://%s:%s@%s:%s/%s?sslmode=disable",
 		dbUser,
 		dbPassword,
+		dbHost,
+		dbPort,
+		dbName,
 	)
 	return sql.Open("postgres", connectStr)
 }
@@ -452,6 +455,45 @@ func checkTeamsMessages(w http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(w).Encode(messageList)
 }
 
+type Spice struct {
+	Name string `json:"name"`
+	Type string `json:"type"`
+}
+
+type Route struct {
+	Type string `json:"type"`
+	Name string `json:"name"`
+	Spices []Spice `json:"spices"`
+}
+
+func getRoutes(w http.ResponseWriter, req *http.Request) {
+	var list = []Route{
+		Route{
+			Name: "send",
+			Type: "reaction",
+			Spices: []Spice{
+				{
+					Name: "channel",
+					Type: "number",
+				},
+				{
+					Name: "message",
+					Type: "text",
+				},
+			},
+		},
+	}
+	var data []byte
+	var err error
+
+	data, err = json.Marshal(list)
+	if err != nil {
+		http.Error(w, `{ "error":  "marshal" }`, http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+    fmt.Fprintln(w, string(data))
+}
 
 func main() {
 	db, err := connectToDatabase()
@@ -468,5 +510,6 @@ func main() {
 	router.HandleFunc("/sendTeamsMessage", sendTeamsMessage).Methods("POST")
 	router.HandleFunc("/checkEmail", checkEmail).Methods("GET")
 	router.HandleFunc("/checkTeamsMessages", checkTeamsMessages).Methods("POST")
+	router.HandleFunc("/routes", getRoutes).Methods("GET")
 	log.Fatal(http.ListenAndServe(":80", router))
 }

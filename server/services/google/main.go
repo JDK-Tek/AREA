@@ -234,6 +234,46 @@ func miniproxy(f func(http.ResponseWriter, *http.Request, *sql.DB), c *sql.DB) f
 	}
 }
 
+type Spice struct {
+	Name string `json:"name"`
+	Type string `json:"type"`
+}
+
+type Route struct {
+	Type string `json:"type"`
+	Name string `json:"name"`
+	Spices []Spice `json:"spices"`
+}
+
+func getRoutes(w http.ResponseWriter, req *http.Request) {
+	var list = []Route{
+		Route{
+			Name: "send",
+			Type: "reaction",
+			Spices: []Spice{
+				{
+					Name: "channel",
+					Type: "number",
+				},
+				{
+					Name: "message",
+					Type: "text",
+				},
+			},
+		},
+	}
+	var data []byte
+	var err error
+
+	data, err = json.Marshal(list)
+	if err != nil {
+		http.Error(w, `{ "error":  "marshal" }`, http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+    fmt.Fprintln(w, string(data))
+}
+
 func main() {
 	db, err := connectToDatabase()
 	if err != nil {
