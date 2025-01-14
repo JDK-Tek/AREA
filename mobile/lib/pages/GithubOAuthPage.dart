@@ -1,15 +1,13 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:area/pages/login_page.dart';
-import 'package:area/tools/providers.dart';
-import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:go_router/go_router.dart';
 
-class DiscordLoginButton extends StatelessWidget {
-  const DiscordLoginButton({super.key});
+class GithubLoginButton extends StatelessWidget {
+  const GithubLoginButton({super.key});
 
   Future<bool> _checkConnectivity() async {
     var connectivityResult = await (Connectivity().checkConnectivity());
@@ -32,7 +30,7 @@ class DiscordLoginButton extends StatelessWidget {
     } else {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const DiscordAuthPage()),
+        MaterialPageRoute(builder: (context) => const GithubAuthPage()),
       );
     }
   }
@@ -41,19 +39,19 @@ class DiscordLoginButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ElevatedButton(
       onPressed: () => _launchURL(context),
-      child: const Text('Se connecter avec Discord'),
+      child: const Text('Se connecter avec Github'),
     );
   }
 }
 
-class DiscordAuthPage extends StatefulWidget {
-  const DiscordAuthPage({super.key});
+class GithubAuthPage extends StatefulWidget {
+  const GithubAuthPage({super.key});
 
   @override
-  State<DiscordAuthPage> createState() => _DiscordAuthPageState();
+  State<GithubAuthPage> createState() => _GithubAuthPageState();
 }
 
-class _DiscordAuthPageState extends State<DiscordAuthPage> {
+class _GithubAuthPageState extends State<GithubAuthPage> {
   bool _isWebViewInitialized = false;
   String url = "";
   late WebViewController _webViewController;
@@ -67,7 +65,7 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
   }
 
   Future<void> _initialize() async {
-    await _makeDemand("api/oauth/discord");
+    await _makeDemand("api/oauth/github");
     setState(() {
       print(url);
       _initializeWebView();
@@ -79,8 +77,8 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
   }
 
   Future<void> _makeDemand(String u) async {
-    final Uri uri =
-        Uri.https(Provider.of<IPState>(context, listen: false).ip, u);
+    final Uri uri = Uri.https("api.area.jepgo.root.sx", u);
+    //final Uri uri = Uri.http("172.20.10.3:1234", u);
     late final http.Response rep;
     late String content;
 
@@ -91,7 +89,7 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
     }
     if (rep.statusCode >= 500) {
       setState(() {
-        u = "pipi";
+        u = "error";
       });
       _errorMessage(rep.body);
       return;
@@ -102,27 +100,6 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
       u = content;
       url = content;
     });
-    // switch ((rep.statusCode / 100) as int) {
-    //   case 2:
-    //     str = content;
-    //     if (str != "error") {
-    //       _token = str;
-    //       u = str;
-    //       url = str;
-    //     } else {
-    //       _errorMessage("Enter a valid email and password !");
-    //     }
-    //     break;
-    //   case 4:
-    //     str = content;
-    //     if (str != "") {
-    //       _errorMessage(str);
-    //     }
-    //     break;
-    //   case 5:
-    //     _errorMessage("Enter a valid email and password !");
-    //   default:
-    //     break;
   }
 
   void _initializeWebView() {
@@ -139,7 +116,7 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
                 setState(() {
                   _authCode = code;
                   if (_authCode != "") {
-                    _makeRequest(_authCode, "api/oauth/discord");
+                    _makeRequest(_authCode, "api/oauth/github");
                     if (!context.mounted) return;
                     context.go("/");
                   }
@@ -187,8 +164,8 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
 
   Future<void> _makeRequest(String a, String u) async {
     final String body = "{ \"code\": \"$a\" }";
-    final Uri uri =
-        Uri.https(Provider.of<IPState>(context, listen: false).ip, u);
+    final Uri uri = Uri.https("api.area.jepgo.root.sx", u);
+    //final Uri uri = Uri.http("172.20.10.3:1234", u);
     late final http.Response rep;
     late Map<String, dynamic> content;
     late String? str;
@@ -203,9 +180,10 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
       case 2:
         str = content['token']?.toString();
         if (str != null) {
-          if (!mounted) return;
-          Provider.of<UserState>(context, listen: false).setToken(_token!);
           _token = str;
+          if (mounted) {
+            context.go("/");
+          }
         } else {
           _errorMessage("Enter a valid email and password !");
         }
@@ -226,7 +204,7 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Discord Authentication")),
+      appBar: AppBar(title: const Text("Github Authentication")),
       body: _isWebViewInitialized
           ? WebViewWidget(controller: _webViewController)
           : const Center(child: CircularProgressIndicator()),
