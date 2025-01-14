@@ -128,7 +128,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	}
 	err = db.QueryRow("select id, owner from tokens where userid = $1", user.ID).Scan(&tokid, &owner)
 	if err != nil {
-		err = db.QueryRow("insert into tokens (service, token, userid) values ($1, $2, $3) returning id",
+		err = db.QueryRow("insert into tokens (service, token, userid) values ($1, $2, $3, $4) returning id",
 			"outlook",
 			tok.Token,
 			tok.Refresh,
