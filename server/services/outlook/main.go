@@ -140,7 +140,11 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	}
 	err = db.QueryRow("select id, owner from tokens where userid = $1", user.ID).Scan(&tokid, &owner)
 	if err != nil {
+<<<<<<< HEAD
 		err = db.QueryRow("insert into tokens (service, token, refresh, userid) values ($1, $2, $3, $4) returning id",
+=======
+		err = db.QueryRow("insert into tokens (service, token, userid) values ($1, $2, $3, $4) returning id",
+>>>>>>> a3966383324e39903863f8ceff48ccc39fda2fa2
 			"outlook",
 			tok.Token,
 			tok.Refresh,
@@ -295,7 +299,7 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 				"contentType": "Text",
 				"content":     emailContent.Body,
 			},
-			"toRecipients": []map[string]interface{}{
+			"toRecipients": []map[string]interface{}{ 
 				{
 					"emailAddress": map[string]string{
 						"address": emailContent.To,
@@ -305,7 +309,6 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		},
 		"saveToSentItems": "true",
 	}
-
 	emailBytes, err := json.Marshal(emailData)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -313,6 +316,7 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		return
 	}
 
+	// send
 	reqEmail, err := http.NewRequest("POST", "https://graph.microsoft.com/v1.0/me/sendMail", bytes.NewBuffer(emailBytes))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
