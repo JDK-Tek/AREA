@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"area-backend/area"
+	"os"
 )
 
 type AreaObject struct {
@@ -100,7 +101,8 @@ func NewArea(a area.AreaRequest) {
 		return
 	}
 	tosend.Spices = bridge.Action.Spices
-	url := fmt.Sprintf("http://reverse-proxy:42002/service/%s/%s",
+	url := fmt.Sprintf("http://reverse-proxy:%s/service/%s/%s",
+		os.Getenv("REVERSEPROXY_PORT"),
 		bridge.Action.Service,
 		bridge.Action.Name)
 	obj, err := json.Marshal(tosend)
