@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"time"
+	"io"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
@@ -65,6 +66,7 @@ type Result struct {
 
 type TokenResult struct {
 	Token string `json:"access_token"`
+	Refresh string `json:"refresh_token"`
 }
 
 type UserResult struct {
@@ -77,6 +79,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	var user UserResult
 	var tokid int
 	var owner = -1
+	var responseData map[string]interface{}
 
 	clientid := os.Getenv("OUTLOOK_CLIENT_ID")
 	clientsecret := os.Getenv("OUTLOOK_CLIENT_SECRET")
@@ -97,18 +100,27 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		return
 	}
 	defer rep.Body.Close()
-	err = json.NewDecoder(rep.Body).Decode(&tok)
+
+	// the new code from paul
+	body, err := io.ReadAll(rep.Body)
 	if err != nil {
-		fmt.Fprintln(w, "decode", err.Error())
+		fmt.Fprintln(w, "read body", err.Error())
 		return
 	}
+	if err := json.Unmarshal(body, &responseData); err != nil {
+		fmt.Fprintln(w, "unmarshal json", err.Error())
+		return
+	}
+	fmt.Println(responseData)
+	// tok.Token = responseData["access_token"].(string)
+	// tok.Refresh = responseData["refresh_token"].(string)
 
 	req, err = http.NewRequest("GET", API_USER_OUTLOOK, nil)
 	if err != nil {
 		fmt.Fprintln(w, "request error", err.Error())
 		return
 	}
-	req.Header.Set("Authorization", "Bearer " + tok.Token)
+	req.Header.Set("Authorization", "Bearer " +tok.Token)
 	client := &http.Client{}
 	rep, err = client.Do(req)
 	if err != nil {
@@ -122,11 +134,15 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		return
 	}
 
+	if tok.Token == "" || tok.Refresh == "" {
+		fmt.Fprintln(w, "error: token is empty")
+	}
 	err = db.QueryRow("select id, owner from tokens where userid = $1", user.ID).Scan(&tokid, &owner)
 	if err != nil {
-		err = db.QueryRow("insert into tokens (service, token, userid) values ($1, $2, $3) returning id",
+		err = db.QueryRow("insert into tokens (service, token, userid) values ($1, $2, $3, ) returning id",
 			"outlook",
 			tok.Token,
+			tok.Refresh,
 			user.ID,
 		).Scan(&tokid)
 		if err != nil {
