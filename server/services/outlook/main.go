@@ -231,20 +231,60 @@ func sendTeamsMessage(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func sendEmail(w http.ResponseWriter, req *http.Request) {
-	var emailContent EmailContent
-	decoder := json.NewDecoder(req.Body)
-	err := decoder.Decode(&emailContent)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
+	authHeader := req.Header.Get("Authorization")
+	if authHeader == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		fmt.Fprintf(w, "{ \"error\": \"Authorization header is missing\" }\n")
 		return
 	}
 
-	token := os.Getenv("OUTLOOK_TOKEN")
-	if token == "" {
+	tokenString := authHeader[len("Bearer "):]
+
+	secretBytes := []byte(os.Getenv("BACKEND_KEY"))
+	claims := jwt.MapClaims{}
+	_, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		return secretBytes, nil
+	})
+
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		fmt.Fprintf(w, "{ \"error\": \"Invalid token: %s\" }\n", err.Error())
+		return
+	}
+
+	owner, ok := claims["id"].(float64)
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		fmt.Fprintf(w, "{ \"error\": \"Invalid token format\" }\n")
+		return
+	}
+
+	var outlookToken string
+	err = db.QueryRow("SELECT token FROM tokens WHERE owner = $1 AND service = 'outlook'", int(owner)).Scan(&outlookToken)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprintf(w, "{ \"error\": \"No Outlook token found for user\" }\n")
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(w, "{ \"error\": \"Database error: %s\" }\n", err.Error())
+		}
+		return
+	}
+
+	if outlookToken == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		fmt.Fprintf(w, "{ \"error\": \"No Outlook token available\" }\n")
+		return
+	}
+
+	var emailContent EmailContent
+	decoder := json.NewDecoder(req.Body)
+	err = decoder.Decode(&emailContent)
+	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "{ \"error\": \"token is missing\" }\n")
+		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
 		return
 	}
 
@@ -255,7 +295,7 @@ func sendEmail(w http.ResponseWriter, req *http.Request) {
 				"contentType": "Text",
 				"content":     emailContent.Body,
 			},
-			"toRecipients": []map[string]interface{}{ 
+			"toRecipients": []map[string]interface{}{
 				{
 					"emailAddress": map[string]string{
 						"address": emailContent.To,
@@ -265,6 +305,7 @@ func sendEmail(w http.ResponseWriter, req *http.Request) {
 		},
 		"saveToSentItems": "true",
 	}
+
 	emailBytes, err := json.Marshal(emailData)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -272,7 +313,6 @@ func sendEmail(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// send
 	reqEmail, err := http.NewRequest("POST", "https://graph.microsoft.com/v1.0/me/sendMail", bytes.NewBuffer(emailBytes))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -280,7 +320,7 @@ func sendEmail(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	reqEmail.Header.Set("Authorization", "Bearer "+token)
+	reqEmail.Header.Set("Authorization", "Bearer "+outlookToken)
 	reqEmail.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
@@ -300,6 +340,7 @@ func sendEmail(w http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(w, "{ \"error\": \"Failed to send email\" }\n")
 	}
 }
+
 
 func connectToDatabase() (*sql.DB, error) {
 	dbPassword := os.Getenv("DB_PASSWORD")
@@ -523,7 +564,7 @@ func main() {
 	//router.HandleFunc("/send", doSomeSend).Methods("POST")
 	router.HandleFunc("/oauth", getOAUTHLink).Methods("GET")
 	router.HandleFunc("/oauth", miniproxy(setOAUTHToken, db)).Methods("POST")
-	router.HandleFunc("/sendEmail", sendEmail).Methods("POST")
+	router.HandleFunc("/sendEmail", miniproxy(sendEmail, db)).Methods("POST")
 	router.HandleFunc("/sendTeamsMessage", sendTeamsMessage).Methods("POST")
 	router.HandleFunc("/checkEmail", checkEmail).Methods("GET")
 	router.HandleFunc("/checkTeamsMessages", checkTeamsMessages).Methods("POST")
