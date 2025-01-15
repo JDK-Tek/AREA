@@ -17,9 +17,17 @@ const expiration = 60 * 30
 
 // the about structure (for about.json)
 
+type AboutSpice struct {
+	Name string `json:"name"`
+	Type string `json:"type"`
+	Title string `json:"title"`
+	Extra []string `json:"extra"`
+}
+
 type AboutSomething struct {
 	Name string `json:"name"`
 	Description string `json:"description"`
+	Spices []AboutSpice `json:"spices"`
 }
 
 type AboutClient struct {
@@ -55,18 +63,11 @@ type Area struct {
 
 // for the informations i get from the services
 
-type InfoSpice struct {
-	Name string `json:"name"`
-	Type string `json:"type"`
-	Title string `json:"title"`
-	Extra []string `json:"extra"`
-}
-
 type InfoRoute struct {
 	Type string `json:"type"`
 	Name string `json:"name"`
 	Desc string `json:"description"`
-	Spices []InfoSpice `json:"spices"`
+	Spices []AboutSpice `json:"spices"`
 }
 
 type Infos struct {
@@ -130,6 +131,8 @@ func (it *Area) SetupTheAbout() error {
 		for _, v := range infos.Routes {
 			something.Description = v.Desc
 			something.Name = v.Name
+			something.Spices = make([]AboutSpice, len(v.Spices))
+			copy(something.Spices, v.Spices)
 			if v.Type == "action" {
 				tmpService.Actions = append(tmpService.Actions, something)
 			} else {
