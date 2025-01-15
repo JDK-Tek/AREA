@@ -119,11 +119,9 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		return
 	}
 
-	// Enregistrer dans la base de données
 	var tokid int
 	err = db.QueryRow("select id from tokens where userid = $1", user.ID).Scan(&tokid)
 	if err != nil {
-		// Créer un nouvel enregistrement dans la table tokens
 		err = db.QueryRow("insert into tokens (service, token, userid) values ($1, $2, $3) returning id",
 			"google", tok.Token, user.ID).Scan(&tokid)
 		if err != nil {
@@ -167,7 +165,6 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		return
 	}
 
-	// Validation du token
 	secretBytes := []byte(os.Getenv("BACKEND_KEY"))
 	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -182,7 +179,6 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		return
 	}
 
-	// Récupérer le token d'accès depuis la base de données
 	err = db.QueryRow("SELECT token, refresh FROM tokens WHERE userid = $1", userID).Scan(&tok.Token, &tok.Refresh)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -195,7 +191,6 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		return
 	}
 
-	// Préparer l'email à envoyer via Gmail API
 	emailData := map[string]interface{}{
 		"raw": encodeWeb64(emailContent.Subject, emailContent.Body, emailContent.To),
 	}
@@ -223,7 +218,6 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	}
 	defer rep.Body.Close()
 
-	// Vérifier la réponse
 	if rep.StatusCode == http.StatusOK {
 		fmt.Fprintf(w, `{ "message": "Email sent successfully" }\n`)
 	} else {
@@ -233,23 +227,19 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 }
 
 func encodeWeb64(subject, body, to string) string {
-	// Fonction pour encoder le message en base64url
 	message := fmt.Sprintf("Subject: %s\nTo: %s\n\n%s", subject, to, body)
 	encoded := base64.URLEncoding.EncodeToString([]byte(message))
 	return encoded
 }
 
 func main() {
-	// Charger les variables d'environnement
 	godotenv.Load()
 
-	// Connexion à la base de données
 	db, err := sql.Open("postgres", os.Getenv("DB_CONNECTION"))
 	if err != nil {
 		log.Fatal("Erreur de connexion à la base de données", err)
 	}
 
-	// Routes
 	r := mux.NewRouter()
 	r.HandleFunc("/oauth/google", getOAUTHLink).Methods("GET")
 	r.HandleFunc("/oauth/callback", func(w http.ResponseWriter, r *http.Request) {
@@ -259,6 +249,5 @@ func main() {
 		sendEmail(w, r, db)
 	}).Methods("POST")
 
-	// Démarrer le serveur
-	log.Fatal(http.ListenAndServe(":8080", r))
+	log.Fatal(http.ListenAndServe(":80", r))
 }
