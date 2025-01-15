@@ -111,6 +111,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		fmt.Fprintln(w, "unmarshal json", err.Error())
 		return
 	}
+	fmt.Println(responseData)
 	tok.Token = responseData["access_token"].(string)
 	tok.Refresh = "foo bar"
 
