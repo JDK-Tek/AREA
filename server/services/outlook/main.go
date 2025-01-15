@@ -95,7 +95,6 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	data.Set("code", res.Code)
 	data.Set("redirect_uri", os.Getenv("REDIRECT"))
 	rep, err := http.PostForm(API_OAUTH_OUTLOOK, data)
-	body, err := io.ReadAll(rep.Body)
 	// fmt.Fprintln(w, "tmp = ", string(body))
 	// return
 	if err != nil {
@@ -103,13 +102,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		return
 	}
 	defer rep.Body.Close()
-	err = json.NewDecoder(rep.Body).Decode(&tok)
-	if err != nil {
-		fmt.Fprintln(w, "decodeaaaa", err.Error())
-		return
-	}
-	//the new code from paul
-	//body, err := io.ReadAll(rep.Body)
+	body, err := io.ReadAll(rep.Body)
 	if err != nil {
 		fmt.Fprintln(w, "read body", err.Error())
 		return
@@ -118,7 +111,6 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		fmt.Fprintln(w, "unmarshal json", err.Error())
 		return
 	}
-	fmt.Println(responseData)
 	tok.Token = responseData["access_token"].(string)
 	tok.Refresh = responseData["refresh_token"].(string)
 
