@@ -17,8 +17,9 @@ import Register from "./routes/register/Register";
 import CreateArea from "./routes/create/CreateArea";
 import Explore from "./routes/explore/Explore";
 import NotFound from "./routes/notfound/NotFound";
-// import AreaDiscord1 from './area/discord/AreaDiscord1';
 import MobileClientDownload from './routes/mobileclientdownload/MobileClientDownload';
+import Connected from './routes/connected/Connected';
+// import AreaDiscord1 from './area/discord/AreaDiscord1';
 
 
 function App() {
@@ -33,10 +34,11 @@ function App() {
         <Route path={listRoutes.register} element={<Register setToken={setToken} />} />
         <Route path={listRoutes.create} element={<CreateArea />} />
         <Route path={listRoutes.explore} element={<Explore />} />
+        <Route path={listRoutes.clientapk} element={<MobileClientDownload />} />
+        <Route path={listRoutes.connected} element={<Connected />} />
 
 
         {/* <Route path="/applet/discord/1" element={<AreaDiscord1 />} /> */}
-        <Route path="/client.apk" element={<MobileClientDownload />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </div>

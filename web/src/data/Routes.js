@@ -12,6 +12,8 @@ const listRoutes = {
     myApplets: "/myapplets",
     create: "/create",
     explore: "/explore",
+    connected: "/connected",
+    clientapk: "/client.apk",
 }
 
 export default listRoutes;
