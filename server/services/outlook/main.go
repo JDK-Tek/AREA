@@ -95,7 +95,8 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	data.Set("code", res.Code)
 	data.Set("redirect_uri", os.Getenv("REDIRECT"))
 	rep, err := http.PostForm(API_OAUTH_OUTLOOK, data)
-	fmt.Fprintln(w, "tmp = ", rep.Body)
+	body, err := io.ReadAll(rep.Body)
+	fmt.Fprintln(w, "tmp = ", string(body))
 	return
 	if err != nil {
 		fmt.Fprintln(w, "postform", err.Error())
