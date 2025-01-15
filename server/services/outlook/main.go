@@ -96,19 +96,19 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	data.Set("redirect_uri", os.Getenv("REDIRECT"))
 	rep, err := http.PostForm(API_OAUTH_OUTLOOK, data)
 	body, err := io.ReadAll(rep.Body)
-	fmt.Fprintln(w, "tmp = ", string(body))
-	return
+	// fmt.Fprintln(w, "tmp = ", string(body))
+	// return
 	if err != nil {
 		fmt.Fprintln(w, "postform", err.Error())
 		return
 	}
 	defer rep.Body.Close()
-	// err = json.NewDecoder(rep.Body).Decode(&tok)
-	// if err != nil {
-	// 	fmt.Fprintln(w, "decode", err.Error())
-	// 	return
-	// }
-	// the new code from paul
+	err = json.NewDecoder(rep.Body).Decode(&tok)
+	if err != nil {
+		fmt.Fprintln(w, "decode", err.Error())
+		return
+	}
+	//the new code from paul
 	//body, err := io.ReadAll(rep.Body)
 	if err != nil {
 		fmt.Fprintln(w, "read body", err.Error())
