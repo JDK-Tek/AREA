@@ -86,7 +86,7 @@ func (it *Area) ObserveServices(where string) error {
 }
 
 func (it *Area) SetupTheAbout() error {
-	var revproxy = os.Getenv("REVERSEPROXY_PORT")
+	// var revproxy = os.Getenv("REVERSEPROXY_PORT")
 	// var infos Infos
 	// var tmpService AboutSevice
 
@@ -102,12 +102,13 @@ func (it *Area) SetupTheAbout() error {
 	if len(it.Services) == 0 {
 		return nil
 	}
-	fmt.Println(fmt.Sprintf("http://reverse-proxy:%s/service/%s/", revproxy, "coucou"))
+	// fmt.Println(fmt.Sprintf("http://reverse-proxy:%s/service/%s/", revproxy, "coucou"))
 	// for _, service := range it.Services {
 	// 	url := fmt.Sprintf("http://reverse-proxy:%s/service/%s/", revproxy, service)
 	// 	rep, err := http.Get(url)
 	// 	if err != nil {
-	// 		return err
+	// 		fmt.Printf("%s failed: %s\n", service, err.Error())
+	// 		continue
 	// 	}
 	// 	defer rep.Body.Close()
 	// 	err = json.NewDecoder(rep.Body).Decode(&infos)

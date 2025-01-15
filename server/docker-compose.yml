@@ -8,6 +8,7 @@ services:
       - ${BACKEND_PORT}:${BACKEND_PORT}
     depends_on:
       - database
+      - reverse-proxy
     environment:
       - FRONTEND=${FRONTEND}
       - DB_USER=${DATABASE_USER}
@@ -16,6 +17,7 @@ services:
       - DB_HOST=database
       - DB_PORT=${DATABASE_PORT}
       - SERVICES_PATH=${BACKEND_SERVICES_PATH}
+      - REVERSEPROXY_PORT=${TRAEFIK_PORT}
     container_name: area-backend
     networks:
       - web
@@ -25,8 +27,8 @@ services:
   database:
     env_file:
       - .env
-    expose:
-      - ${DATABASE_PORT}
+    # expose:
+    #   - ${DATABASE_PORT}
     image: postgres
     container_name: area-database
     command: -p ${DATABASE_PORT}
@@ -159,10 +161,11 @@ services:
 
   reverse-proxy:
     env_file:
-      - .env
+    - .env
     image: traefik:v${TRAEFIK_VERSION}
     container_name: area-traefik
     command:
+      # - "--api.insecure=true"
       - "--providers.docker=true"
       - "--entrypoints.web.address=:${TRAEFIK_PORT}"
     ports:
