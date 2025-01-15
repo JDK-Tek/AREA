@@ -81,11 +81,40 @@ def retrieve_user_token(id):
 
 ## #
 ##
+## INITIALIZATION
+##
+##
+
+class NewOreo:
+	TYPE_REACTIONS = "reaction"
+	TYPE_ACTIONS = "action"
+
+	def __init__(self, service, color, image):
+		self.service = service
+		self.color = color
+		self.image = image
+		self.areas = []
+	
+	def create_area(self, name, type, description, spices):
+		self.areas.append({
+			"name": name,
+			"type": type,
+			"description": description,
+			"spices": spices
+		})
+
+## #
+##
 ## ROUTES
 ##
 ##
 
 app = Flask(__name__)
+oreo = NewOreo(
+	service="reddit",
+	color="#ff4500",
+	image="https://www.redditstatic.com/desktop2x/img/favicon/android-icon-192x192.png"
+)
 
 PERMISSIONS_REQUIRED = [
 	"creddits",
@@ -123,6 +152,13 @@ PERMISSIONS_REQUIRED = [
 ##
 ## OAUTH2
 ##
+
+def generate_beared_token(id):
+	return jwt.encode({
+		"id": id,
+		"exp": dt.datetime.now() + dt.timedelta(seconds=EXPIRATION)
+	}, BACKEND_KEY, algorithm="HS256")
+
 @app.route('/oauth', methods=["GET", "POST"])
 def oauth():
 	# get the URL of the oauth2 reddit
@@ -163,6 +199,9 @@ def oauth():
 
 		
 
+		#########
+
+
 
 		# get informations about the reddit user
 		user_info_url = "https://oauth.reddit.com/api/v1/me"
@@ -176,57 +215,157 @@ def oauth():
 		reddit_user_name = user_info.get("name")
 		reddit_user_id = user_info.get("id")
 
-		# create a new user in the bdd
-		try:
-			with db.cursor() as cur:
-				tokenid, ownerid = -1, -1
-				cur.execute("SELECT id, owner FROM tokens WHERE userid = %s", (reddit_user_id,))
-				rows = cur.fetchone()
-				if not rows:
-					cur.execute("INSERT INTO tokens" \
-						"(service, token, refresh, userid)" \
-						"VALUES (%s, %s, %s, %s)" \
-						"RETURNING id", \
-							("reddit", reddit_access_token, reddit_refresh_token, reddit_user_id,)
+
+
+		#########
+
+
+
+
+		# data treatment
+		area_bearer_token = retrieve_token(get_beared_token(request))
+		area_user_id = area_bearer_token.get("id", None) if area_bearer_token else None
+	
+		# user is not logged in an area account
+		if not area_bearer_token or not area_user_id:
+			try:
+				with db.cursor() as cur:
+					cur.execute("SELECT owner FROM tokens " \
+				 		"WHERE userid = %s AND service = %s", (
+							reddit_user_id,
+							oreo.service,
+						)
 					)
-					r = cur.fetchone()
-					if not r:
-						raise Exception("could not fetch")
-					tokenid = r[0]
-					cur.execute("INSERT INTO users (tokenid) VALUES (%s) RETURNING id", (tokenid,))
-					r = cur.fetchone()
-					if not r:
-						raise Exception("could not fetch")
-					ownerid = r[0]
-					cur.execute("UPDATE tokens SET owner = %s WHERE id = %s", (ownerid, tokenid))
-					db.commit()
-				else:
-					tokenid, ownerid = rows[0], rows[1]
-				db.commit()
-				data = jwt.encode({
-					"id": ownerid,
-					"exp": dt.datetime.now() + dt.timedelta(seconds=EXPIRATION)
-				}, BACKEND_KEY, algorithm="HS256")
-				return jsonify({ "token": data }), 200
+					rows = cur.fetchone()
 			
+					# service account not linked with any area account: create new token and new area account
+					if not rows:
+						# create new area account empty entry
+						cur.execute("INSERT INTO users " \
+							"DEFAULT VALUES " \
+							"RETURNING id"
+						)
+						area_user_id = cur.fetchone()[0]
+
+						# create new token linked with the new area account
+						cur.execute("INSERT INTO tokens " \
+							"(service, token, refresh, userid, owner) " \
+							"VALUES (%s, %s, %s, %s, %s)", (
+								oreo.service,
+		 						reddit_access_token,
+								reddit_refresh_token,
+								reddit_user_id,
+								area_user_id,
+							)
+						)
+
+						db.commit()
+						return jsonify({ "token": generate_beared_token(area_user_id) }), 200
+				
+					# service account already linked with an area account: update token
+					else:
+						cur.execute(
+								"UPDATE tokens " \
+								"SET token = %s, refresh = %s " \
+								"WHERE userid = %s AND service = %s " \
+								"RETURNING owner", (
+									reddit_access_token,
+									reddit_refresh_token,
+									reddit_user_id,
+									oreo.service,
+								)
+						)
+						
+						area_user_id = cur.fetchone()[0]
+			
+						db.commit()
+						return jsonify({ "token": generate_beared_token(area_user_id) }), 200
+			except (Exception, psycopg2.Error) as err:
+				return jsonify({ "error":  str(err)}), 400
+
 		
-		except (Exception, psycopg2.Error) as err:
-			return jsonify({ "error":  str(err)}), 400
+		
+		# user is already logged in an area account
+		else:
+			try:
+				with db.cursor() as cur:
+					cur.execute("SELECT owner FROM tokens " \
+				 		"WHERE userid = %s AND service = %s", (
+							 reddit_user_id,
+							 oreo.service,
+						)
+					)
+					rows = cur.fetchone()
+			
+					# service account already linked with an other area account: forbiden
+					if rows and rows[0] != area_user_id:
+						return jsonify({ "error": "forbiden: user already logged in an other account"}), 403
+				
+					# service account already linked with the same area account: update token
+					elif rows and rows[0] == area_user_id:
+						cur.execute("UPDATE tokens " \
+				  			"SET token = %s, refresh = %s " \
+							"WHERE userid = %s AND service = %s", (
+								reddit_access_token,
+								reddit_refresh_token,
+								reddit_user_id,
+								oreo.service,
+							)
+						)
+						db.commit()
+				
+					# service account not linked with any area account: create new token
+					else:
+						cur.execute("INSERT INTO tokens " \
+							"(service, token, refresh, userid, owner)" \
+							"VALUES (%s, %s, %s, %s, %s)", (
+								oreo.service,
+								reddit_access_token,
+								reddit_refresh_token,
+								reddit_user_id,
+								area_user_id,
+							)
+						)
+						db.commit()
+					
+					return jsonify({ "token": generate_beared_token(area_user_id) }), 200
+			except (Exception, psycopg2.Error) as err:
+				return jsonify({ "error":  str(err)}), 400
+
 		return jsonify({ "error": "unexpected end of code"}), 500
+
 
 ##
 ## ACTIONS
 ##
-
-# @app.route('/new-post-save-by-me', methods=["POST"])
-# def new_post_save_by_me():
-# 	return jsonify({"status": "caca"}), 200
 
 ##
 ## REACTIONS
 ##
 
 # Submit a new post on a subreddit
+oreo.create_area(
+	name="submit-new-post",
+	type=oreo.TYPE_REACTIONS,
+	description="Submit a new post on a subreddit",
+	spices=[
+		{
+			"title": "Title of the post",
+			"name": "title",
+			"type": "input"
+		},
+		{
+			"title": "Subreddit where to post without the r/",
+			"name": "subreddit",
+			"type": "input"
+		},
+		{
+			"title": "Content of the post",
+			"name": "content",
+			"type": "text"
+		}
+	]
+)
 @app.route('/submit-new-post', methods=["POST"])
 def submit_new_post():
     app.logger.info("submit-new-post endpoint hit")
@@ -237,8 +376,8 @@ def submit_new_post():
 
     access_token = retrieve_user_token(user.get("id"))
     if not access_token:
-        app.logger.error("Invalid reddit token")
-        return jsonify({"error": "Invalid reddit token"}), 401
+        app.logger.error(f"Invalid {oreo.service} token")
+        return jsonify({"error": f"Invalid {oreo.service} token"}), 401
 
     if not request.is_json:
         app.logger.error("Request is not valid JSON")
@@ -279,6 +418,28 @@ def submit_new_post():
 
 
 # Submit a new link on a subreddit
+oreo.create_area(
+	name="submit-new-link",
+	type=oreo.TYPE_REACTIONS,
+	description="Submit a new link on a subreddit",
+	spices=[
+		{
+			"title": "Title of the post",
+			"name": "title",
+			"type": "input"
+		},
+		{
+			"title": "Subreddit where to post without the r/",
+			"name": "subreddit",
+			"type": "input"
+		},
+		{
+			"title": "The url to post",
+			"name": "url",
+			"type": "text"
+		}
+	]
+)
 @app.route('/submit-new-link', methods=["POST"])
 def submit_new_link():
     app.logger.info("submit-new-link endpoint hit")
@@ -289,8 +450,8 @@ def submit_new_link():
 
     access_token = retrieve_user_token(user.get("id"))
     if not access_token:
-        app.logger.error("Invalid reddit token")
-        return jsonify({"error": "Invalid reddit token"}), 401
+        app.logger.error(f"Invalid {oreo.service} token")
+        return jsonify({"error": f"Invalid {oreo.service} token"}), 401
 
     if not request.is_json:
         app.logger.error("Request is not valid JSON")
@@ -331,6 +492,23 @@ def submit_new_link():
 
 
 # Reply to a post
+oreo.create_area(
+	name="reply-post",
+	type=oreo.TYPE_REACTIONS,
+	description="Reply to a post on a subreddit",
+	spices=[
+		{
+			"title": "Post id (e.g. t3_<id>)",
+			"name": "post_id",
+			"type": "input"
+		},
+		{
+			"title": "Reply message",
+			"name": "reply_msg",
+			"type": "text"
+		}
+	]
+)
 @app.route('/reply-post', methods=["POST"])
 def reply_post():
     app.logger.info("reply-post endpoint hit")
@@ -341,8 +519,8 @@ def reply_post():
 
     access_token = retrieve_user_token(user.get("id"))
     if not access_token:
-        app.logger.error("Invalid reddit token")
-        return jsonify({"error": "Invalid reddit token"}), 401
+        app.logger.error(f"Invalid {oreo.service} token")
+        return jsonify({"error": f"Invalid {oreo.service} token"}), 401
 
     if not request.is_json:
         app.logger.error("Request is not valid JSON")
@@ -381,6 +559,23 @@ def reply_post():
 
 
 # Reply to a message
+oreo.create_area(
+	name="reply-message",
+	type=oreo.TYPE_REACTIONS,
+	description="Reply to a private message",
+	spices=[
+		{
+			"title": "Post id (e.g. t4_<id>)",
+			"name": "message_id",
+			"type": "input"
+		},
+		{
+			"title": "Reply message",
+			"name": "reply_msg",
+			"type": "text"
+		}
+	]
+)
 @app.route('/reply-message', methods=["POST"])
 def reply_message():
     app.logger.info("reply-message endpoint hit")
@@ -391,8 +586,8 @@ def reply_message():
 
     access_token = retrieve_user_token(user.get("id"))
     if not access_token:
-        app.logger.error("Invalid reddit token")
-        return jsonify({"error": "Invalid reddit token"}), 401
+        app.logger.error(f"Invalid {oreo.service} token")
+        return jsonify({"error": f"Invalid {oreo.service} token"}), 401
 
     if not request.is_json:
         app.logger.error("Request is not valid JSON")
@@ -441,89 +636,12 @@ def reply_message():
 @app.route('/', methods=["GET"])
 def info():
 	res = {
-		"color": "#ff4500",
-		"image": "http://link.com",
-		"areas": [
-			{
-				"name": "submit-new-post",
-				"type": "reaction",
-				"description": "Submit a new post on a subreddit",
-				"spices": [
-					{
-						"title": "Title of the post",
-						"name": "title",
-						"type": "input"
-					},
-					{
-						"title": "Subreddit where to post without the r/",
-						"name": "subreddit",
-						"type": "input"
-					},
-					{
-						"title": "Content of the post",
-						"name": "content",
-						"type": "text"
-					}
-				]
-			},
-			{
-				"name": "submit-new-link",
-				"type": "reaction",
-				"description": "Submit a new link on a subreddit",
-				"spices": [
-					{
-						"title": "Title of the post",
-						"name": "title",
-						"type": "input"
-					},
-					{
-						"title": "Subreddit where to post without the r/",
-						"name": "subreddit",
-						"type": "input"
-					},
-					{
-						"title": "The url to post",
-						"name": "url",
-						"type": "text"
-					}
-				]
-			},
-			{
-				"name": "reply-post",
-				"type": "reaction",
-				"description": "Reply to a post on a subreddit",
-				"spices": [
-					{
-						"title": "Post id (e.g. t3_<id>)",
-						"name": "post_id",
-						"type": "input"
-					},
-					{
-						"title": "Reply message",
-						"name": "reply_msg",
-						"type": "text"
-					}
-				]
-			},
-			{
-				"name": "reply-message",
-				"type": "reaction",
-				"description": "Reply to a private message",
-				"spices": [
-					{
-						"title": "Post id (e.g. t4_<id>)",
-						"name": "message_id",
-						"type": "input"
-					},
-					{
-						"title": "Reply message",
-						"name": "reply_msg",
-						"type": "text"
-					}
-				]
-			}
-		]
+		"service": oreo.service,
+		"color": oreo.color,
+		"image": oreo.image,
+		"areas": oreo.areas
 	}
+	return jsonify(res), 200
 
 
 if __name__ == '__main__':
