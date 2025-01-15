@@ -304,15 +304,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	err = a.SetupTheAbout()
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	corsMiddleware := handlers.CORS(
-		handlers.AllowedOrigins([]string{"*"}),
-		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE"}),
-		handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
-	)
+    corsMiddleware := handlers.CORS(
+        handlers.AllowedOrigins([]string{"*"}),
+        handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE"}),
+        handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
+    )
 	router.HandleFunc("/api/login", newProxy(&a, auth.DoSomeLogin)).Methods("POST")
 	router.HandleFunc("/api/register", newProxy(&a, auth.DoSomeRegister)).Methods("POST")
 	router.HandleFunc("/api/area", newProxy(&a, arearoute.NewArea)).Methods("POST")
@@ -328,6 +324,12 @@ func main() {
 	router.HandleFunc("/api/change", newProxy(&a, auth.DoSomeChangePassword)).Methods("PUT")
 	router.HandleFunc("/about.json", newProxy(&a, createTheAbout)).Methods("GET")
 
-	fmt.Println("=> server listens on port ", portString)
-	log.Fatal(http.ListenAndServe(":"+portString, corsMiddleware(router)))
+    fmt.Println("=> server listens on port ", portString)
+	time.Sleep(time.Second)
+	err = a.SetupTheAbout()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+    log.Fatal(http.ListenAndServe(":"+portString, corsMiddleware(router)))
+
 }
