@@ -82,11 +82,37 @@ def retrieve_user_token(id):
 
 ## #
 ##
+## INITIALIZATION
+##
+##
+
+class NewOreo:
+	TYPE_REACTIONS = "reaction"
+	TYPE_ACTIONS = "action"
+
+	def __init__(self, color="#ff4500", image="http://link.com"):
+		self.color = color
+		self.image = image
+		self.areas = []
+	
+	def create_area(self, name, type, description, spices):
+		self.areas.append({
+			"name": name,
+			"type": type,
+			"description": description,
+			"spices": spices
+		})
+		
+
+## #
+##
 ## ROUTES
 ##
 ##
 
 app = Flask(__name__)
+
+oreo = NewOreo()
 
 PERMISSIONS_REQUIRED = [
 	"user",
@@ -197,6 +223,33 @@ def oauth():
 ##
 
 # Create a new issue
+oreo.create_area(
+	"create-issue",
+	NewOreo.TYPE_REACTIONS,
+	"Create a new issue in a repository",
+	[
+		{
+			"name": "owner",
+			"type": "input",
+			"description": "The owner of the repository"
+		},
+		{
+			"name": "repo",
+			"type": "input",
+			"description": "The repository name"
+		},
+		{
+			"name": "title",
+			"type": "input",
+			"description": "The title of the issue (Markdown supported)"
+		},
+		{
+			"name": "body",
+			"type": "text",
+			"description": "The body of the issue (Markdown supported)"
+		}
+	]
+)
 @app.route('/create-issue', methods=["POST"])
 def create_issue():
     app.logger.info("create-issue endpoint hit")
@@ -249,7 +302,36 @@ def create_issue():
     return jsonify({"status": "Issue created"}), 200
 
 
+
+
 # Create a new reply to an issue / pull request
+oreo.create_area(
+	"create-reply",
+	NewOreo.TYPE_REACTIONS,
+	"Create a new reply to an issue or pull request",
+	[
+		{
+			"name": "id",
+			"type": "number",
+			"description": "The id of the issue or pull request"
+		},
+		{
+			"name": "owner",
+			"type": "input",
+			"description": "The owner of the repository"
+		},
+		{
+			"name": "repo",
+			"type": "input",
+			"description": "The repository name"
+		},
+		{
+			"name": "body",
+			"type": "text",
+			"description": "The body of the reply (Markdown supported)"
+		}
+	]
+)
 @app.route('/create-reply', methods=["POST"])
 def create_reply():
     app.logger.info("create-reply endpoint hit")
@@ -307,65 +389,11 @@ def create_reply():
 @app.route('/', methods=["GET"])
 def info():
 	res = {
-		"color": "#ff4500",
-		"image": "http://link.com",
-		"areas": [
-			{
-				"name": "create-issue",
-				"type": "reaction",
-				"description": "Create a new issue in a repository",
-				"spices": [
-					{
-						"name": "owner",
-						"type": "input",
-						"description": "The owner of the repository"
-					},
-					{
-						"name": "repo",
-						"type": "input",
-						"description": "The repository name"
-					},
-					{
-						"name": "title",
-						"type": "input",
-						"description": "The title of the issue (Markdown supported)"
-					},
-					{
-						"name": "body",
-						"type": "text",
-						"description": "The body of the issue (Markdown supported)"
-					}
-				]
-			},
-			{
-				"name": "create-reply",
-				"type": "reaction",
-				"description": "Create a new reply to an issue or pull request",
-				"spices": [
-					{
-						"name": "id",
-						"type": "number",
-						"description": "The id of the issue or pull request"
-					},
-					{
-						"name": "owner",
-						"type": "input",
-						"description": "The owner of the repository"
-					},
-					{
-						"name": "repo",
-						"type": "input",
-						"description": "The repository name"
-					},
-					{
-						"name": "body",
-						"type": "text",
-						"description": "The body of the reply (Markdown supported)"
-					}
-				]
-			}
-		]
+		"color": oreo.color,
+		"image": oreo.image,
+		"areas": oreo.areas
 	}
+	return jsonify(res), 200
 
 
 if __name__ == '__main__':
