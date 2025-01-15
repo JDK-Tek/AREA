@@ -7,9 +7,8 @@
 
 import React from "react";
 import { useEffect } from "react";
-import axios from "axios";
 
-export default function Connected({ setToken }) {
+export default function Connected() {
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('code');

@@ -35,7 +35,7 @@ function App() {
         <Route path={listRoutes.create} element={<CreateArea />} />
         <Route path={listRoutes.explore} element={<Explore />} />
         <Route path={listRoutes.clientapk} element={<MobileClientDownload />} />
-        <Route path={listRoutes.connected} element={<Connected setToken={setToken}/>} />
+        <Route path={listRoutes.connected} element={<Connected />} />
 
 
         {/* <Route path="/applet/discord/1" element={<AreaDiscord1 />} /> */}
