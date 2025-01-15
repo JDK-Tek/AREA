@@ -112,7 +112,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		return
 	}
 	tok.Token = responseData["access_token"].(string)
-	tok.Refresh = responseData["refresh_token"].(string)
+	tok.Refresh = "foo bar"
 
 	req, err = http.NewRequest("GET", API_USER_OUTLOOK, nil)
 	if err != nil {
