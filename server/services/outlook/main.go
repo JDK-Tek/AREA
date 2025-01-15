@@ -96,8 +96,8 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	data.Set("redirect_uri", os.Getenv("REDIRECT"))
 	rep, err := http.PostForm(API_OAUTH_OUTLOOK, data)
 	body, err := io.ReadAll(rep.Body)
+	fmt.Println(clientsecret)
 	fmt.Fprintln(w, "tmp = ", string(body))
-	return
 	if err != nil {
 		fmt.Fprintln(w, "postform", err.Error())
 		return
@@ -120,7 +120,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	}
 	fmt.Println(responseData)
 	tok.Token = responseData["access_token"].(string)
-	tok.Refresh = responseData["refresh_token"].(string)
+	tok.Refresh = "foobar"
 
 	req, err = http.NewRequest("GET", API_USER_OUTLOOK, nil)
 	if err != nil {
@@ -520,13 +520,13 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 }
 
 func main() {
+	godotenv.Load(".env")
 	db, err := connectToDatabase()
 	if err != nil {
 		os.Exit(84)
 	}
 	fmt.Println("outlook microservice container is running !")
 	router := mux.NewRouter()
-	godotenv.Load(".env")
 	//router.HandleFunc("/send", doSomeSend).Methods("POST")
 	router.HandleFunc("/oauth", getOAUTHLink).Methods("GET")
 	router.HandleFunc("/oauth", miniproxy(setOAUTHToken, db)).Methods("POST")
