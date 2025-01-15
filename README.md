@@ -22,6 +22,7 @@ COMPOSE_FILE=docker-compose.yaml:server/docker-compose.yml
 # web
 WEB_PORT=8081
 REACT_APP_BACKEND_URL=...
+WDS_SOCKET_PORT=8081
 
 # general
 REDIRECT=.../connected
