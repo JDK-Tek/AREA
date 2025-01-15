@@ -10,9 +10,7 @@ import (
 	"os"
 	"time"
 
-	"google.golang.org/api/gmail/v1"
 	"golang.org/x/oauth2"
-	"google.golang.org/api/option"
 	"github.com/dgrijalva/jwt-go"
 	"golang.org/x/net/context"
 	"github.com/gorilla/mux"
@@ -21,9 +19,9 @@ import (
 	"encoding/base64"
 )
 
-const API_OAUTH_GOOGLE = "https://oauth2.googleapis.com/token"
-const API_USER_GOOGLE = "https://www.googleapis.com/oauth2/v3/userinfo"
-const API_GMAIL_SEND = "https://www.googleapis.com/gmail/v1/users/me/messages/send"
+const API_OAUTH_CUSTOM = "https://example.com/oauth/token" // Remplacer par l'URL de l'API appropriée
+const API_USER_CUSTOM = "https://example.com/api/v1/user" // Remplacer par l'URL de l'API appropriée
+const API_EMAIL_SEND = "https://example.com/api/v1/send-email" // Remplacer par l'URL de l'API appropriée
 
 const EXPIRATION = 60 * 30
 
@@ -42,11 +40,11 @@ type UserResult struct {
 }
 
 func getOAUTHLink(w http.ResponseWriter, req *http.Request) {
-	str := "https://accounts.google.com/o/oauth2/v2/auth?"
-	str += "client_id=" + os.Getenv("GOOGLE_CLIENT_ID")
+	str := "https://example.com/oauth/authorize?" // Remplacer par l'URL de l'API appropriée
+	str += "client_id=" + os.Getenv("CUSTOM_CLIENT_ID")
 	str += "&response_type=code"
 	str += "&redirect_uri=" + url.QueryEscape(os.Getenv("REDIRECT"))
-	str += "&scope=openid profile email https://www.googleapis.com/auth/gmail.send"
+	str += "&scope=openid profile email send_email"
 	str += "&state=some-state-value"
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintln(w, str)
@@ -59,8 +57,8 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	var tokid int
 	var owner = -1
 
-	clientid := os.Getenv("GOOGLE_CLIENT_ID")
-	clientsecret := os.Getenv("GOOGLE_CLIENT_SECRET")
+	clientid := os.Getenv("CUSTOM_CLIENT_ID")
+	clientsecret := os.Getenv("CUSTOM_CLIENT_SECRET")
 	data := url.Values{}
 
 	err := json.NewDecoder(req.Body).Decode(&res)
@@ -75,7 +73,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	data.Set("code", res.Code)
 	data.Set("redirect_uri", os.Getenv("REDIRECT"))
 
-	resp, err := http.PostForm(API_OAUTH_GOOGLE, data)
+	resp, err := http.PostForm(API_OAUTH_CUSTOM, data)
 	if err != nil {
 		fmt.Fprintln(w, "postform: ", err.Error())
 		return
@@ -93,7 +91,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		return
 	}
 
-	req, err = http.NewRequest("GET", API_USER_GOOGLE, nil)
+	req, err = http.NewRequest("GET", API_USER_CUSTOM, nil)
 	if err != nil {
 		fmt.Fprintln(w, "request error", err.Error())
 		return
@@ -116,7 +114,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	err = db.QueryRow("select id, owner from tokens where userid = $1", user.ID).Scan(&tokid, &owner)
 	if err != nil {
 		err = db.QueryRow("insert into tokens (service, token, refresh, userid) values ($1, $2, $3, $4) returning id",
-			"google",
+			"custom",
 			tok.AccessToken,
 			tok.RefreshToken,
 			user.ID,
@@ -171,7 +169,7 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 
 	service, err := gmail.NewService(context.Background(), option.WithTokenSource(oauth2.StaticTokenSource(tok)))
 	if err != nil {
-		fmt.Fprintln(w, "failed to create Gmail service", err.Error())
+		fmt.Fprintln(w, "failed to create custom email service", err.Error())
 		return
 	}
 
@@ -234,52 +232,12 @@ func miniproxy(f func(http.ResponseWriter, *http.Request, *sql.DB), c *sql.DB) f
 	}
 }
 
-type Spice struct {
-	Name string `json:"name"`
-	Type string `json:"type"`
-}
-
-type Route struct {
-	Type string `json:"type"`
-	Name string `json:"name"`
-	Spices []Spice `json:"spices"`
-}
-
-func getRoutes(w http.ResponseWriter, req *http.Request) {
-	var list = []Route{
-		Route{
-			Name: "send",
-			Type: "reaction",
-			Spices: []Spice{
-				{
-					Name: "channel",
-					Type: "number",
-				},
-				{
-					Name: "message",
-					Type: "text",
-				},
-			},
-		},
-	}
-	var data []byte
-	var err error
-
-	data, err = json.Marshal(list)
-	if err != nil {
-		http.Error(w, `{ "error":  "marshal" }`, http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
-    fmt.Fprintln(w, string(data))
-}
-
 func main() {
 	db, err := connectToDatabase()
 	if err != nil {
 		os.Exit(84)
 	}
-	fmt.Println("google microservice container is running !")
+	fmt.Println("Custom microservice container is running !")
 	router := mux.NewRouter()
 	godotenv.Load(".env")
 	router.HandleFunc("/oauth", getOAUTHLink).Methods("GET")
