@@ -296,10 +296,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	err = a.SetupTheAbout()
-	if err != nil {
-		log.Fatal(err.Error())
-	}
     corsMiddleware := handlers.CORS(
         handlers.AllowedOrigins([]string{"*"}),
         handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE"}),
@@ -321,5 +317,11 @@ func main() {
     router.HandleFunc("/about.json", newProxy(&a, createTheAbout)).Methods("GET")
 
     fmt.Println("=> server listens on port ", portString)
+	time.Sleep(time.Second)
+	err = a.SetupTheAbout()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
     log.Fatal(http.ListenAndServe(":"+portString, corsMiddleware(router)))
+
 }

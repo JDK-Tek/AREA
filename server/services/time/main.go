@@ -308,6 +308,6 @@ func main() {
 	fmt.Println("time microservice container is running !")
 	router := mux.NewRouter()
 	router.HandleFunc("/in", miniProxy(timeIn, db)).Methods("POST")
-	router.HandleFunc("/routes", getRoutes).Methods("GET")
+	router.HandleFunc("/", getRoutes).Methods("GET")
 	log.Fatal(http.ListenAndServe(":80", router))
 }
