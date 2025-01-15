@@ -4,10 +4,11 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"os"
 	"strings"
 	"time"
-	"os"
 
 	"github.com/dgrijalva/jwt-go"
 )
@@ -86,9 +87,9 @@ func (it *Area) ObserveServices(where string) error {
 }
 
 func (it *Area) SetupTheAbout() error {
-	// var revproxy = os.Getenv("REVERSEPROXY_PORT")
-	// var infos Infos
-	// var tmpService AboutSevice
+	var revproxy = os.Getenv("REVERSEPROXY_PORT")
+	var infos Infos
+	var tmpService AboutSevice
 
 	it.About = About{
 		Client: AboutClient{
@@ -103,25 +104,32 @@ func (it *Area) SetupTheAbout() error {
 		return nil
 	}
 	// fmt.Println(fmt.Sprintf("http://reverse-proxy:%s/service/%s/", revproxy, "coucou"))
-	// for _, service := range it.Services {
-	// 	url := fmt.Sprintf("http://reverse-proxy:%s/service/%s/", revproxy, service)
-	// 	rep, err := http.Get(url)
-	// 	if err != nil {
-	// 		fmt.Printf("%s failed: %s\n", service, err.Error())
-	// 		continue
-	// 	}
-	// 	defer rep.Body.Close()
-	// 	err = json.NewDecoder(rep.Body).Decode(&infos)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	for _, v := range infos.Routes {
-	// 		if v.Type == "action" {
-	// 			tmpService.Actions = append(tmpService.Actions, )
-	// 		}
-	// 	}
-	// 	it.About.Server.Services = append(it.About.Server.Services, tmpService)
-	// }
+	for _, service := range it.Services {
+		url := fmt.Sprintf("http://reverse-proxy:%s/service/%s/", revproxy, service)
+		rep, err := http.Get(url)
+		if err != nil {
+			fmt.Printf("%s failed: %s\n", service, err.Error())
+			continue
+		}
+		defer rep.Body.Close()
+		body, err := io.ReadAll(rep.Body)
+		if err != nil {
+			fmt.Printf("reeadall of %s failed: %s\n", service, err.Error())
+			continue
+		}
+		fmt.Printf("%s: (%s)\n", url, body)
+		err = json.Unmarshal(body, &infos)
+		if err != nil {
+			fmt.Printf("decoding %s failed: %s body is %s\n", service, err.Error(), rep.Body)
+			continue
+		}
+		for _, v := range infos.Routes {
+			if v.Type == "action" {
+				tmpService.Actions = append(tmpService.Actions, )
+			}
+		}
+		it.About.Server.Services = append(it.About.Server.Services, tmpService)
+	}
 	return nil
 }
 

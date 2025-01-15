@@ -315,6 +315,6 @@ func main() {
 	router.HandleFunc("/send", doSomeSend).Methods("POST")
 	router.HandleFunc("/oauth", getOAUTHLink).Methods("GET")
 	router.HandleFunc("/oauth", miniproxy(setOAUTHToken, db)).Methods("POST")
-	router.HandleFunc("/routes", getRoutes).Methods("GET")
+	router.HandleFunc("/", getRoutes).Methods("GET")
 	log.Fatal(http.ListenAndServe(":80", router))
 }
