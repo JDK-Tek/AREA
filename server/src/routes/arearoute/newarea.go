@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"area-backend/area"
 	"os"
@@ -124,13 +124,13 @@ func NewArea(a area.AreaRequest) {
 		return
 	}
 	defer rep.Body.Close()
-	body, err := ioutil.ReadAll(rep.Body)
+	body, err := io.ReadAll(rep.Body)
 	if err != nil {
 		a.Error(err, http.StatusInternalServerError)
 		return
 	}
 	a.Reply(map[string]any{
-		"res": "Your email is send" + string(body) + " " + string(id),
+		"status": "ok",
+		"body": string(body),
 	}, http.StatusOK)
-	// fmt.Fprintf(a.Writter, "Your email is %d, Awnser is %s", id, string(body))
 }
