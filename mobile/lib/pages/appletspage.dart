@@ -214,7 +214,9 @@ class AppletSection extends StatelessWidget {
       nameAREA: applet.nameAREA,
       icon1: applet.icon1,
       icon2: applet.icon2,
-      press: () {},
+      press: () {
+        context.go("/discordarea");
+      },
     );
   }
 }

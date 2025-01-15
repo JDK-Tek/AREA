@@ -1,11 +1,9 @@
 import 'package:area/pages/home_page.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import 'package:area/tools/dynamic.dart';
-import 'package:go_router/go_router.dart';
+import 'package:area/tools/providers.dart';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as https;
 import 'dart:convert';
-import 'package:area/tools/providers.dart';
 import 'package:provider/provider.dart';
 
 class CreateAutomationPage extends StatefulWidget {
@@ -16,109 +14,182 @@ class CreateAutomationPage extends StatefulWidget {
 }
 
 class CreateAutomationPageState extends State<CreateAutomationPage> {
-  Map<String, dynamic> triggers = {};
-  Map<String, dynamic> triggersConfigurations = {};
+  Map<String, dynamic> services = {};
   List<dynamic> selectedTriggers = [];
-  Map<String, dynamic> reactions = {};
-  Map<String, dynamic> reactionsConfigurations = {};
   List<dynamic> selectedReactions = [];
-
   List<Map<String, dynamic>> triggerValues = [];
   List<Map<String, dynamic>> reactionValues = [];
 
   @override
   void initState() {
     super.initState();
-    _loadMockTriggers();
-    _loadMockReactions();
+    _loadServices();
   }
 
-  void _loadMockTriggers() {
-    triggers = {
-      "actions": [
-        {
-          "label": "Time",
-          "icon_url": "https://img.icons8.com/ios/452/timer.png"
-        },
-      ]
-    };
-    triggersConfigurations = {
-      "configuration": [
-        {
-          "type": "action",
-          "name": "in",
-          "spices": [
-            {"name": "howmuch", "type": "number", "extraParams": null},
-            {
-              "name": "unit",
-              "type": "dropdown",
-              "extraParams": ["weeks", "days", "hours", "minutes", "seconds"]
-            }
-          ]
-        }
-      ]
+  void _loadServices() {
+    services = {
+      "time": {
+        "name": "time",
+        "icon": "https://img.icons8.com/ios/452/timer.png",
+        "color": "#ffffff",
+        "actions": [
+          {
+            "name": "in",
+            "description": "Triggers in some amount of time.",
+            "spices": [
+              {
+                "name": "howmuch",
+                "type": "number",
+                "title": "How much time to wait.",
+                "extraParams": null,
+              },
+              {
+                "name": "unit",
+                "type": "dropdown",
+                "title": "The unit to wait.",
+                "extraParams": ["weeks", "days", "hours", "minutes", "seconds"]
+              }
+            ]
+          }
+        ],
+        "reactions": []
+      },
+      "discord": {
+        "name": "discord",
+        "icon":
+            "https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/636e0a6cc3c481a15a141738_icon_clyde_white_RGB.png",
+        "color": "#5865F2",
+        "actions": [],
+        "reactions": [
+          {
+            "name": "send",
+            "description": "Sends a message in a channel.",
+            "spices": [
+              {
+                "name": "channel",
+                "type": "text",
+                "title": "The Discord channel ID.",
+                "extraParams": null,
+              },
+              {
+                "name": "message",
+                "type": "text",
+                "title": "The message to send.",
+                "extraParams": null,
+              }
+            ]
+          }
+        ]
+      }
     };
     setState(() {});
   }
 
-  void _loadMockReactions() {
-    reactions = {
-      "reactions": [
-        {
-          "label": "Discord",
-          "icon_url": "https://img.icons8.com/ios/452/discord.png",
-        },
-      ]
-    };
-    reactionsConfigurations = {
-      "configuration": [
-        {
-          "type": "reaction",
-          "name": "send",
-          "spices": [
-            {"name": "channel", "type": "text"},
-            {"name": "message", "type": "text"}
-          ]
-        }
-      ]
-    };
-    setState(() {});
+  Map<String, dynamic> _buildDynamicConfig(
+      List<dynamic> selectedItems, List<dynamic> spices, int index) {
+    Map<String, dynamic> tempValues = {};
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: ListView(
+            children: spices.map((spice) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    spice['title'],
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Dynamic(
+                    title: spice['type'],
+                    extraParams: {'items': spice['extraParams']},
+                    onValueChanged: (key, value) {
+                      setState(() {
+                        if (spice['type'] == "number") {
+                          tempValues[spice['name']] = int.parse(value);
+                        } else {
+                          tempValues[spice['name']] = value;
+                        }
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
+    return tempValues;
   }
 
   void _addService(String type) {
+    final items = services.values
+        .where((service) => service[type].isNotEmpty)
+        .map((service) => {
+              "name": service['name'],
+              "icon": service['icon'],
+              "actionsOrReactions": service[type]
+            })
+        .toList();
+
     showModalBottomSheet(
       context: context,
       builder: (context) {
-        final services = type == "actions" ? triggers : reactions;
-
         return ListView.builder(
-          itemCount: services.length,
+          itemCount: items.length,
           itemBuilder: (context, index) {
+            final item = items[index];
             return ListTile(
-              title: Row(children: [
-                Image.network(
-                  services[type][index]['icon_url'],
-                  width: MediaQuery.of(context).size.width * 0.05,
-                ),
-                SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.01,
-                ),
-                Text(services[type][index]['label'])
-              ]),
+              leading: Image.network(
+                item['icon'],
+                width: 40,
+                height: 40,
+              ),
+              title: Text(item['name']),
+              onTap: () {
+                _selectService(type, item['actionsOrReactions'], item['name']);
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _selectService(String type, List<dynamic> options, String serviceName) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return ListView.builder(
+          itemCount: options.length,
+          itemBuilder: (context, index) {
+            final option = options[index];
+            return ListTile(
+              title: Text(option['name']),
+              subtitle: Text(option['description']),
               onTap: () {
                 setState(() {
                   if (type == "actions") {
-                    selectedTriggers.add(services[type][index]);
-                    if (index < triggersConfigurations.length) {
-                      _buildDynamicConfig(selectedTriggers,
-                          triggersConfigurations, triggerValues, index);
-                    }
+                    selectedTriggers.add({
+                      "service": serviceName,
+                      "name": option['name'],
+                      "icon": services[serviceName]['icon'],
+                    });
+                    triggerValues.add(_buildDynamicConfig(
+                        selectedTriggers, option['spices'], index));
                   } else {
-                    selectedReactions.add(services[type][index]);
-                    if (index < reactionsConfigurations.length) {
-                      _buildDynamicConfig(selectedReactions,
-                          reactionsConfigurations, reactionValues, index);
-                    }
+                    selectedReactions.add({
+                      "service": serviceName,
+                      "name": option['name'],
+                      "icon": services[serviceName]['icon'],
+                    });
+                    reactionValues.add(_buildDynamicConfig(
+                        selectedReactions, option['spices'], index));
                   }
                 });
               },
@@ -129,77 +200,34 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
     );
   }
 
-  void _buildDynamicConfig(
-      List<dynamic> selectedItems,
-      Map<String, dynamic> configurations,
-      List<Map<String, dynamic>> values,
-      int index) {
-    showModalBottomSheet(
-        useSafeArea: true,
-        context: context,
-        builder: (BuildContext context) {
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (var config in configurations["configuration"])
-                  if (config['spices'] != null)
-                    ...config['spices']!.map<Widget>((childConfig) {
-                      return Dynamic(
-                        title: childConfig['type'],
-                        extraParams: {
-                          'items': childConfig['extraParams'],
-                        },
-                        onValueChanged: (key, value) {
-                          setState(() {
-                            if (childConfig['type'] == "number") {
-                              values
-                                  .add({childConfig['name']: int.parse(value)});
-                            } else {
-                              values.add({childConfig['name']: value});
-                            }
-                          });
-                        },
-                      );
-                    }).toList()
-              ],
-            ),
-          );
-        });
-  }
-
   void _submitAutomation() {
     if (selectedTriggers.isEmpty || selectedReactions.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content:
-                Text("Please select at least one trigger and one reaction.")),
+          content: Text("Please select at least one trigger and one reaction."),
+        ),
       );
       return;
     }
 
     final automation = {
-      "action": List.generate(selectedTriggers.length, (index) {
+      "actions": selectedTriggers.map((trigger) {
         return {
-          "service": selectedTriggers[index]['label'].toLowerCase(),
-          "name": triggersConfigurations["configuration"][index]['name'],
-          "spices": triggerValues[index],
+          "service": trigger['service'],
+          "name": trigger['name'],
+          "spices": triggerValues[selectedTriggers.indexOf(trigger)],
         };
-      }),
-      "reaction": List.generate(selectedReactions.length, (index) {
+      }).toList(),
+      "reactions": selectedReactions.map((reaction) {
         return {
-          "service": selectedReactions[index]['label'].toLowerCase(),
-          "name": reactionsConfigurations["configuration"][index]['name'],
-          "spices": reactionValues[index],
+          "service": reaction['service'],
+          "name": reaction['name'],
+          "spices": reactionValues[selectedReactions.indexOf(reaction)],
         };
-      }),
+      }).toList(),
     };
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-          content: Text("Automation Submitted: \n${jsonEncode(automation)}")),
-    );
+    print(jsonEncode(automation));
     _sendRequest(automation);
   }
 
@@ -247,41 +275,16 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
     );
   }
 
-  int currentPageIndex = 1;
   @override
   Widget build(BuildContext context) {
-    final List<String> dest = ["/applets", "/create", "/services", "/plus"];
     return SafeArea(
-        child: Scaffold(
-      bottomNavigationBar: NavigationBar(
-        backgroundColor: Colors.black,
-        indicatorColor: Colors.grey,
-        selectedIndex: 1,
-        onDestinationSelected: (int index) {
-          setState(() {
-            currentPageIndex = index;
-            context.go(dest[index]);
-          });
-        },
-        destinations: const [
-          NavigationDestination(
-              icon: Icon(Icons.folder, color: Colors.white), label: 'Applets'),
-          NavigationDestination(
-              icon: Icon(Icons.add_circle_outline, color: Colors.white),
-              label: 'Create'),
-          NavigationDestination(
-              icon: Icon(Icons.cloud, color: Colors.white), label: 'Services'),
-          NavigationDestination(
-              icon: Icon(CupertinoIcons.ellipsis, color: Colors.white),
-              label: 'Developers'),
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const MiniHeaderSection(),
-            Padding(
+      child: Scaffold(
+        body: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const MiniHeaderSection(),
+              Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -296,31 +299,24 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
                       onPressed: () => _addService("actions"),
                     ),
                   ],
-                )),
-            const Divider(),
-            ...selectedTriggers.map((trigger) => ListTile(
-                  key: ValueKey(trigger['label']),
-                  title: Text(trigger['label']),
-                  leading: Image.network(
-                    trigger['icon_url'],
-                    width: 40,
-                    height: 40,
-                    errorBuilder: (context, error, stackTrace) =>
-                        const Icon(Icons.error),
-                  ),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete),
-                    onPressed: () {
-                      setState(() {
-                        triggerValues
-                            .removeAt(selectedTriggers.indexOf(trigger));
-                        selectedTriggers.remove(trigger);
-                      });
-                    },
-                  ),
-                )),
-            const SizedBox(height: 32),
-            Padding(
+                ),
+              ),
+              ...selectedTriggers.map((trigger) => ListTile(
+                    title: Text(trigger['name']),
+                    leading: Image.network(trigger['icon']),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete),
+                      onPressed: () {
+                        setState(() {
+                          triggerValues
+                              .removeAt(selectedTriggers.indexOf(trigger));
+                          selectedTriggers.remove(trigger);
+                        });
+                      },
+                    ),
+                  )),
+              const Divider(),
+              Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -335,39 +331,32 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
                       onPressed: () => _addService("reactions"),
                     ),
                   ],
-                )),
-            const Divider(),
-            ...selectedReactions.map((reaction) => ListTile(
-                  key: ValueKey(reaction['label']),
-                  title: Text(reaction['label']),
-                  leading: Image.network(
-                    reaction['icon_url'],
-                    width: 40,
-                    height: 40,
-                    errorBuilder: (context, error, stackTrace) =>
-                        const Icon(Icons.error),
-                  ),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete),
-                    onPressed: () {
-                      setState(() {
-                        reactionValues
-                            .removeAt(selectedTriggers.indexOf(reaction));
-                        selectedReactions.remove(reaction);
-                      });
-                    },
-                  ),
-                )),
-            const SizedBox(height: 32),
-            Center(
-              child: ElevatedButton(
-                onPressed: _submitAutomation,
-                child: const Text("Submit"),
+                ),
               ),
-            ),
-          ],
+              ...selectedReactions.map((reaction) => ListTile(
+                    title: Text(reaction['name']),
+                    leading: Image.network(reaction['icon']),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete),
+                      onPressed: () {
+                        setState(() {
+                          reactionValues
+                              .removeAt(selectedTriggers.indexOf(reaction));
+                          selectedReactions.remove(reaction);
+                        });
+                      },
+                    ),
+                  )),
+              Center(
+                child: ElevatedButton(
+                  onPressed: _submitAutomation,
+                  child: const Text("Submit"),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-    ));
+    );
   }
 }

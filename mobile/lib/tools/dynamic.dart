@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class Dynamic extends StatefulWidget {
   const Dynamic({
@@ -45,6 +46,22 @@ class _DynamicState extends State<Dynamic> {
 
     final widgetMap = {
       "text": () {
+        return SizedBox(
+          width: 200,
+          child: TextField(
+            controller: textController,
+            focusNode: _focusNode,
+            decoration: InputDecoration(
+              labelText: "Enter ${widget.title}",
+              border: const OutlineInputBorder(),
+            ),
+            onChanged: (value) {
+              widget.onValueChanged(widget.title, value);
+            },
+          ),
+        );
+      },
+      "input": () {
         return SizedBox(
           width: 200,
           child: TextField(
