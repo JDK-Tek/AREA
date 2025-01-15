@@ -24,6 +24,7 @@ type Bridge struct {
 type ToSend struct {
 	Spices json.RawMessage `json:"spices"`
 	Bridge int `json:"bridge"`
+	Id int `json:"userid"`
 }
 
 func createActionReaction(a area.AreaRequest, bridge Bridge) int {
@@ -101,6 +102,7 @@ func NewArea(a area.AreaRequest) {
 		return
 	}
 	tosend.Spices = bridge.Action.Spices
+	tosend.Id = id
 	url := fmt.Sprintf("http://reverse-proxy:%s/service/%s/%s",
 		os.Getenv("REVERSEPROXY_PORT"),
 		bridge.Action.Service,
