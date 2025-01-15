@@ -198,7 +198,7 @@ def oauth():
 
 # Create a new issue
 @app.route('/create-issue', methods=["POST"])
-def submit_new_post():
+def create_issue():
     app.logger.info("create-issue endpoint hit")
     user = retrieve_token(get_beared_token(request))
     if not user:
@@ -248,8 +248,61 @@ def submit_new_post():
     app.logger.info(f"User {user.get('id')} created a new issue in {owner}/{repo}: {title}")
     return jsonify({"status": "Issue created"}), 200
 
-##
 
+# Create a new reply to an issue / pull request
+@app.route('/create-reply', methods=["POST"])
+def create_reply():
+    app.logger.info("create-reply endpoint hit")
+    user = retrieve_token(get_beared_token(request))
+    if not user:
+        app.logger.error("Invalid area token")
+        return jsonify({"error": "Invalid area token"}), 401
+
+    access_token = retrieve_user_token(user.get("id"))
+    if not access_token:
+        app.logger.error("Invalid github token")
+        return jsonify({"error": "Invalid github token"}), 401
+
+    if not request.is_json:
+        app.logger.error("Request is not valid JSON")
+        return jsonify({"error": "Invalid JSON"}), 400
+
+    spices = request.json.get("spices", {})
+    id = spices.get("id")
+    owner = spices.get("owner")
+    repo = spices.get("repo")
+    body = spices.get("body", "")
+
+    if not owner or not repo:
+        app.logger.error("Missing required fields: owner=%s, repo=%s", owner, repo)
+        return jsonify({"error": "Missing required fields"}), 400
+
+    github_submit_url = f"{GITHUB_API_URL}/repos/{owner}/{repo}/issues/{id}/comments"
+    headers = {
+        "User-Agent": "area/1.0",
+        "Authorization": f"Bearer {access_token}",
+        "Accept": "application/vnd.github+json"
+    }
+    body = {
+		"body": body,
+    }
+
+    res = requests.post(github_submit_url, headers=headers, json=body)
+
+
+    if res.status_code != 201:
+        app.logger.info("Failed to create issue: %s", res.json())
+        return jsonify({
+            "error": "Failed to create issue",
+            "details": res.json()
+        }), res.status_code
+
+    app.logger.info(f"User {user.get('id')} created a new reply in {owner}/{repo}, to the '{id}' issue/pr")
+    return jsonify({"status": "Reply created"}), 200
+
+
+##
+## INFO
 ##
 @app.route('/', methods=["GET"])
 def info():
@@ -281,6 +334,33 @@ def info():
 						"name": "body",
 						"type": "text",
 						"description": "The body of the issue (Markdown supported)"
+					}
+				]
+			},
+			{
+				"name": "create-reply",
+				"type": "reaction",
+				"description": "Create a new reply to an issue or pull request",
+				"spices": [
+					{
+						"name": "id",
+						"type": "number",
+						"description": "The id of the issue or pull request"
+					},
+					{
+						"name": "owner",
+						"type": "input",
+						"description": "The owner of the repository"
+					},
+					{
+						"name": "repo",
+						"type": "input",
+						"description": "The repository name"
+					},
+					{
+						"name": "body",
+						"type": "text",
+						"description": "The body of the reply (Markdown supported)"
 					}
 				]
 			}
