@@ -72,7 +72,11 @@ def retrieve_token(token):
 def retrieve_user_token(id):
 	try:
 		with db.cursor() as cur:
-			cur.execute("SELECT token FROM tokens WHERE service = 'github' AND owner = %s", (id,))
+			cur.execute("SELECT token FROM tokens " \
+			   "WHERE service = 'github' AND owner = %s", (
+				   id,
+				)
+			)
 			rows = cur.fetchone()
 			if not rows:
 				return None
@@ -90,7 +94,8 @@ class NewOreo:
 	TYPE_REACTIONS = "reaction"
 	TYPE_ACTIONS = "action"
 
-	def __init__(self, color="#ff4500", image="http://link.com"):
+	def __init__(self, service, color, image):
+		self.service = service
 		self.color = color
 		self.image = image
 		self.areas = []
@@ -111,8 +116,12 @@ class NewOreo:
 ##
 
 app = Flask(__name__)
-
-oreo = NewOreo()
+# github color and image
+oreo = NewOreo(
+	service="github",
+	color="#ff4500",
+	image="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
+)
 
 PERMISSIONS_REQUIRED = [
 	"user",
@@ -124,6 +133,13 @@ PERMISSIONS_REQUIRED = [
 ##
 ## OAUTH2
 ##
+
+def generate_beared_token(id):
+	return jwt.encode({
+		"id": id,
+		"exp": dt.datetime.now() + dt.timedelta(seconds=EXPIRATION)
+	}, BACKEND_KEY, algorithm="HS256")
+
 @app.route('/oauth', methods=["GET", "POST"])
 def oauth():
 	# get the URL of the oauth2 github
@@ -165,6 +181,12 @@ def oauth():
 		github_access_token = token_data.get("access_token")
 		github_refresh_token = token_data.get("refresh_token")
 	
+
+
+		#########
+
+
+
 		# get informations about the github user
 		user_info_url = f"{GITHUB_API_URL}/user"
 		headers.update({"Authorization": f"Bearer {github_access_token}"})
@@ -176,42 +198,122 @@ def oauth():
 		user_info = user_info_response.json()
 		github_user_id = str(user_info.get("id"))
 
-		# create a new user in the bdd
-		try:
-			with db.cursor() as cur:
-				tokenid, ownerid = -1, -1
-				cur.execute("SELECT id, owner FROM tokens WHERE userid = %s", (github_user_id,))
-				rows = cur.fetchone()
-				if not rows:
-					cur.execute("INSERT INTO tokens" \
-						"(service, token, refresh, userid)" \
-						"VALUES (%s, %s, %s, %s)" \
-						"RETURNING id", \
-							("github", github_access_token, github_refresh_token, github_user_id,)
+
+
+		#########
+
+
+
+		# data treatment
+		area_bearer_token = retrieve_token(get_beared_token(request))
+		area_user_id = area_bearer_token.get("id", None) if area_bearer_token else None
+	
+		# user is not logged in an area account
+		if not area_bearer_token or not area_user_id:
+			try:
+				with db.cursor() as cur:
+					cur.execute("SELECT owner FROM tokens " \
+				 		"WHERE userid = %s AND service = %s", (
+							github_user_id,
+							oreo.service,
+						)
 					)
-					r = cur.fetchone()
-					if not r:
-						raise Exception("could not fetch")
-					tokenid = r[0]
-					cur.execute("INSERT INTO users (tokenid) VALUES (%s) RETURNING id", (tokenid,))
-					r = cur.fetchone()
-					if not r:
-						raise Exception("could not fetch")
-					ownerid = r[0]
-					cur.execute("UPDATE tokens SET owner = %s WHERE id = %s", (ownerid, tokenid))
-					db.commit()
-				else:
-					tokenid, ownerid = rows[0], rows[1]
-				db.commit()
-				data = jwt.encode({
-					"id": ownerid,
-					"exp": dt.datetime.now() + dt.timedelta(seconds=EXPIRATION)
-				}, BACKEND_KEY, algorithm="HS256")
-				return jsonify({ "token": data }), 200
+					rows = cur.fetchone()
 			
+					# service account not linked with any area account: create new token and new area account
+					if not rows:
+						# create new area account empty entry
+						cur.execute("INSERT INTO users " \
+							"DEFAULT VALUES " \
+							"RETURNING id"
+						)
+						area_user_id = cur.fetchone()[0]
+
+						# create new token linked with the new area account
+						cur.execute("INSERT INTO tokens " \
+							"(service, token, refresh, userid, owner) " \
+							"VALUES (%s, %s, %s, %s, %s)", (
+								oreo.service,
+		 						github_access_token,
+								github_refresh_token,
+								github_user_id,
+								area_user_id,
+							)
+						)
+
+						db.commit()
+						return jsonify({ "token": generate_beared_token(area_user_id) }), 200
+				
+					# service account already linked with an area account: update token
+					else:
+						cur.execute(
+								"UPDATE tokens " \
+								"SET token = %s, refresh = %s " \
+								"WHERE userid = %s AND service = %s " \
+								"RETURNING owner", (
+									github_access_token,
+									github_refresh_token,
+									github_user_id,
+									oreo.service,
+								)
+						)
+						
+						area_user_id = cur.fetchone()[0]
+			
+						db.commit()
+						return jsonify({ "token": generate_beared_token(area_user_id) }), 200
+			except (Exception, psycopg2.Error) as err:
+				return jsonify({ "error":  str(err)}), 400
+
 		
-		except (Exception, psycopg2.Error) as err:
-			return jsonify({ "error":  str(err)}), 400
+		
+		# user is already logged in an area account
+		else:
+			try:
+				with db.cursor() as cur:
+					cur.execute("SELECT owner FROM tokens " \
+				 		"WHERE userid = %s AND service = %s", (
+							 github_user_id,
+							 oreo.service,
+						)
+					)
+					rows = cur.fetchone()
+			
+					# service account already linked with an other area account: forbiden
+					if rows and rows[0] != area_user_id:
+						return jsonify({ "error": "forbiden: user already logged in an other account"}), 403
+				
+					# service account already linked with the same area account: update token
+					elif rows and rows[0] == area_user_id:
+						cur.execute("UPDATE tokens " \
+				  			"SET token = %s, refresh = %s " \
+							"WHERE userid = %s AND service = %s", (
+								github_access_token,
+								github_refresh_token,
+								github_user_id,
+								oreo.service,
+							)
+						)
+						db.commit()
+				
+					# service account not linked with any area account: create new token
+					else:
+						cur.execute("INSERT INTO tokens " \
+							"(service, token, refresh, userid, owner)" \
+							"VALUES (%s, %s, %s, %s, %s)", (
+								oreo.service,
+								github_access_token,
+								github_refresh_token,
+								github_user_id,
+								area_user_id,
+							)
+						)
+						db.commit()
+					
+					return jsonify({ "token": generate_beared_token(area_user_id) }), 200
+			except (Exception, psycopg2.Error) as err:
+				return jsonify({ "error":  str(err)}), 400
+
 		return jsonify({ "error": "unexpected end of code"}), 500
 
 ##
