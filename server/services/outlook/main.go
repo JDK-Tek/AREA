@@ -86,7 +86,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	data := url.Values{}
 	err := json.NewDecoder(req.Body).Decode(&res)
 	if err != nil {
-		fmt.Fprintln(w, "decode", err.Error())
+		fmt.Fprintln(w, "decodeeee", err.Error())
 		return
 	}
 	data.Set("client_id", clientid)
@@ -105,7 +105,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	defer rep.Body.Close()
 	err = json.NewDecoder(rep.Body).Decode(&tok)
 	if err != nil {
-		fmt.Fprintln(w, "decode", err.Error())
+		fmt.Fprintln(w, "decodeaaaa", err.Error())
 		return
 	}
 	//the new code from paul
@@ -137,7 +137,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	defer rep.Body.Close()
 	err = json.NewDecoder(rep.Body).Decode(&user)
 	if err != nil {
-		fmt.Fprintln(w, "decode", err.Error())
+		fmt.Fprintln(w, "decodeiiiiii", err.Error())
 		return
 	}
 
