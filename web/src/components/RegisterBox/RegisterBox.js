@@ -26,7 +26,7 @@ function RegisterTexts() {
     )
 }
 
-export default function RegisterBox ( {setToken} ) {
+export default function RegisterBox ( {setToken, setError} ) {
 
     const backendUrl = process.env.REACT_APP_BACKEND_URL
 
@@ -57,7 +57,7 @@ export default function RegisterBox ( {setToken} ) {
             window.location.href = "/";
         })
         .catch((error) => {
-            console.error('Error:', error);
+            setError(error.response.data.error);
         });
     }
 

@@ -160,7 +160,6 @@ func oauthSetter(a area.AreaRequest) {
 		return
 	}
 	defer rep.Body.Close()
-
 	body, err := io.ReadAll(rep.Body)
 	if err != nil {
 		a.Error(err, http.StatusBadGateway)
@@ -188,56 +187,21 @@ func codeCallback(a area.AreaRequest) {
 	}, http.StatusOK)
 }
 
-// about + 
-
-type AboutSomething struct {
-	Name string `json:"name"`
-	Description string `json:"description"`
-}
-
-type AboutClient struct {
-	Host string `json:"host"`
-}
-
-type AboutSevice struct {
-	Name string `json:"name"`
-	Icon string `json:"icon"`
-	Actions []AboutSomething `json:"actions"`
-	Reactions []AboutSomething `json:"reactions"`
-}
-
-type AboutServer struct {
-	CurrentTime int64 `json:"current_time"`
-	Services []AboutSevice `json:"services"`
-}
-
-type About struct {
-	Client AboutClient `json:"client"`
-	Server AboutServer `json:"server"`
-}
-
 func getAllServices(a area.AreaRequest) {
 	a.Reply(a.Area.Services, http.StatusOK)
 }
 
 func createTheAbout(a area.AreaRequest) {
-	x := About{
-		Client: AboutClient{
-			Host: os.Getenv("FRONTEND"),
-		},
-		Server: AboutServer{
-			CurrentTime: time.Now().Unix(),
-			Services: []AboutSevice{},
-		},
-	}
-	a.Reply(x, http.StatusOK)
+	a.Area.About.Server.CurrentTime = time.Now().Unix()
+	a.Reply(a.Area.About, http.StatusOK)
 }
 
 func getRoutes(a area.AreaRequest) {
 	vars := mux.Vars(a.Request)
     service := vars["service"]
 	url := fmt.Sprintf(
-		"http://reverse-proxy:42002/service/%s/routes",
+		"http://reverse-proxy:%s/service/%s/",
+		os.Getenv("REVERSEPROXY_PORT"),
 		service,
 	)
 	rep, err := http.Get(url)
@@ -252,7 +216,7 @@ func getRoutes(a area.AreaRequest) {
 		return
 	}
 	if rep.StatusCode != 200 {
-		a.ErrorStr(string(body), http.StatusInternalServerError)
+		a.ErrorStr(string(body), rep.StatusCode)
 		return
 	}
 	a.Writter.WriteHeader(http.StatusOK)
@@ -277,6 +241,10 @@ func doctor(a area.AreaRequest) {
 		return
 	}
 	a.Reply(MessageWithID{Message: "i'm ok", Authentificated: true, ID: id}, http.StatusOK)
+		a.Reply(Message{Message: "i'm ok thanks", Authentificated: false}, http.StatusOK)
+		return
+	}
+	a.Reply(MessageWithID{Message: "i'm ok thanks", Authentificated: true, ID: id}, http.StatusOK)
 }
 
 func main() {
@@ -340,7 +308,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	fmt.Println(a.Services[0])
+	err = a.SetupTheAbout()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
     corsMiddleware := handlers.CORS(
         handlers.AllowedOrigins([]string{"*"}),
         handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE"}),
@@ -358,6 +329,7 @@ func main() {
 	router.HandleFunc("/api/services", newProxy(&a, getAllServices)).Methods("GET")
 	router.HandleFunc("/api/services/{service}", newProxy(&a, getRoutes)).Methods("GET")
     router.HandleFunc("/api/doctor", newProxy(&a, doctor)).Methods("GET")
+    router.HandleFunc("/api/change", newProxy(&a, auth.DoSomeChangePassword)).Methods("PUT")
     router.HandleFunc("/about.json", newProxy(&a, createTheAbout)).Methods("GET")
 
     fmt.Println("=> server listens on port ", portString)

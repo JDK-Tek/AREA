@@ -150,9 +150,10 @@ func connectToDatabase() (*sql.DB, error) {
 	// 	dbName,
 	// )
 	connectStr := fmt.Sprintf(
-		"postgresql://%s:%s@database:42001/area_database?sslmode=disable",
+		"postgresql://%s:%s@database:%s/area_database?sslmode=disable",
 		dbUser,
 		dbPassword,
+		dbPort,
 	)
 	return sql.Open("postgres", connectStr)
 }
@@ -171,7 +172,11 @@ func masterThread(db *sql.DB) {
 	var msg Message
 
 	client := http.Client{}
-	url := "http://backend:42000/api/orchestrator"
+	backendPort := os.Getenv("BACKEND_PORT")
+	if backendPort == "" {
+		log.Fatal("BACKEND_PORT not found")
+	}
+	url := fmt.Sprintf("http://backend:%s/api/orchestrator", backendPort)
 	for {
 		var bridges []int
 		var n int
@@ -230,31 +235,42 @@ func masterThread(db *sql.DB) {
 	}
 }
 
-type Spice struct {
+type InfoSpice struct {
 	Name string `json:"name"`
 	Type string `json:"type"`
-	Extra []string `json:"extraParams"`
+	Title string `json:"title"`
+	Extra []string `json:"extra"`
 }
 
-type Route struct {
+type InfoRoute struct {
 	Type string `json:"type"`
 	Name string `json:"name"`
-	Spices []Spice `json:"spices"`
+	Desc string `json:"description"`
+	Spices []InfoSpice `json:"spices"`
+}
+
+type Infos struct {
+	Color string `json:"color"`
+	Image string `json:"Image"`
+	Routes []InfoRoute `json:"routes"`
 }
 
 func getRoutes(w http.ResponseWriter, req *http.Request) {
-	var list = []Route{
-		Route{
+	var list = []InfoRoute{
+		InfoRoute{
 			Name: "in",
 			Type: "action",
-			Spices: []Spice{
+			Desc: "Triggers in some amount of time.",
+			Spices: []InfoSpice{
 				{
 					Name: "howmuch",
 					Type: "number",
+					Title: "How much time to wait.",
 				},
 				{
 					Name: "unit",
 					Type: "dropdown",
+					Title: "The unit to wait.",
 					Extra: []string{
 						"weeks",
 						"days",
@@ -266,10 +282,14 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 			},
 		},
 	}
+	var infos = Infos{
+		Color: "#ff0000ff",
+		Routes: list,
+	}
 	var data []byte
 	var err error
 
-	data, err = json.Marshal(list)
+	data, err = json.Marshal(infos)
 	if err != nil {
 		http.Error(w, `{ "error": "marshal" }`, http.StatusInternalServerError)
 		return

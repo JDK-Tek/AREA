@@ -3,11 +3,12 @@ services:
     env_file:
       - .env
     build:
-      context: ./src
+      context: ./server/src
     ports:
       - ${BACKEND_PORT}:${BACKEND_PORT}
     depends_on:
       - database
+      - reverse-proxy
     environment:
       - FRONTEND=${FRONTEND}
       - DB_USER=${DATABASE_USER}
@@ -16,17 +17,18 @@ services:
       - DB_HOST=database
       - DB_PORT=${DATABASE_PORT}
       - SERVICES_PATH=${BACKEND_SERVICES_PATH}
+      - REVERSEPROXY_PORT=${TRAEFIK_PORT}
     container_name: area-backend
     networks:
       - web
     volumes:
-      - ./services:${BACKEND_SERVICES_PATH}
+      - ./server/services:${BACKEND_SERVICES_PATH}
 
   database:
     env_file:
       - .env
-    expose:
-      - ${DATABASE_PORT}
+    # expose:
+    #   - ${DATABASE_PORT}
     image: postgres
     container_name: area-database
     command: -p ${DATABASE_PORT}
@@ -48,7 +50,7 @@ services:
       - .env
     container_name: area-service-discord
     build:
-      context: ./services/discord
+      context: ./server/services/discord
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.discord.rule=PathPrefix(`/service/discord/`)"
@@ -66,14 +68,14 @@ services:
     networks:
       - web
     volumes:
-      - ./services/discord/.env:/usr/mount.d/.env
+      - ./server/services/discord/.env:/usr/mount.d/.env
   
   service-spotify:
     env_file:
       - .env
     container_name: area-service-spotify
     build:
-      context: ./services/spotify
+      context: ./server/services/spotify
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.spotify.rule=PathPrefix(`/service/spotify/`)"
@@ -96,7 +98,7 @@ services:
       - .env
     container_name: area-service-outlook
     build:
-      context: ./services/outlook
+      context: ./server/services/outlook
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.outlook.rule=PathPrefix(`/service/outlook/`)"
@@ -119,7 +121,7 @@ services:
       - .env
     container_name: area-service-time
     build:
-      context: ./services/time
+      context: ./server/services/time
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.time.rule=PathPrefix(`/service/time/`)"
@@ -140,7 +142,7 @@ services:
       - .env
     container_name: area-service-roblox
     build:
-      context: ./services/roblox
+      context: ./server/services/roblox
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.roblox.rule=PathPrefix(`/service/roblox/`)"
@@ -156,14 +158,37 @@ services:
     networks:
       - web
     volumes:
-    - ./services/roblox/.env:/usr/mount.d/.env
+    - ./server/services/roblox/.env:/usr/mount.d/.env
+  
+  service-github:
+    env_file:
+      - .env
+    container_name: area-service-github
+    build:
+      context: ./server/services/github
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.github.rule=PathPrefix(`/service/github/`)"
+      - "traefik.http.services.github.loadbalancer.server.port=80"
+      - "traefik.http.routers.github.middlewares=stripprefix-service-github"
+      - "traefik.http.middlewares.stripprefix-service-github.stripprefix.prefixes=/service/github"
+    environment:
+      - DB_HOST=database
+      - DB_PORT=${DATABASE_PORT}
+      - DB_USER=${DATABASE_USER}
+      - DB_PASSWORD=${DATABASE_PASSWORD}
+      - DB_NAME=${DATABASE_NAME}
+    networks:
+      - web
+    volumes:
+    - ./server/services/github/.env:/usr/mount.d/.env
 
   service-reddit:
     env_file:
       - .env
     container_name: area-service-reddit
     build:
-      context: ./services/reddit
+      context: ./server/services/reddit
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.reddit.rule=PathPrefix(`/service/reddit/`)"
@@ -179,14 +204,15 @@ services:
     networks:
       - web
     volumes:
-    - ./services/reddit/.env:/usr/mount.d/.env
+    - ./server/services/reddit/.env:/usr/mount.d/.env
 
   reverse-proxy:
     env_file:
-      - .env
+    - .env
     image: traefik:v${TRAEFIK_VERSION}
     container_name: area-traefik
     command:
+      # - "--api.insecure=true"
       - "--providers.docker=true"
       - "--entrypoints.web.address=:${TRAEFIK_PORT}"
     ports:
@@ -195,7 +221,6 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock"
     networks:
       - web
-      
 
 
 networks:

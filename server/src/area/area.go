@@ -14,10 +14,63 @@ import (
 
 const expiration = 60 * 30
 
+// the about structure (for about.json)
+
+type AboutSomething struct {
+	Name string `json:"name"`
+	Description string `json:"description"`
+}
+
+type AboutClient struct {
+	Host string `json:"host"`
+}
+
+type AboutSevice struct {
+	Name string `json:"name"`
+	Icon string `json:"icon"`
+	Actions []AboutSomething `json:"actions"`
+	Reactions []AboutSomething `json:"reactions"`
+}
+
+type AboutServer struct {
+	CurrentTime int64 `json:"current_time"`
+	Services []AboutSevice `json:"services"`
+}
+
+type About struct {
+	Client AboutClient `json:"client"`
+	Server AboutServer `json:"server"`
+}
+
+// the main area structuree
+
 type Area struct {
 	Database *sql.DB
 	Key string
 	Services []string
+	About About
+}
+
+// for the informations i get from the services
+
+type InfoSpice struct {
+	Name string `json:"name"`
+	Type string `json:"type"`
+	Title string `json:"title"`
+	Extra []string `json:"extra"`
+}
+
+type InfoRoute struct {
+	Type string `json:"type"`
+	Name string `json:"name"`
+	Desc string `json:"description"`
+	Spices []InfoSpice `json:"spices"`
+}
+
+type Infos struct {
+	Color string `json:"color"`
+	Image string `json:"Image"`
+	Routes []InfoRoute `json:"routes"`
 }
 
 func (it *Area) ObserveServices(where string) error {
@@ -29,6 +82,46 @@ func (it *Area) ObserveServices(where string) error {
     for n, e := range entries {
         it.Services[n] = e.Name()
     }
+	return nil
+}
+
+func (it *Area) SetupTheAbout() error {
+	// var revproxy = os.Getenv("REVERSEPROXY_PORT")
+	// var infos Infos
+	// var tmpService AboutSevice
+
+	it.About = About{
+		Client: AboutClient{
+			Host: os.Getenv("FRONTEND"),
+		},
+		Server: AboutServer{
+			CurrentTime: time.Now().Unix(),
+			Services: []AboutSevice{},
+		},
+	}
+	if len(it.Services) == 0 {
+		return nil
+	}
+	// fmt.Println(fmt.Sprintf("http://reverse-proxy:%s/service/%s/", revproxy, "coucou"))
+	// for _, service := range it.Services {
+	// 	url := fmt.Sprintf("http://reverse-proxy:%s/service/%s/", revproxy, service)
+	// 	rep, err := http.Get(url)
+	// 	if err != nil {
+	// 		fmt.Printf("%s failed: %s\n", service, err.Error())
+	// 		continue
+	// 	}
+	// 	defer rep.Body.Close()
+	// 	err = json.NewDecoder(rep.Body).Decode(&infos)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	for _, v := range infos.Routes {
+	// 		if v.Type == "action" {
+	// 			tmpService.Actions = append(tmpService.Actions, )
+	// 		}
+	// 	}
+	// 	it.About.Server.Services = append(it.About.Server.Services, tmpService)
+	// }
 	return nil
 }
 

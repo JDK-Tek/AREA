@@ -16,22 +16,31 @@ This project is a multi-platform application developed to provide backend, mobil
 ### Prerequisites 📋
 - .env file at the root of repository using this template:
 ```
-# backend
-BACKEND_PORT=8080
-BACKEND_KEY=
+COMPOSE_PATH_SEPARATOR=:
+COMPOSE_FILE=docker-compose.yaml:server/docker-compose.yml
 
 # web
 WEB_PORT=8081
-REACT_APP_BACKEND_URL=
+REACT_APP_BACKEND_URL=...
+
+# general
+REDIRECT=.../connected
+FRONTEND=...
+EXPIRATION=1800
+
+# backend
+BACKEND_PORT=8080
+BACKEND_KEY=...
+BACKEND_SERVICES_PATH=/usr/services
 
 # database
-DATABASE_PORT=8082
-DATABASE_PASSWORD=
-DATABASE_USER=
-DATABASE_NAME=
+DATABASE_PORT=42001
+DATABASE_PASSWORD=...
+DATABASE_USER=postgres
+DATABASE_NAME=area_database
 
 # traefik
-TRAEFIK_PORT=8083
+TRAEFIK_PORT=42002
 TRAEFIK_VERSION=2.10
 ```
 

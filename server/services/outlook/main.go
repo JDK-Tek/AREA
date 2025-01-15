@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"time"
+	"io"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
@@ -65,6 +66,7 @@ type Result struct {
 
 type TokenResult struct {
 	Token string `json:"access_token"`
+	Refresh string `json:"refresh_token"`
 }
 
 type UserResult struct {
@@ -77,6 +79,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	var user UserResult
 	var tokid int
 	var owner = -1
+	var responseData map[string]interface{}
 
 	clientid := os.Getenv("OUTLOOK_CLIENT_ID")
 	clientsecret := os.Getenv("OUTLOOK_CLIENT_SECRET")
@@ -92,23 +95,38 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	data.Set("code", res.Code)
 	data.Set("redirect_uri", os.Getenv("REDIRECT"))
 	rep, err := http.PostForm(API_OAUTH_OUTLOOK, data)
+	fmt.Fprintln(w, "tmp = ", res.Code)
+	return
 	if err != nil {
 		fmt.Fprintln(w, "postform", err.Error())
 		return
 	}
 	defer rep.Body.Close()
-	err = json.NewDecoder(rep.Body).Decode(&tok)
+	// err = json.NewDecoder(rep.Body).Decode(&tok)
+	// if err != nil {
+	// 	fmt.Fprintln(w, "decode", err.Error())
+	// 	return
+	// }
+	// the new code from paul
+	body, err := io.ReadAll(rep.Body)
 	if err != nil {
-		fmt.Fprintln(w, "decode", err.Error())
+		fmt.Fprintln(w, "read body", err.Error())
 		return
 	}
+	if err := json.Unmarshal(body, &responseData); err != nil {
+		fmt.Fprintln(w, "unmarshal json", err.Error())
+		return
+	}
+	fmt.Println(responseData)
+	tok.Token = responseData["access_token"].(string)
+	tok.Refresh = responseData["refresh_token"].(string)
 
 	req, err = http.NewRequest("GET", API_USER_OUTLOOK, nil)
 	if err != nil {
 		fmt.Fprintln(w, "request error", err.Error())
 		return
 	}
-	req.Header.Set("Authorization", "Bearer " + tok.Token)
+	req.Header.Set("Authorization", "Bearer " +tok.Token)
 	client := &http.Client{}
 	rep, err = client.Do(req)
 	if err != nil {
@@ -122,11 +140,16 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		return
 	}
 
+	if tok.Token == "" || tok.Refresh == "" {
+		fmt.Fprintln(w, "error: token is empty")
+		return
+	}
 	err = db.QueryRow("select id, owner from tokens where userid = $1", user.ID).Scan(&tokid, &owner)
 	if err != nil {
-		err = db.QueryRow("insert into tokens (service, token, userid) values ($1, $2, $3) returning id",
+		err = db.QueryRow("insert into tokens (service, token, userid) values ($1, $2, $3, ) returning id",
 			"outlook",
 			tok.Token,
+			tok.Refresh,
 			user.ID,
 		).Scan(&tokid)
 		if err != nil {
@@ -306,9 +329,12 @@ func connectToDatabase() (*sql.DB, error) {
 		log.Fatal("DB_PORT not found")
 	}
 	connectStr := fmt.Sprintf(
-		"postgresql://%s:%s@database:5432/area_database?sslmode=disable",
+		"postgresql://%s:%s@%s:%s/%s?sslmode=disable",
 		dbUser,
 		dbPassword,
+		dbHost,
+		dbPort,
+		dbName,
 	)
 	return sql.Open("postgres", connectStr)
 }
@@ -452,6 +478,45 @@ func checkTeamsMessages(w http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(w).Encode(messageList)
 }
 
+type Spice struct {
+	Name string `json:"name"`
+	Type string `json:"type"`
+}
+
+type Route struct {
+	Type string `json:"type"`
+	Name string `json:"name"`
+	Spices []Spice `json:"spices"`
+}
+
+func getRoutes(w http.ResponseWriter, req *http.Request) {
+	var list = []Route{
+		Route{
+			Name: "send",
+			Type: "reaction",
+			Spices: []Spice{
+				{
+					Name: "channel",
+					Type: "number",
+				},
+				{
+					Name: "message",
+					Type: "text",
+				},
+			},
+		},
+	}
+	var data []byte
+	var err error
+
+	data, err = json.Marshal(list)
+	if err != nil {
+		http.Error(w, `{ "error":  "marshal" }`, http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+    fmt.Fprintln(w, string(data))
+}
 
 func main() {
 	db, err := connectToDatabase()
@@ -468,5 +533,6 @@ func main() {
 	router.HandleFunc("/sendTeamsMessage", sendTeamsMessage).Methods("POST")
 	router.HandleFunc("/checkEmail", checkEmail).Methods("GET")
 	router.HandleFunc("/checkTeamsMessages", checkTeamsMessages).Methods("POST")
+	router.HandleFunc("/routes", getRoutes).Methods("GET")
 	log.Fatal(http.ListenAndServe(":80", router))
 }

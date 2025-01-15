@@ -10,15 +10,16 @@ import (
 	"os"
 	"time"
 
-	"google.golang.org/api/gmail/v1"
-	"golang.org/x/oauth2"
-	"google.golang.org/api/option"
+	"encoding/base64"
+
 	"github.com/dgrijalva/jwt-go"
-	"golang.org/x/net/context"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
-	"encoding/base64"
+	"golang.org/x/net/context"
+	"golang.org/x/oauth2"
+	"google.golang.org/api/gmail/v1"
+	"google.golang.org/api/option"
 )
 
 const API_OAUTH_GOOGLE = "https://oauth2.googleapis.com/token"
@@ -98,7 +99,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		fmt.Fprintln(w, "request error", err.Error())
 		return
 	}
-	req.Header.Set("Authorization", "Bearer " + tok.AccessToken)
+	req.Header.Set("Authorization", "Bearer "+tok.AccessToken)
 	client := &http.Client{}
 	resp, err = client.Do(req)
 	if err != nil {
@@ -232,6 +233,46 @@ func miniproxy(f func(http.ResponseWriter, *http.Request, *sql.DB), c *sql.DB) f
 	return func(a http.ResponseWriter, b *http.Request) {
 		f(a, b, c)
 	}
+}
+
+type Spice struct {
+	Name string `json:"name"`
+	Type string `json:"type"`
+}
+
+type Route struct {
+	Type   string  `json:"type"`
+	Name   string  `json:"name"`
+	Spices []Spice `json:"spices"`
+}
+
+func getRoutes(w http.ResponseWriter, req *http.Request) {
+	var list = []Route{
+		Route{
+			Name: "send",
+			Type: "reaction",
+			Spices: []Spice{
+				{
+					Name: "channel",
+					Type: "number",
+				},
+				{
+					Name: "message",
+					Type: "text",
+				},
+			},
+		},
+	}
+	var data []byte
+	var err error
+
+	data, err = json.Marshal(list)
+	if err != nil {
+		http.Error(w, `{ "error":  "marshal" }`, http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintln(w, string(data))
 }
 
 func main() {
