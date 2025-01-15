@@ -82,9 +82,8 @@ export default function LoginBox ( {setToken, setError} ) {
                             }
                         })
                         .then((response) => {
-                            console.log("Token: " + response.data);
-                            // setToken(response.data.token);
-                            // window.location.href = "/";
+                            setToken(response.data.token);
+                            window.location.href = "/";
                         })
                         .catch((error) => {
                             console.error('Error:', error);
