@@ -19,8 +19,9 @@ load_dotenv("/usr/mount.d/.env")
 API_APP_ID=os.environ.get("API_APP_ID")
 API_CLIENT_ID_TOKEN=os.environ.get("API_CLIENT_ID_TOKEN")
 API_CLIENT_SECRET_TOKEN=os.environ.get("API_CLIENT_SECRET_TOKEN")
-
 REDIRECT_URI = os.environ.get("REDIRECT")
+BACKEND_PORT = os.environ.get("BACKEND_PORT")
+
 GITHUB_API_OAUTH_URL = "https://github.com/login/oauth"
 GITHUB_API_URL = "https://api.github.com"
 
@@ -94,20 +95,21 @@ class NewOreo:
 	TYPE_REACTIONS = "reaction"
 	TYPE_ACTIONS = "action"
 
+
 	def __init__(self, service, color, image):
 		self.service = service
 		self.color = color
 		self.image = image
 		self.areas = []
 	
-	def create_area(self, name, type, description, spices):
+	def create_area(self, name, type, title, spices):
 		self.areas.append({
 			"name": name,
 			"type": type,
-			"description": description,
+			"title": title,
 			"spices": spices
 		})
-		
+
 
 ## #
 ##
@@ -122,6 +124,7 @@ oreo = NewOreo(
 	color="#ff4500",
 	image="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
 )
+
 
 PERMISSIONS_REQUIRED = [
 	"user",
@@ -316,9 +319,6 @@ def oauth():
 
 		return jsonify({ "error": "unexpected end of code"}), 500
 
-##
-## ACTIONS
-##
 
 ##
 ## REACTIONS
@@ -333,22 +333,22 @@ oreo.create_area(
 		{
 			"name": "owner",
 			"type": "input",
-			"description": "The owner of the repository"
+			"title": "The owner of the repository"
 		},
 		{
 			"name": "repo",
 			"type": "input",
-			"description": "The repository name"
+			"title": "The repository name"
 		},
 		{
 			"name": "title",
 			"type": "input",
-			"description": "The title of the issue (Markdown supported)"
+			"title": "The title of the issue (Markdown supported)"
 		},
 		{
 			"name": "body",
 			"type": "text",
-			"description": "The body of the issue (Markdown supported)"
+			"title": "The body of the issue (Markdown supported)"
 		}
 	]
 )
@@ -404,8 +404,6 @@ def create_issue():
     return jsonify({"status": "Issue created"}), 200
 
 
-
-
 # Create a new reply to an issue / pull request
 oreo.create_area(
 	"create-reply",
@@ -415,22 +413,22 @@ oreo.create_area(
 		{
 			"name": "id",
 			"type": "number",
-			"description": "The id of the issue or pull request"
+			"title": "The id of the issue or pull request"
 		},
 		{
 			"name": "owner",
 			"type": "input",
-			"description": "The owner of the repository"
+			"title": "The owner of the repository"
 		},
 		{
 			"name": "repo",
 			"type": "input",
-			"description": "The repository name"
+			"title": "The repository name"
 		},
 		{
 			"name": "body",
 			"type": "text",
-			"description": "The body of the reply (Markdown supported)"
+			"title": "The body of the reply (Markdown supported)"
 		}
 	]
 )
@@ -483,6 +481,118 @@ def create_reply():
 
     app.logger.info(f"User {user.get('id')} created a new reply in {owner}/{repo}, to the '{id}' issue/pr")
     return jsonify({"status": "Reply created"}), 200
+
+
+
+##
+## ACTIONS
+##
+
+# When you are assigned to an issue
+ACTION_ASSIGNED_ISSUE = "assigned-issue"
+oreo.create_area(
+	ACTION_ASSIGNED_ISSUE,
+	NewOreo.TYPE_ACTIONS,
+	"When you are assigned to an issue",
+	[ ]
+)
+@app.route('/assigned-issue', methods=["POST"])
+def assigned_issue():
+	app.logger.info("assigned-issue endpoint hit")
+
+	# get data
+	data = request.json
+	if not data:
+		return jsonify({"error": "Invalid JSON"}), 400
+
+	area_user_id = data.get("id_user", 1)
+	bridge = data.get("bridge")
+	spices = data.get("spices")
+	if not area_user_id or not bridge:
+		return jsonify({"error": f"Missing required fields: 'user_id': {area_user_id}, 'spices': {spices}, 'bridge': {bridge}"}), 400
+
+
+	with db.cursor() as cur:
+		cur.execute("SELECT userid FROM tokens " \
+			  "WHERE service = 'github' AND owner = %s", (
+				  area_user_id,
+			  )
+		)
+		rows = cur.fetchone()
+		if not rows:
+			return jsonify({"error": "User not found"}), 404
+		github_user_id = rows[0]
+
+		cur.execute("INSERT INTO micro_github" \
+			  "(areauserid, userid, bridgeid, triggers) " \
+			  "VALUES (%s, %s, %s, %s)", (
+				  area_user_id,
+				  github_user_id,
+				  bridge,
+				  ACTION_ASSIGNED_ISSUE
+			  )
+		)
+
+		db.commit()
+
+	return jsonify({"status": "ok"}), 200
+
+
+
+##
+## WEBHOOKS
+##
+@app.route('/webhook', methods=["POST"])
+def webhook():
+	app.logger.info("webhook endpoint hit")
+	
+	data = request.json
+	action = data.get('action')
+	if not action:
+		app.logger.error("Invalid JSON")
+		return jsonify({"error": "Invalid JSON"}), 400
+	
+	try:
+		if action == "assigned":
+			assignee = data.get('assignee', {})
+			github_userid = assignee.get('id')
+
+			if not github_userid:
+				return jsonify({"error": "Invalid JSON"}), 400
+
+			with db.cursor() as cur:
+				cur.execute("SELECT bridgeid, areauserid FROM micro_github " \
+					"WHERE userid = %s AND triggers = %s", (
+						github_userid,
+						ACTION_ASSIGNED_ISSUE
+					)
+				)
+
+				# check if the user has an action assigned
+				rows = cur.fetchall()
+				if not rows:
+					return jsonify({"status": "ok"}), 200
+				
+				# get the bridge id
+				for row in rows:
+					bridge = row[0]
+					areauserid = row[1]
+					requests.put(
+						f"http://backend:{BACKEND_PORT}/api/orchestrator",
+						json={
+							"bridge": bridge,
+							"userid": areauserid,
+							"ingredients": {}
+						}
+					)
+				return jsonify({"status": "ok"}), 200
+				
+	except (Exception, psycopg2.Error) as err:
+		app.logger.error(str(err))
+		return jsonify({"error": str(err)}), 400
+
+	return jsonify({"status": "ok"}), 200
+
 
 
 ##
