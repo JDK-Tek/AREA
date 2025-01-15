@@ -11,7 +11,6 @@ import (
 	"os"
 	"time"
 	"io"
-	
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
@@ -43,18 +42,22 @@ type Content struct {
 	Dishes Objects `json:"spices"`
 }
 
+type EmailContent struct {
+	To      string `json:"to"`
+	Subject string `json:"subject"`
+	Body    string `json:"body"`
+}
+
 func getOAUTHLink(w http.ResponseWriter, req *http.Request) {
-	params := url.Values{}
-	params.Set("client_id", os.Getenv("OUTLOOK_CLIENT_ID"))
-	params.Set("response_type", "code")
-	params.Set("redirect_uri", os.Getenv("REDIRECT"))
-	params.Set("scope", "openid profile email offline_access user.read")
-	params.Set("state", "some-state-value")
-
-	oauthURL := "https://login.microsoftonline.com/common/oauth2/v2.0/authorize?" + params.Encode()
-
+	str := "https://login.microsoftonline.com/common/oauth2/v2.0/authorize?"
+	x := url.QueryEscape(os.Getenv("REDIRECT"))
+	str += "client_id=" + os.Getenv("OUTLOOK_CLIENT_ID")
+	str += "&response_type=code"
+	str += "&redirect_uri=" + x
+	str += "&scope=User.Read"
+	str += "&state=some-state-value"
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, oauthURL)
+	fmt.Fprintln(w, str)
 }
 
 type Result struct {
@@ -93,8 +96,8 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	data.Set("redirect_uri", os.Getenv("REDIRECT"))
 	rep, err := http.PostForm(API_OAUTH_OUTLOOK, data)
 	body, err := io.ReadAll(rep.Body)
-	fmt.Println(clientsecret)
 	fmt.Fprintln(w, "tmp = ", string(body))
+	return
 	if err != nil {
 		fmt.Fprintln(w, "postform", err.Error())
 		return
@@ -117,7 +120,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	}
 	fmt.Println(responseData)
 	tok.Token = responseData["access_token"].(string)
-	tok.Refresh = "foobar"
+	tok.Refresh = responseData["refresh_token"].(string)
 
 	req, err = http.NewRequest("GET", API_USER_OUTLOOK, nil)
 	if err != nil {
@@ -176,10 +179,8 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	fmt.Fprintf(w, `{"token": "%s"}\n`, tokenStr)
 }
 
-func sendTeamsMessage(w http.ResponseWriter, req *http.Request, db *sql.DB) {
+func sendTeamsMessage(w http.ResponseWriter, req *http.Request) {
 	var teamsContent TeamsContent
-	var tok TokenResult
-
 	decoder := json.NewDecoder(req.Body)
 	err := decoder.Decode(&teamsContent)
 	if err != nil {
@@ -188,58 +189,10 @@ func sendTeamsMessage(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		return
 	}
 
-	userID := teamsContent.TeamID
-	tokenStr := teamsContent.Message
-
-	if tokenStr == "" {
-		w.WriteHeader(http.StatusUnauthorized)
-		fmt.Fprintf(w, "{ \"error\": \"Token is missing\" }\n")
-		return
-	}
-
-	secretBytes := []byte(os.Getenv("BACKEND_KEY"))
-	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return secretBytes, nil
-	})
-
-	if err != nil || !token.Valid {
-		w.WriteHeader(http.StatusUnauthorized)
-		fmt.Fprintf(w, "{ \"error\": \"Invalid token\" }\n")
-		return
-	}
-
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		w.WriteHeader(http.StatusUnauthorized)
-		fmt.Fprintf(w, "{ \"error\": \"Invalid token claims\" }\n")
-		return
-	}
-
-	ownerID := claims["id"].(float64)
-	if ownerID == 0 {
-		w.WriteHeader(http.StatusUnauthorized)
-		fmt.Fprintf(w, "{ \"error\": \"User ID not found in token\" }\n")
-		return
-	}
-
-	err = db.QueryRow("SELECT token, refresh FROM tokens WHERE userid = $1", userID).Scan(&tok.Token, &tok.Refresh)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			w.WriteHeader(http.StatusUnauthorized)
-			fmt.Fprintf(w, "{ \"error\": \"Token not found for the user\" }\n")
-		} else {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(w, "{ \"error\": \"Database query error: %s\" }\n", err.Error())
-		}
-		return
-	}
-
-	if tok.Token == "" || tok.Refresh == "" {
-		w.WriteHeader(http.StatusUnauthorized)
-		fmt.Fprintf(w, "{ \"error\": \"Token is empty\" }\n")
+	token := os.Getenv("OUTLOOK_TOKEN")
+	if token == "" {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "{ \"error\": \"token is missing\" }\n")
 		return
 	}
 
@@ -248,7 +201,6 @@ func sendTeamsMessage(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 			"content": teamsContent.Message,
 		},
 	}
-
 	messageBytes, err := json.Marshal(messageData)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -265,7 +217,7 @@ func sendTeamsMessage(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		return
 	}
 
-	reqTeams.Header.Set("Authorization", "Bearer "+tok.Token)
+	reqTeams.Header.Set("Authorization", "Bearer "+token)
 	reqTeams.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
@@ -286,19 +238,8 @@ func sendTeamsMessage(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	}
 }
 
-
-type EmailContent struct {
-	UserID  string `json:"UserID"`
-	Token   string `json:"Token"`
-	Subject string `json:"Subject"`
-	Body    string `json:"Body"`
-	To      string `json:"To"`
-}
-
-func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
+func sendEmail(w http.ResponseWriter, req *http.Request) {
 	var emailContent EmailContent
-	var tok TokenResult
-
 	decoder := json.NewDecoder(req.Body)
 	err := decoder.Decode(&emailContent)
 	if err != nil {
@@ -307,58 +248,10 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		return
 	}
 
-	userID := emailContent.UserID
-	tokenStr := emailContent.Token
-
-	if tokenStr == "" {
-		w.WriteHeader(http.StatusUnauthorized)
-		fmt.Fprintf(w, "{ \"error\": \"Token is missing\" }\n")
-		return
-	}
-
-	secretBytes := []byte(os.Getenv("BACKEND_KEY"))
-	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return secretBytes, nil
-	})
-
-	if err != nil || !token.Valid {
-		w.WriteHeader(http.StatusUnauthorized)
-		fmt.Fprintf(w, "{ \"error\": \"Invalid token\" }\n")
-		return
-	}
-
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		w.WriteHeader(http.StatusUnauthorized)
-		fmt.Fprintf(w, "{ \"error\": \"Invalid token claims\" }\n")
-		return
-	}
-
-	ownerID := claims["id"].(float64)
-	if ownerID == 0 {
-		w.WriteHeader(http.StatusUnauthorized)
-		fmt.Fprintf(w, "{ \"error\": \"User ID not found in token\" }\n")
-		return
-	}
-
-	err = db.QueryRow("SELECT token, refresh FROM tokens WHERE userid = $1", userID).Scan(&tok.Token, &tok.Refresh)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			w.WriteHeader(http.StatusUnauthorized)
-			fmt.Fprintf(w, "{ \"error\": \"Token not found for the user\" }\n")
-		} else {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(w, "{ \"error\": \"Database query error: %s\" }\n", err.Error())
-		}
-		return
-	}
-
-	if tok.Token == "" || tok.Refresh == "" {
-		w.WriteHeader(http.StatusUnauthorized)
-		fmt.Fprintf(w, "{ \"error\": \"Token is empty\" }\n")
+	token := os.Getenv("OUTLOOK_TOKEN")
+	if token == "" {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "{ \"error\": \"token is missing\" }\n")
 		return
 	}
 
@@ -369,7 +262,7 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 				"contentType": "Text",
 				"content":     emailContent.Body,
 			},
-			"toRecipients": []map[string]interface{}{
+			"toRecipients": []map[string]interface{}{ 
 				{
 					"emailAddress": map[string]string{
 						"address": emailContent.To,
@@ -379,7 +272,6 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		},
 		"saveToSentItems": "true",
 	}
-
 	emailBytes, err := json.Marshal(emailData)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -387,6 +279,7 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		return
 	}
 
+	// send
 	reqEmail, err := http.NewRequest("POST", "https://graph.microsoft.com/v1.0/me/sendMail", bytes.NewBuffer(emailBytes))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -394,7 +287,7 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		return
 	}
 
-	reqEmail.Header.Set("Authorization", "Bearer "+tok.Token)
+	reqEmail.Header.Set("Authorization", "Bearer "+token)
 	reqEmail.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
@@ -627,18 +520,18 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 }
 
 func main() {
-	godotenv.Load(".env")
 	db, err := connectToDatabase()
 	if err != nil {
 		os.Exit(84)
 	}
 	fmt.Println("outlook microservice container is running !")
 	router := mux.NewRouter()
+	godotenv.Load(".env")
 	//router.HandleFunc("/send", doSomeSend).Methods("POST")
 	router.HandleFunc("/oauth", getOAUTHLink).Methods("GET")
 	router.HandleFunc("/oauth", miniproxy(setOAUTHToken, db)).Methods("POST")
-	router.HandleFunc("/sendEmail", miniproxy(sendEmail, db)).Methods("POST")
-	router.HandleFunc("/sendTeamsMessage", miniproxy(sendTeamsMessage, db)).Methods("POST")
+	router.HandleFunc("/sendEmail", sendEmail).Methods("POST")
+	router.HandleFunc("/sendTeamsMessage", sendTeamsMessage).Methods("POST")
 	router.HandleFunc("/checkEmail", checkEmail).Methods("GET")
 	router.HandleFunc("/checkTeamsMessages", checkTeamsMessages).Methods("POST")
 	router.HandleFunc("/routes", getRoutes).Methods("GET")
