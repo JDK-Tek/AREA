@@ -28,17 +28,17 @@ import (
 )
 
 func newProxy(a *area.Area, f func(area.AreaRequest)) func(http.ResponseWriter, *http.Request) {
-    return func(w http.ResponseWriter, r *http.Request) {
-        w.Header().Set("Access-Control-Allow-Origin", "*")
-        w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE")
-        w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
-        f(area.AreaRequest{
-            Area: a,
-            Writter: w,
-            Request: r,
-        })
-    }
+		f(area.AreaRequest{
+			Area:    a,
+			Writter: w,
+			Request: r,
+		})
+	}
 }
 
 type UpdateRequest struct {
@@ -105,7 +105,7 @@ func onUpdate(a area.AreaRequest) {
 
 func oauthGetter(a area.AreaRequest) {
 	vars := mux.Vars(a.Request)
-    service := vars["service"]
+	service := vars["service"]
 	redirect := a.Request.URL.Query().Get("redirect")
 	url := fmt.Sprintf(
 		"http://reverse-proxy:42002/service/%s/oauth?redirect=%s",
@@ -126,9 +126,9 @@ func oauthGetter(a area.AreaRequest) {
 		return
 	}
 	data, err := io.ReadAll(rep.Body)
-    if err != nil {
-        a.Error(err, http.StatusBadGateway)
-    }
+	if err != nil {
+		a.Error(err, http.StatusBadGateway)
+	}
 	str := html.UnescapeString(string(data))
 	fmt.Println(str)
 	a.Writter.WriteHeader(rep.StatusCode)
@@ -137,21 +137,22 @@ func oauthGetter(a area.AreaRequest) {
 
 func oauthSetter(a area.AreaRequest) {
 	vars := mux.Vars(a.Request)
-    service := vars["service"]
-	// querry := a.Request.URL.RawQuery
+	service := vars["service"]
+
 	url := fmt.Sprintf(
-		// "http://reverse-proxy:42002/service/%s/oauth?%s",
 		"http://reverse-proxy:42002/service/%s/oauth",
 		service,
-		// querry,
 	)
+
 	req, err := http.NewRequest("POST", url, a.Request.Body)
 	if err != nil {
 		a.Error(err, http.StatusBadGateway)
 		return
 	}
+
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
+
 	client := http.Client{}
 	rep, err := client.Do(req)
 	if err != nil {
@@ -159,12 +160,19 @@ func oauthSetter(a area.AreaRequest) {
 		return
 	}
 	defer rep.Body.Close()
+
 	body, err := io.ReadAll(rep.Body)
 	if err != nil {
 		a.Error(err, http.StatusBadGateway)
 		return
 	}
-	a.Reply(string(body), http.StatusOK)
+
+	var jsonResponse map[string]interface{}
+	if err := json.Unmarshal(body, &jsonResponse); err != nil {
+		a.Error(err, http.StatusInternalServerError)
+		return
+	}
+	a.Reply(jsonResponse, http.StatusOK)
 }
 
 func codeCallback(a area.AreaRequest) {
@@ -190,7 +198,7 @@ func createTheAbout(a area.AreaRequest) {
 
 func getRoutes(a area.AreaRequest) {
 	vars := mux.Vars(a.Request)
-    service := vars["service"]
+	service := vars["service"]
 	url := fmt.Sprintf(
 		"http://reverse-proxy:%s/service/%s/",
 		os.Getenv("REVERSEPROXY_PORT"),
@@ -216,14 +224,14 @@ func getRoutes(a area.AreaRequest) {
 }
 
 type Message struct {
-	Message string `json:"message"`
-	Authentificated bool `json:"authentificated"`
+	Message         string `json:"message"`
+	Authentificated bool   `json:"authentificated"`
 }
 
 type MessageWithID struct {
-	Message string `json:"message"`
-	Authentificated bool `json:"authentificated"`
-	ID int `json:"id"`
+	Message         string `json:"message"`
+	Authentificated bool   `json:"authentificated"`
+	ID              int    `json:"id"`
 }
 
 func doctor(a area.AreaRequest) {
@@ -236,23 +244,23 @@ func doctor(a area.AreaRequest) {
 }
 
 func main() {
-    router := mux.NewRouter()
-    var err error
-    var dbPassword, dbUser, dbName, dbHost, dbPort string
+	router := mux.NewRouter()
+	var err error
+	var dbPassword, dbUser, dbName, dbHost, dbPort string
 	var servicePath string
-    var connectStr string
-    var portString string
-    var a area.Area
+	var connectStr string
+	var portString string
+	var a area.Area
 
-    // if err = godotenv.Load("/usr/mount.d/.env"); err != nil {
-    //     log.Fatal("no .env")
-    // }
-    if dbPassword = os.Getenv("DB_PASSWORD"); dbPassword == "" {
-        log.Fatal("DB_PASSWORD not found")
-    }
-    if dbUser = os.Getenv("DB_USER"); dbUser == "" {
-        log.Fatal("DB_USER not found")
-    }
+	// if err = godotenv.Load("/usr/mount.d/.env"); err != nil {
+	//     log.Fatal("no .env")
+	// }
+	if dbPassword = os.Getenv("DB_PASSWORD"); dbPassword == "" {
+		log.Fatal("DB_PASSWORD not found")
+	}
+	if dbUser = os.Getenv("DB_USER"); dbUser == "" {
+		log.Fatal("DB_USER not found")
+	}
 	if dbName = os.Getenv("DB_NAME"); dbName == "" {
 		log.Fatal("DB_NAME not found")
 	}
@@ -262,36 +270,36 @@ func main() {
 	if dbPort = os.Getenv("DB_PORT"); dbPort == "" {
 		log.Fatal("DB_PORT not found")
 	}
-    if portString = os.Getenv("BACKEND_PORT"); portString == "" {
-        log.Fatal("BACKEND_PORT not found")
-    }
-    if a.Key = os.Getenv("BACKEND_KEY"); a.Key == "" {
-        log.Fatal("BACKEND_KEY not found")
-    }
-    if _, err = strconv.Atoi(portString); err != nil {
-        log.Fatal("atoi:", err)
-    }
-    connectStr = fmt.Sprintf(
-        "postgresql://%s:%s@%s:%s/%s?sslmode=disable",
-        dbUser,
-        dbPassword,
+	if portString = os.Getenv("BACKEND_PORT"); portString == "" {
+		log.Fatal("BACKEND_PORT not found")
+	}
+	if a.Key = os.Getenv("BACKEND_KEY"); a.Key == "" {
+		log.Fatal("BACKEND_KEY not found")
+	}
+	if _, err = strconv.Atoi(portString); err != nil {
+		log.Fatal("atoi:", err)
+	}
+	connectStr = fmt.Sprintf(
+		"postgresql://%s:%s@%s:%s/%s?sslmode=disable",
+		dbUser,
+		dbPassword,
 		dbHost,
 		dbPort,
 		dbName,
-    )
-    if a.Database, err = sql.Open("postgres", connectStr); err != nil {
-        log.Fatal(err)
-    }
-    defer a.Database.Close()
-    err = a.Database.Ping()
-    for err != nil {
-        fmt.Println("ping:", err)
-        time.Sleep(time.Second)
-        err = a.Database.Ping()
-    }
+	)
+	if a.Database, err = sql.Open("postgres", connectStr); err != nil {
+		log.Fatal(err)
+	}
+	defer a.Database.Close()
+	err = a.Database.Ping()
+	for err != nil {
+		fmt.Println("ping:", err)
+		time.Sleep(time.Second)
+		err = a.Database.Ping()
+	}
 	if servicePath = os.Getenv("SERVICES_PATH"); servicePath == "" {
-        log.Fatal("BACKEND_KEY not found")
-    }
+		log.Fatal("BACKEND_KEY not found")
+	}
 	err = a.ObserveServices(servicePath)
 	if err != nil {
 		log.Fatal(err.Error())
@@ -300,11 +308,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-    corsMiddleware := handlers.CORS(
-        handlers.AllowedOrigins([]string{"*"}),
-        handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE"}),
-        handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
-    )
+	corsMiddleware := handlers.CORS(
+		handlers.AllowedOrigins([]string{"*"}),
+		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE"}),
+		handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
+	)
 	router.HandleFunc("/api/login", newProxy(&a, auth.DoSomeLogin)).Methods("POST")
 	router.HandleFunc("/api/register", newProxy(&a, auth.DoSomeRegister)).Methods("POST")
 	router.HandleFunc("/api/area", newProxy(&a, arearoute.NewArea)).Methods("POST")
@@ -316,10 +324,10 @@ func main() {
 	router.HandleFunc("/api/orchestrator", newProxy(&a, onUpdate)).Methods("PUT")
 	router.HandleFunc("/api/services", newProxy(&a, getAllServices)).Methods("GET")
 	router.HandleFunc("/api/services/{service}", newProxy(&a, getRoutes)).Methods("GET")
-    router.HandleFunc("/api/doctor", newProxy(&a, doctor)).Methods("GET")
-    router.HandleFunc("/api/change", newProxy(&a, auth.DoSomeChangePassword)).Methods("PUT")
-    router.HandleFunc("/about.json", newProxy(&a, createTheAbout)).Methods("GET")
+	router.HandleFunc("/api/doctor", newProxy(&a, doctor)).Methods("GET")
+	router.HandleFunc("/api/change", newProxy(&a, auth.DoSomeChangePassword)).Methods("PUT")
+	router.HandleFunc("/about.json", newProxy(&a, createTheAbout)).Methods("GET")
 
-    fmt.Println("=> server listens on port ", portString)
-    log.Fatal(http.ListenAndServe(":"+portString, corsMiddleware(router)))
+	fmt.Println("=> server listens on port ", portString)
+	log.Fatal(http.ListenAndServe(":"+portString, corsMiddleware(router)))
 }
