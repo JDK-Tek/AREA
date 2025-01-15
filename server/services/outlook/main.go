@@ -136,6 +136,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 
 	if tok.Token == "" || tok.Refresh == "" {
 		fmt.Fprintln(w, "error: token is empty")
+		return
 	}
 	err = db.QueryRow("select id, owner from tokens where userid = $1", user.ID).Scan(&tokid, &owner)
 	if err != nil {
