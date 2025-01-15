@@ -158,6 +158,29 @@ services:
       - web
     volumes:
     - ./services/roblox/.env:/usr/mount.d/.env
+  
+  service-github:
+    env_file:
+      - .env
+    container_name: area-service-github
+    build:
+      context: ./services/github
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.github.rule=PathPrefix(`/service/github/`)"
+      - "traefik.http.services.github.loadbalancer.server.port=80"
+      - "traefik.http.routers.github.middlewares=stripprefix-service-github"
+      - "traefik.http.middlewares.stripprefix-service-github.stripprefix.prefixes=/service/github"
+    environment:
+      - DB_HOST=database
+      - DB_PORT=${DATABASE_PORT}
+      - DB_USER=${DATABASE_USER}
+      - DB_PASSWORD=${DATABASE_PASSWORD}
+      - DB_NAME=${DATABASE_NAME}
+    networks:
+      - web
+    volumes:
+    - ./services/github/.env:/usr/mount.d/.env
 
   reverse-proxy:
     env_file:
