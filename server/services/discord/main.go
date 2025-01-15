@@ -288,7 +288,8 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 		},
 	}
 	var infos = Infos{
-		Color: "#ffff0000",
+		Color: "#5865F2",
+		Image: "https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/636e0a6ca814282eca7172c6_icon_clyde_white_RGB.svg",
 		Routes: list,
 	}
 	var data []byte
