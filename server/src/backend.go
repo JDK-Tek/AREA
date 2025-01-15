@@ -325,7 +325,7 @@ func main() {
 	router.HandleFunc("/about.json", newProxy(&a, createTheAbout)).Methods("GET")
 
     fmt.Println("=> server listens on port ", portString)
-	time.Sleep(time.Second)
+	time.Sleep(time.Second * 2)
 	err = a.SetupTheAbout()
 	if err != nil {
 		log.Fatal(err.Error())

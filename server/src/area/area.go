@@ -29,6 +29,7 @@ type AboutClient struct {
 type AboutSevice struct {
 	Name string `json:"name"`
 	Icon string `json:"icon"`
+	Color string `json:"color"`
 	Actions []AboutSomething `json:"actions"`
 	Reactions []AboutSomething `json:"reactions"`
 }
@@ -70,8 +71,8 @@ type InfoRoute struct {
 
 type Infos struct {
 	Color string `json:"color"`
-	Image string `json:"Image"`
-	Routes []InfoRoute `json:"routes"`
+	Image string `json:"image"`
+	Routes []InfoRoute `json:"areas"`
 }
 
 func (it *Area) ObserveServices(where string) error {
@@ -90,6 +91,7 @@ func (it *Area) SetupTheAbout() error {
 	var revproxy = os.Getenv("REVERSEPROXY_PORT")
 	var infos Infos
 	var tmpService AboutSevice
+	var something AboutSomething
 
 	it.About = About{
 		Client: AboutClient{
@@ -117,17 +119,26 @@ func (it *Area) SetupTheAbout() error {
 			fmt.Printf("reeadall of %s failed: %s\n", service, err.Error())
 			continue
 		}
-		fmt.Printf("%s: (%s)\n", url, body)
+		// fmt.Printf("%s: (%s)\n", url, body)
 		err = json.Unmarshal(body, &infos)
 		if err != nil {
 			fmt.Printf("decoding %s failed: %s body is %s\n", service, err.Error(), rep.Body)
 			continue
 		}
+		tmpService.Actions = []AboutSomething{}
+		tmpService.Reactions = []AboutSomething{}
 		for _, v := range infos.Routes {
+			something.Description = v.Desc
+			something.Name = v.Name
 			if v.Type == "action" {
-				tmpService.Actions = append(tmpService.Actions, )
+				tmpService.Actions = append(tmpService.Actions, something)
+			} else {
+				tmpService.Reactions = append(tmpService.Reactions, something)
 			}
 		}
+		tmpService.Name = service
+		tmpService.Icon = infos.Image
+		tmpService.Color = infos.Color
 		it.About.Server.Services = append(it.About.Server.Services, tmpService)
 	}
 	return nil

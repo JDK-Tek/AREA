@@ -251,8 +251,8 @@ type InfoRoute struct {
 
 type Infos struct {
 	Color string `json:"color"`
-	Image string `json:"Image"`
-	Routes []InfoRoute `json:"routes"`
+	Image string `json:"image"`
+	Routes []InfoRoute `json:"areas"`
 }
 
 func getRoutes(w http.ResponseWriter, req *http.Request) {
