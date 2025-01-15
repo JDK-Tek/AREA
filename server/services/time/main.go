@@ -284,6 +284,7 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 	}
 	var infos = Infos{
 		Color: "#ffffff",
+		Image: "https://img.icons8.com/ios/452/timer.png",
 		Routes: list,
 	}
 	var data []byte
