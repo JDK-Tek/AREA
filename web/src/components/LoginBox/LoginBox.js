@@ -107,7 +107,10 @@ export default function LoginBox ( {setToken, setError} ) {
                 <a href="/register" className="font-bold text-white dark:text-white hover:underline"> Register here!</a>
             </div>
             <LRButton text="Login" handleClick={handleSubmit}/>
-            <LRButton text="Connect with Discord" handleClick={() => handleOauth("discord")} /> 
+            <div className="flex flex-row space-x-4 justify-center pt-4">
+                <LRButton text="Connect with Discord" handleClick={() => handleOauth("discord")} /> 
+                <LRButton text="Connect with Reddit" handleClick={() => handleOauth("reddit")} /> 
+            </div>
         </LRBox>
     )
 }
