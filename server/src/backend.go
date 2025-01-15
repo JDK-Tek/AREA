@@ -137,21 +137,22 @@ func oauthGetter(a area.AreaRequest) {
 
 func oauthSetter(a area.AreaRequest) {
 	vars := mux.Vars(a.Request)
-    service := vars["service"]
-	// querry := a.Request.URL.RawQuery
+	service := vars["service"]
+
 	url := fmt.Sprintf(
-		// "http://reverse-proxy:42002/service/%s/oauth?%s",
 		"http://reverse-proxy:42002/service/%s/oauth",
 		service,
-		// querry,
 	)
+
 	req, err := http.NewRequest("POST", url, a.Request.Body)
 	if err != nil {
 		a.Error(err, http.StatusBadGateway)
 		return
 	}
+
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
+
 	client := http.Client{}
 	rep, err := client.Do(req)
 	if err != nil {
@@ -159,13 +160,21 @@ func oauthSetter(a area.AreaRequest) {
 		return
 	}
 	defer rep.Body.Close()
+
 	body, err := io.ReadAll(rep.Body)
 	if err != nil {
 		a.Error(err, http.StatusBadGateway)
 		return
 	}
-	a.Reply(string(body), http.StatusOK)
+
+	var jsonResponse map[string]interface{}
+	if err := json.Unmarshal(body, &jsonResponse); err != nil {
+		a.Error(err, http.StatusInternalServerError)
+		return
+	}
+	a.Reply(jsonResponse, http.StatusOK)
 }
+
 
 func codeCallback(a area.AreaRequest) {
 	var code = a.Request.URL.Query().Get("code")
