@@ -106,7 +106,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	// 	fmt.Fprintln(w, "decode", err.Error())
 	// 	return
 	// }
-
+	// the new code from paul
 	body, err := io.ReadAll(rep.Body)
 	if err != nil {
 		fmt.Fprintln(w, "read body", err.Error())
