@@ -180,14 +180,14 @@ services:
     networks:
       - web
     volumes:
-    - ./server/services/github/.env:/usr/mount.d/.env
+    - ./services/github/.env:/usr/mount.d/.env
   
   service-reddit:
     env_file:
       - .env
     container_name: area-service-reddit
     build:
-      context: ./server/services/reddit
+      context: ./services/reddit
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.reddit.rule=PathPrefix(`/service/reddit/`)"

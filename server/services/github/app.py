@@ -119,7 +119,7 @@ app = Flask(__name__)
 # github color and image
 oreo = NewOreo(
 	service="github",
-	color="#ff4500",
+	color="#24292e",
 	image="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
 )
 
