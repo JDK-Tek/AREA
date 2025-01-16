@@ -209,14 +209,14 @@ def oauth():
 
 		# data treatment
 		area_bearer_token = retrieve_token(get_beared_token(request))
-		area_user_id = area_bearer_token.get("id", None) if area_bearer_token else None
+		userid = area_bearer_token.get("id", None) if area_bearer_token else None
 	
 		app.logger.info(f"Header: {request.headers}")
 		app.logger.info(f"Bear token: {area_bearer_token}")
-		app.logger.info(f"Area user id: {area_user_id}")
+		app.logger.info(f"Area user id: {userid}")
 
 		# user is not logged in an area account
-		if not area_bearer_token or not area_user_id:
+		if not area_bearer_token or not userid:
 			try:
 				with db.cursor() as cur:
 					cur.execute("SELECT owner FROM tokens " \
@@ -234,7 +234,7 @@ def oauth():
 							"DEFAULT VALUES " \
 							"RETURNING id"
 						)
-						area_user_id = cur.fetchone()[0]
+						userid = cur.fetchone()[0]
 
 						# create new token linked with the new area account
 						cur.execute("INSERT INTO tokens " \
@@ -244,12 +244,12 @@ def oauth():
 		 						github_access_token,
 								github_refresh_token,
 								github_user_id,
-								area_user_id,
+								userid,
 							)
 						)
 
 						db.commit()
-						return jsonify({ "token": generate_beared_token(area_user_id) }), 200
+						return jsonify({ "token": generate_beared_token(userid) }), 200
 				
 					# service account already linked with an area account: update token
 					else:
@@ -265,10 +265,10 @@ def oauth():
 								)
 						)
 						
-						area_user_id = cur.fetchone()[0]
+						userid = cur.fetchone()[0]
 			
 						db.commit()
-						return jsonify({ "token": generate_beared_token(area_user_id) }), 200
+						return jsonify({ "token": generate_beared_token(userid) }), 200
 			except (Exception, psycopg2.Error) as err:
 				return jsonify({ "error":  str(err)}), 400
 
@@ -296,15 +296,15 @@ def oauth():
 								github_access_token,
 								github_refresh_token,
 								github_user_id,
-								area_user_id,
+								userid,
 							)
 						)
 
 						db.commit()
-						return jsonify({ "token": generate_beared_token(area_user_id) }), 200
+						return jsonify({ "token": generate_beared_token(userid) }), 200
 
 					# github account already linked with an area account (same account): update token
-					elif rows[0] == area_user_id:
+					elif rows[0] == userid:
 						cur.execute(
 							"UPDATE tokens " \
 							"SET token = %s, refresh = %s " \
@@ -316,9 +316,9 @@ def oauth():
 								oreo.service,
 							)
 						)
-						area_user_id = cur.fetchone()[0]
+						userid = cur.fetchone()[0]
 						db.commit()
-						return jsonify({ "token": generate_beared_token(area_user_id) }), 200
+						return jsonify({ "token": generate_beared_token(userid) }), 200
 
 					# github account already linked with an area account (different account):forbidden
 					else:
@@ -514,28 +514,28 @@ def new_notification():
 	if not data:
 		return jsonify({"error": "Invalid JSON"}), 400
 
-	area_user_id = data.get("userid", 1)
+	userid = data.get("userid", 1)
 	bridge = data.get("bridge")
 	spices = data.get("spices", {})
-	if not area_user_id or not bridge:
-		return jsonify({"error": f"Missing required fields: 'user_id': {area_user_id}, 'spices': {spices}, 'bridge': {bridge}"}), 400
+	if not userid or not bridge:
+		return jsonify({"error": f"Missing required fields: 'userid': {userid}, 'spices': {spices}, 'bridge': {bridge}"}), 400
 
 	with db.cursor() as cur:
 		cur.execute("SELECT userid FROM tokens " \
 			  "WHERE service = 'github' AND owner = %s", (
-				  area_user_id,
+				  userid,
 			  )
 		)
 		rows = cur.fetchone()
 		if not rows:
 			return jsonify({"error": "User not found"}), 404
-		github_user_id = rows[0]
+		spices["check_this_userid"] = int(rows[0])
+		app.logger.info(f"Spices: {spices}")
 
 		cur.execute("INSERT INTO micro_github" \
-			  "(areauserid, userid, bridgeid, triggers, spices) " \
-			  "VALUES (%s, %s, %s, %s, %s)", (
-				  area_user_id,
-				  github_user_id,
+			  "(userid, bridgeid, triggers, spices) " \
+			  "VALUES (%s, %s, %s, %s)", (
+				  userid,
 				  bridge,
 				  ACTION_ANY_NEW_NOTIFICATION,
 				  json.dumps(spices)
@@ -563,29 +563,28 @@ def assigned_issue():
 	if not data:
 		return jsonify({"error": "Invalid JSON"}), 400
 
-	area_user_id = data.get("userid", 1)
+	userid = data.get("userid", 1)
 	bridge = data.get("bridge")
 	spices = data.get("spices", {})
-	if not area_user_id or not bridge:
-		return jsonify({"error": f"Missing required fields: 'user_id': {area_user_id}, 'spices': {spices}, 'bridge': {bridge}"}), 400
+	if not userid or not bridge:
+		return jsonify({"error": f"Missing required fields: 'userid': {userid}, 'spices': {spices}, 'bridge': {bridge}"}), 400
 
 
 	with db.cursor() as cur:
 		cur.execute("SELECT userid FROM tokens " \
 			  "WHERE service = 'github' AND owner = %s", (
-				  area_user_id,
+				  userid,
 			  )
 		)
 		rows = cur.fetchone()
 		if not rows:
 			return jsonify({"error": "User not found"}), 404
-		github_user_id = rows[0]
+		spices["check_this_userid"] = int(rows[0])
 
 		cur.execute("INSERT INTO micro_github" \
-			  "(areauserid, userid, bridgeid, triggers, spices) " \
-			  "VALUES (%s, %s, %s, %s, %s)", (
-				  area_user_id,
-				  github_user_id,
+			  "(userid, bridgeid, triggers, spices) " \
+			  "VALUES (%s, %s, %s, %s)", (
+				  userid,
 				  bridge,
 				  ACTION_ASSIGNED_ISSUE,
 				  json.dumps(spices)
@@ -613,28 +612,27 @@ def new_issue():
 	if not data:
 		return jsonify({"error": "Invalid JSON"}), 400
 
-	area_user_id = data.get("userid", 1)
+	userid = data.get("userid", 1)
 	bridge = data.get("bridge")
 	spices = data.get("spices", {})
-	if not area_user_id or not bridge:
-		return jsonify({"error": f"Missing required fields: 'user_id': {area_user_id}, 'spices': {spices}, 'bridge': {bridge}"}), 400
+	if not userid or not bridge:
+		return jsonify({"error": f"Missing required fields: 'userid': {userid}, 'spices': {spices}, 'bridge': {bridge}"}), 400
 
 	with db.cursor() as cur:
 		cur.execute("SELECT userid FROM tokens " \
 			  "WHERE service = 'github' AND owner = %s", (
-				  area_user_id,
+				  userid,
 			  )
 		)
 		rows = cur.fetchone()
 		if not rows:
 			return jsonify({"error": "User not found"}), 404
-		github_user_id = rows[0]
+		spices["check_this_userid"] = int(rows[0])
 
 		cur.execute("INSERT INTO micro_github" \
-			  "(areauserid, userid, bridgeid, triggers, spices) " \
-			  "VALUES (%s, %s, %s, %s, %s)", (
-				  area_user_id,
-				  github_user_id,
+			  "(userid, bridgeid, triggers, spices) " \
+			  "VALUES (%s, %s, %s, %s)", (
+				  userid,
 				  bridge,
 				  ACTION_ANY_NEW_ISSUE,
 				  json.dumps(spices)
@@ -662,28 +660,27 @@ def closed_issue():
 	if not data:
 		return jsonify({"error": "Invalid JSON"}), 400
 
-	area_user_id = data.get("userid", 1)
+	userid = data.get("userid", 1)
 	bridge = data.get("bridge")
 	spices = data.get("spices", {})
-	if not area_user_id or not bridge:
-		return jsonify({"error": f"Missing required fields: 'user_id': {area_user_id}, 'spices': {spices}, 'bridge': {bridge}"}), 400
+	if not userid or not bridge:
+		return jsonify({"error": f"Missing required fields: 'userid': {userid}, 'spices': {spices}, 'bridge': {bridge}"}), 400
 
 	with db.cursor() as cur:
 		cur.execute("SELECT userid FROM tokens " \
 			  "WHERE service = 'github' AND owner = %s", (
-				  area_user_id,
+				  userid,
 			  )
 		)
 		rows = cur.fetchone()
 		if not rows:
 			return jsonify({"error": "User not found"}), 404
-		github_user_id = rows[0]
+		spices["check_this_userid"] = int(rows[0])
 
 		cur.execute("INSERT INTO micro_github" \
-			  "(areauserid, userid, bridgeid, triggers, spices) " \
-			  "VALUES (%s, %s, %s, %s, %s)", (
-				  area_user_id,
-				  github_user_id,
+			  "(userid, bridgeid, triggers, spices) " \
+			  "VALUES (%s, %s, %s, %s)", (
+				  userid,
 				  bridge,
 				  ACTION_ANY_CLOSED_ISSUE,
 				  json.dumps(spices)
@@ -722,30 +719,19 @@ def new_commit():
 	if not data:
 		return jsonify({"error": "Invalid JSON"}), 400
 
-	area_user_id = data.get("userid", 1)
+	userid = data.get("userid", 1)
 	bridge = data.get("bridge")
 	spices = data.get("spices", {})
 	github_owner = spices.get("owner")
 	github_repo = spices.get("repo")
-	if not area_user_id or not bridge or not spices or not github_owner or not github_repo:
-		return jsonify({"error": f"Missing required fields: 'user_id': {area_user_id}, 'spices': {spices}, 'bridge': {bridge}"}), 400
+	if not userid or not bridge or not spices or not github_owner or not github_repo:
+		return jsonify({"error": f"Missing required fields: 'userid': {userid}, 'spices': {spices}, 'bridge': {bridge}"}), 400
 
 	with db.cursor() as cur:
-		cur.execute("SELECT userid FROM tokens " \
-			  "WHERE service = 'github' AND owner = %s", (
-				  area_user_id,
-			  )
-		)
-		rows = cur.fetchone()
-		if not rows:
-			return jsonify({"error": "User not found"}), 404
-		github_user_id = rows[0]
-
 		cur.execute("INSERT INTO micro_github" \
-			  "(areauserid, userid, bridgeid, triggers, spices) " \
-			  "VALUES (%s, %s, %s, %s, %s)", (
-				  area_user_id,
-				  github_user_id,
+			  "(userid, bridgeid, triggers, spices) " \
+			  "VALUES (%s, %s, %s, %s)", (
+				  userid,
 				  bridge,
 				  ACTION_NEW_COMMIT,
 				  json.dumps(spices)
@@ -779,29 +765,18 @@ def new_repository():
 	if not data:
 		return jsonify({"error": "Invalid JSON"}), 400
 
-	area_user_id = data.get("userid", 1)
+	userid = data.get("userid", 1)
 	bridge = data.get("bridge")
 	spices = data.get("spices", {})
 	github_owner = spices.get("owner")
-	if not area_user_id or not bridge or not spices or not github_owner:
-		return jsonify({"error": f"Missing required fields: 'user_id': {area_user_id}, 'spices': {spices}, 'bridge': {bridge}"}), 400
+	if not userid or not bridge or not spices or not github_owner:
+		return jsonify({"error": f"Missing required fields: 'userid': {userid}, 'spices': {spices}, 'bridge': {bridge}"}), 400
 
 	with db.cursor() as cur:
-		cur.execute("SELECT userid FROM tokens " \
-			  "WHERE service = 'github' AND owner = %s", (
-				  area_user_id,
-			  )
-		)
-		rows = cur.fetchone()
-		if not rows:
-			return jsonify({"error": "User not found"}), 404
-		github_user_id = rows[0]
-
 		cur.execute("INSERT INTO micro_github" \
-			  "(areauserid, userid, bridgeid, triggers, spices) " \
-			  "VALUES (%s, %s, %s, %s, %s)", (
-				  area_user_id,
-				  github_user_id,
+			  "(userid, bridgeid, triggers, spices) " \
+			  "VALUES (%s, %s, %s, %s)", (
+				  userid,
 				  bridge,
 				  ACTION_NEW_REPOSITORY,
 				  json.dumps(spices)
@@ -823,30 +798,34 @@ def webhook():
 	data = request.json
 	action = data.get('action')
 	sender = data.get('sender', {})
-	github_userid = sender.get('id')
-	if not action or not github_userid:
-		app.logger.error(f"Invalid hook, missing action: {action} or sender: {github_userid}")
-		return jsonify({"error": f"Invalid hook, missing action: {action} or sender: {github_userid}"}), 400
+	sender_userid = sender.get('id')
+	if not action or not sender_userid:
+		app.logger.error(f"Invalid hook, missing action: {action} or sender: {sender_userid}")
+		return jsonify({"error": f"Invalid hook, missing action: {action} or sender: {sender_userid}"}), 400
 	
 	try:
 		# any new notification
 		with db.cursor() as cur:
-			cur.execute("SELECT bridgeid, areauserid FROM micro_github " \
-				"WHERE userid = %s AND triggers = %s", (
-					github_userid,
-					ACTION_ANY_NEW_NOTIFICATION
+			cur.execute("SELECT bridgeid, userid, spices FROM micro_github " \
+				"WHERE triggers = %s", (
+					ACTION_ANY_NEW_NOTIFICATION,
 				)
 			)
 
 			for row in cur.fetchall():
 				bridge = row[0]
-				areauserid = row[1]
+				userid = row[1]
+				spices = json.loads(row[2])
+				check_this_userid = spices.get("check_this_userid")
+
+				if not check_this_userid or check_this_userid != sender_userid:
+					continue
 
 				requests.put(
 					f"http://backend:{BACKEND_PORT}/api/orchestrator",
 					json={
 						"bridge": bridge,
-						"userid": areauserid,
+						"userid": userid,
 						"ingredients": {}
 					}
 				)
@@ -854,16 +833,15 @@ def webhook():
 		# when an issue is assigned to the user
 		if action == "assigned":
 			assignee = data.get('assignee', {})
-			github_userid = assignee.get('id')
+			userid_just_assigned = assignee.get('id')
 
-			if not github_userid:
+			if not userid_just_assigned:
 				return jsonify({"error": "Invalid JSON"}), 400
 
 			with db.cursor() as cur:
-				cur.execute("SELECT bridgeid, areauserid FROM micro_github " \
-					"WHERE userid = %s AND triggers = %s", (
-						github_userid,
-						ACTION_ASSIGNED_ISSUE
+				cur.execute("SELECT bridgeid, userid, spices FROM micro_github " \
+					"WHERE triggers = %s", (
+						ACTION_ASSIGNED_ISSUE,
 					)
 				)
 
@@ -875,26 +853,31 @@ def webhook():
 				# get the bridge id
 				for row in rows:
 					bridge = row[0]
-					areauserid = row[1]
+					userid = row[1]
+					spices = json.loads(row[2])
+
+					# check if the user is the assignee
+					check_this_userid = spices.get("check_this_userid")
+					if not check_this_userid or check_this_userid != userid_just_assigned:
+						continue
+	
 					requests.put(
 						f"http://backend:{BACKEND_PORT}/api/orchestrator",
 						json={
 							"bridge": bridge,
-							"userid": areauserid,
+							"userid": userid,
 							"ingredients": {}
 						}
 					)
 				return jsonify({"status": "ok"}), 200
 	
-
 		# when a new issue is created
 		if action == "opened":
 		
 			with db.cursor() as cur:
-				cur.execute("SELECT bridgeid, areauserid FROM micro_github " \
-					"WHERE userid = %s AND triggers = %s", (
-						github_userid,
-						ACTION_ANY_NEW_ISSUE
+				cur.execute("SELECT bridgeid, userid, spices FROM micro_github " \
+					"WHERE triggers = %s", (
+						ACTION_ANY_NEW_ISSUE,
 					)
 				)
 
@@ -906,12 +889,18 @@ def webhook():
 				# get the bridge id
 				for row in rows:
 					bridge = row[0]
-					areauserid = row[1]
+					userid = row[1]
+					spices = json.loads(row[2])
+
+					check_this_userid = spices.get("check_this_userid")
+					if not check_this_userid or check_this_userid != sender_userid:
+						continue
+					
 					requests.put(
 						f"http://backend:{BACKEND_PORT}/api/orchestrator",
 						json={
 							"bridge": bridge,
-							"userid": areauserid,
+							"userid": userid,
 							"ingredients": {}
 						}
 					)
@@ -921,10 +910,9 @@ def webhook():
 		if action == "closed":
 
 			with db.cursor() as cur:
-				cur.execute("SELECT bridgeid, areauserid FROM micro_github " \
-					"WHERE userid = %s AND triggers = %s", (
-						github_userid,
-						ACTION_ANY_CLOSED_ISSUE
+				cur.execute("SELECT bridgeid, userid, spices FROM micro_github " \
+					"WHERE triggers = %s", (
+						ACTION_ANY_CLOSED_ISSUE,
 					)
 				)
 
@@ -936,12 +924,18 @@ def webhook():
 				# get the bridge id
 				for row in rows:
 					bridge = row[0]
-					areauserid = row[1]
+					userid = row[1]
+					spices = json.loads(row[2])
+
+					check_this_userid = spices.get("check_this_userid")
+					if not check_this_userid or check_this_userid != sender_userid:
+						continue
+	
 					requests.put(
 						f"http://backend:{BACKEND_PORT}/api/orchestrator",
 						json={
 							"bridge": bridge,
-							"userid": areauserid,
+							"userid": userid,
 							"ingredients": {}
 						}
 					)
@@ -951,10 +945,9 @@ def webhook():
 		if action == "requested":
 
 			with db.cursor() as cur:
-				cur.execute("SELECT bridgeid, areauserid, spices FROM micro_github " \
-					"WHERE userid = %s AND triggers = %s", (
-						github_userid,
-						ACTION_NEW_COMMIT
+				cur.execute("SELECT bridgeid, userid, spices FROM micro_github " \
+					"WHERE triggers = %s", (
+						ACTION_NEW_COMMIT,
 					)
 				)
 
@@ -966,13 +959,13 @@ def webhook():
 				# get the bridge id
 				for row in rows:
 					bridge = row[0]
-					areauserid = row[1]
+					userid = row[1]
 					spices = json.loads(row[2])
 
 					github_owner = spices.get("owner")
 					github_repo = spices.get("repo")
 					if not github_owner or not github_repo:
-						return jsonify({"error": "Missing spices"}), 500
+						continue
 
 					if (f"{github_owner}/{github_repo}") != data.get("repository", {}).get("full_name"):
 						continue
@@ -982,7 +975,7 @@ def webhook():
 						f"http://backend:{BACKEND_PORT}/api/orchestrator",
 						json={
 							"bridge": bridge,
-							"userid": areauserid,
+							"userid": userid,
 							"ingredients": {}
 						}
 					)
@@ -993,10 +986,9 @@ def webhook():
 			app.logger.info("New repository created")
 		
 			with db.cursor() as cur:
-				cur.execute("SELECT bridgeid, areauserid, spices FROM micro_github " \
-					"WHERE userid = %s AND triggers = %s", (
-						github_userid,
-						ACTION_NEW_REPOSITORY
+				cur.execute("SELECT bridgeid, userid, spices FROM micro_github " \
+					"WHERE triggers = %s", (
+						ACTION_NEW_REPOSITORY,
 					)
 				)
 
@@ -1008,12 +1000,12 @@ def webhook():
 				# get the bridge id
 				for row in rows:
 					bridge = row[0]
-					areauserid = row[1]
+					userid = row[1]
 					spices = json.loads(row[2])
 
 					github_owner = spices.get("owner")
 					if not github_owner:
-						return jsonify({"error": "Missing spices"}), 500
+						continue
 
 					if github_owner != data.get("repository", {}).get("owner", {}).get("login"):
 						continue
@@ -1022,7 +1014,7 @@ def webhook():
 						f"http://backend:{BACKEND_PORT}/api/orchestrator",
 						json={
 							"bridge": bridge,
-							"userid": areauserid,
+							"userid": userid,
 							"ingredients": {}
 						}
 					)
