@@ -223,7 +223,7 @@ func createTheAbout(a area.AreaRequest) {
 	a.Reply(a.Area.About, http.StatusOK)
 }
 
-func getRoutes(a area.AreaRequest) {
+func getServiceRoutes(a area.AreaRequest) {
 	vars := mux.Vars(a.Request)
 	service := vars["service"]
 	url := fmt.Sprintf(
@@ -268,6 +268,65 @@ func doctor(a area.AreaRequest) {
 		return
 	}
 	a.Reply(MessageWithID{Message: "i'm ok thanks", Authentificated: true, ID: id}, http.StatusOK)
+}
+
+func openWebhooks(a area.AreaRequest) {
+	vars := mux.Vars(a.Request)
+	service := vars["service"]
+	toCall := fmt.Sprintf(
+		"http://reverse-proxy:%s/service/%s/webhook",
+		os.Getenv("REVERSEPROXY_PORT"),
+		service,
+	)
+
+	// i copy all the querry parmas
+	queryParams := a.Request.URL.Query()
+	uri := fmt.Sprintf("%s?%s", toCall, queryParams.Encode())
+
+	// i copy the body
+	body, err := io.ReadAll(a.Request.Body)
+	if err != nil {
+		http.Error(a.Writter, "Failed to read request body", http.StatusInternalServerError)
+		return
+	}
+
+	// i create a request
+	req, err := http.NewRequest("POST", uri, bytes.NewReader(body))
+	if err != nil {
+		a.Error(err, http.StatusBadGateway)
+		return
+	}
+
+	// i copy the headers
+	for k, vs := range a.Request.Header {
+		for _, v := range vs {
+			req.Header.Add(k, v)
+		}
+	}
+
+	// snd the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		a.Error(err, http.StatusBadGateway)
+		return
+	}
+	defer resp.Body.Close()
+
+	// reecopy the headers
+	for key, values := range resp.Header {
+		for _, value := range values {
+			a.Writter.Header().Add(key, value)
+		}
+	}
+
+	// then i just like create thee response
+	rep, err := io.ReadAll(resp.Body)
+	if err != nil {
+		a.Error(err, http.StatusBadGateway)
+		return
+	}
+	a.Reply(rep, resp.StatusCode)
 }
 
 func main() {
@@ -346,7 +405,8 @@ func main() {
 	router.HandleFunc("/api/applets", newProxy(&a, applet.GetApplets)).Methods("GET")
 	router.HandleFunc("/api/orchestrator", newProxy(&a, onUpdate)).Methods("PUT")
 	router.HandleFunc("/api/services", newProxy(&a, getAllServices)).Methods("GET")
-	router.HandleFunc("/api/services/{service}", newProxy(&a, getRoutes)).Methods("GET")
+	router.HandleFunc("/api/services/{service}", newProxy(&a, getServiceRoutes)).Methods("GET")
+	router.HandleFunc("/api/services/{service}/webhook", newProxy(&a, openWebhooks)).Methods("POST")
 	router.HandleFunc("/api/doctor", newProxy(&a, doctor)).Methods("GET")
 	router.HandleFunc("/api/change", newProxy(&a, auth.DoSomeChangePassword)).Methods("PUT")
 	router.HandleFunc("/about.json", newProxy(&a, createTheAbout)).Methods("GET")
