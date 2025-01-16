@@ -505,7 +505,7 @@ oreo.create_area(
 	"When you are assigned to an issue",
 	[ ]
 )
-@app.route('/assigned-issue', methods=["POST"])
+@app.route(f'/{ACTION_ASSIGNED_ISSUE}', methods=["POST"])
 def assigned_issue():
 	app.logger.info("assigned-issue endpoint hit")
 
@@ -546,6 +546,53 @@ def assigned_issue():
 
 	return jsonify({"status": "ok"}), 200
 
+# Any new issue
+ACTION_NEW_ISSUE = "new-issue"
+oreo.create_area(
+	ACTION_NEW_ISSUE,
+	NewOreo.TYPE_ACTIONS,
+	"Any new issue",
+	[ ]
+)
+@app.route(f'/{ACTION_NEW_ISSUE}', methods=["POST"])
+def new_issue():
+	app.logger.info("new-issue endpoint hit")
+
+	# get data
+	data = request.json
+	if not data:
+		return jsonify({"error": "Invalid JSON"}), 400
+
+	area_user_id = data.get("id_user", 1)
+	bridge = data.get("bridge")
+	spices = data.get("spices")
+	if not area_user_id or not bridge:
+		return jsonify({"error": f"Missing required fields: 'user_id': {area_user_id}, 'spices': {spices}, 'bridge': {bridge}"}), 400
+
+	with db.cursor() as cur:
+		cur.execute("SELECT userid FROM tokens " \
+			  "WHERE service = 'github' AND owner = %s", (
+				  area_user_id,
+			  )
+		)
+		rows = cur.fetchone()
+		if not rows:
+			return jsonify({"error": "User not found"}), 404
+		github_user_id = rows[0]
+
+		cur.execute("INSERT INTO micro_github" \
+			  "(areauserid, userid, bridgeid, triggers) " \
+			  "VALUES (%s, %s, %s, %s)", (
+				  area_user_id,
+				  github_user_id,
+				  bridge,
+				  ACTION_NEW_ISSUE
+			  )
+		)
+
+		db.commit()
+
+	return jsonify({"status": "ok"}), 200
 
 
 ##
@@ -574,6 +621,39 @@ def webhook():
 					"WHERE userid = %s AND triggers = %s", (
 						github_userid,
 						ACTION_ASSIGNED_ISSUE
+					)
+				)
+
+				# check if the user has an action assigned
+				rows = cur.fetchall()
+				if not rows:
+					return jsonify({"status": "ok"}), 200
+				
+				# get the bridge id
+				for row in rows:
+					bridge = row[0]
+					areauserid = row[1]
+					requests.put(
+						f"http://backend:{BACKEND_PORT}/api/orchestrator",
+						json={
+							"bridge": bridge,
+							"userid": areauserid,
+							"ingredients": {}
+						}
+					)
+				return jsonify({"status": "ok"}), 200
+		if action == "opened":
+			issue = data.get('issue', {})
+			github_userid = issue.get('user', {}).get('id')
+
+			if not github_userid:
+				return jsonify({"error": "Invalid JSON"}), 400
+
+			with db.cursor() as cur:
+				cur.execute("SELECT bridgeid, areauserid FROM micro_github " \
+					"WHERE userid = %s AND triggers = %s", (
+						github_userid,
+						ACTION_NEW_ISSUE
 					)
 				)
 
