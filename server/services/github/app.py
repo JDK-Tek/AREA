@@ -497,6 +497,55 @@ def create_reply():
 ## ACTIONS
 ##
 
+# Any new notification
+ACTION_ANY_NEW_NOTIFICATION = "any-new-notification"
+oreo.create_area(
+	ACTION_ANY_NEW_NOTIFICATION,
+	NewOreo.TYPE_ACTIONS,
+	"Any new notification",
+	[ ]
+)
+@app.route(f'/{ACTION_ANY_NEW_NOTIFICATION}', methods=["POST"])
+def new_notification():
+	app.logger.info("new-notification endpoint hit")
+
+	# get data
+	data = request.json
+	if not data:
+		return jsonify({"error": "Invalid JSON"}), 400
+
+	area_user_id = data.get("id_user", 1)
+	bridge = data.get("bridge")
+	spices = data.get("spices", {})
+	if not area_user_id or not bridge:
+		return jsonify({"error": f"Missing required fields: 'user_id': {area_user_id}, 'spices': {spices}, 'bridge': {bridge}"}), 400
+
+	with db.cursor() as cur:
+		cur.execute("SELECT userid FROM tokens " \
+			  "WHERE service = 'github' AND owner = %s", (
+				  area_user_id,
+			  )
+		)
+		rows = cur.fetchone()
+		if not rows:
+			return jsonify({"error": "User not found"}), 404
+		github_user_id = rows[0]
+
+		cur.execute("INSERT INTO micro_github" \
+			  "(areauserid, userid, bridgeid, triggers, spices) " \
+			  "VALUES (%s, %s, %s, %s, %s)", (
+				  area_user_id,
+				  github_user_id,
+				  bridge,
+				  ACTION_ANY_NEW_NOTIFICATION,
+				  json.dumps(spices)
+			  )
+		)
+
+		db.commit()
+
+	return jsonify({"status": "ok"}), 200
+
 # When you are assigned to an issue
 ACTION_ASSIGNED_ISSUE = "assigned-issue"
 oreo.create_area(
@@ -723,6 +772,28 @@ def webhook():
 		return jsonify({"error": f"Invalid hook, missing action: {action} or sender: {github_userid}"}), 400
 	
 	try:
+		# any new notification
+		with db.cursor() as cur:
+			cur.execute("SELECT bridgeid, areauserid FROM micro_github " \
+				"WHERE userid = %s AND triggers = %s", (
+					github_userid,
+					ACTION_ANY_NEW_NOTIFICATION
+				)
+			)
+
+			for row in cur.fetchall():
+				bridge = row[0]
+				areauserid = row[1]
+
+				requests.put(
+					f"http://backend:{BACKEND_PORT}/api/orchestrator",
+					json={
+						"bridge": bridge,
+						"userid": areauserid,
+						"ingredients": {}
+					}
+				)
+
 		# when an issue is assigned to the user
 		if action == "assigned":
 			assignee = data.get('assignee', {})
