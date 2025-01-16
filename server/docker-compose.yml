@@ -3,7 +3,7 @@ services:
     env_file:
       - .env
     build:
-      context: ./src
+      context: ./server/src
     ports:
       - ${BACKEND_PORT}:${BACKEND_PORT}
     depends_on:
@@ -39,8 +39,8 @@ services:
       - POSTGRES_USER=${DATABASE_USER}
       - POSTGRES_DB=${DATABASE_NAME}
     volumes:
-      - ./database/setup.sql:/docker-entrypoint-initdb.d/setup.sql
-      - ./database/time.sql:/docker-entrypoint-initdb.d/time.sql
+      - ./server/database/setup.sql:/docker-entrypoint-initdb.d/setup.sql
+      - ./server/database/time.sql:/docker-entrypoint-initdb.d/time.sql
     networks:
       - web
     
