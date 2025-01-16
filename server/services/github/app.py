@@ -515,7 +515,7 @@ def new_notification():
 	if not data:
 		return jsonify({"error": "Invalid JSON"}), 400
 
-	userid = data.get("userid", 1)
+	userid = data.get("userid")
 	bridge = data.get("bridge")
 	spices = data.get("spices", {})
 	if not userid or not bridge:
@@ -563,7 +563,7 @@ def assigned_issue():
 	if not data:
 		return jsonify({"error": "Invalid JSON"}), 400
 
-	userid = data.get("userid", 1)
+	userid = data.get("userid")
 	bridge = data.get("bridge")
 	spices = data.get("spices", {})
 	if not userid or not bridge:
@@ -612,7 +612,7 @@ def assigned_pull_request():
 	if not data:
 		return jsonify({"error": "Invalid JSON"}), 400
 
-	userid = data.get("userid", 1)
+	userid = data.get("userid")
 	bridge = data.get("bridge")
 	spices = data.get("spices", {})
 	if not userid or not bridge:
@@ -661,7 +661,7 @@ def new_issue():
 	if not data:
 		return jsonify({"error": "Invalid JSON"}), 400
 
-	userid = data.get("userid", 1)
+	userid = data.get("userid")
 	bridge = data.get("bridge")
 	spices = data.get("spices", {})
 	if not userid or not bridge:
@@ -709,7 +709,7 @@ def closed_issue():
 	if not data:
 		return jsonify({"error": "Invalid JSON"}), 400
 
-	userid = data.get("userid", 1)
+	userid = data.get("userid")
 	bridge = data.get("bridge")
 	spices = data.get("spices", {})
 	if not userid or not bridge:
@@ -768,7 +768,7 @@ def new_commit():
 	if not data:
 		return jsonify({"error": "Invalid JSON"}), 400
 
-	userid = data.get("userid", 1)
+	userid = data.get("userid")
 	bridge = data.get("bridge")
 	spices = data.get("spices", {})
 	github_owner = spices.get("owner")
@@ -819,7 +819,7 @@ def new_pull_request():
 	if not data:
 		return jsonify({"error": "Invalid JSON"}), 400
 
-	userid = data.get("userid", 1)
+	userid = data.get("userid")
 	bridge = data.get("bridge")
 	spices = data.get("spices", {})
 	github_owner = spices.get("owner")
@@ -870,7 +870,7 @@ def close_pull_request():
 	if not data:
 		return jsonify({"error": "Invalid JSON"}), 400
 
-	userid = data.get("userid", 1)
+	userid = data.get("userid")
 	bridge = data.get("bridge")
 	spices = data.get("spices", {})
 	github_owner = spices.get("owner")
@@ -916,7 +916,7 @@ def new_repository():
 	if not data:
 		return jsonify({"error": "Invalid JSON"}), 400
 
-	userid = data.get("userid", 1)
+	userid = data.get("userid")
 	bridge = data.get("bridge")
 	spices = data.get("spices", {})
 	github_owner = spices.get("owner")
