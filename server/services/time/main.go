@@ -28,8 +28,9 @@ type Spices struct {
 }
 
 type Content struct {
-	Spices   Spices `json:"spices"`
-	BridgeId int    `json:"bridge"`
+	Spices Spices `json:"spices"`
+	BridgeId int `json:"bridge"`
+	UserId int `json:"userid"`
 }
 
 type Response struct {
@@ -109,9 +110,55 @@ func timeIn(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	}
 	secs := ms / 1000
 	nsecs := (ms % 1000) * 1e6
+	now := time.Unix(secs, nsecs)
 	secs += spices2Seconds(content.Spices)
 	timestamp := time.Unix(secs, nsecs)
-	_, err = db.Exec("insert into micro_time (bridgeid, triggers) values ($1, $2)", content.BridgeId, timestamp)
+	_, err = db.Exec(
+		"insert into micro_time (bridgeid, triggers, userid, original) values ($1, $2, $3, $4)",
+		content.BridgeId, timestamp, content.UserId, now,
+	)
+	if err != nil {
+		makeAnError(w, err, http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "hello %v", timestamp)
+}
+
+type AtSpices struct {
+	TimeStamp int64 `json:"timestamp"`
+}
+
+type AtContent struct {
+	Spices AtSpices `json:"spices"`
+	BridgeId int `json:"bridge"`
+	UserId int `json:"userid"`
+}
+
+func timeAt(w http.ResponseWriter, req *http.Request, db *sql.DB) {
+	var maybeid int
+	var c AtContent
+
+	decoder := json.NewDecoder(req.Body)
+	err := decoder.Decode(&c)
+	if err != nil {
+		makeAnError(w, err, http.StatusBadRequest)
+		return
+	}
+	if err != nil {
+		return
+	}
+	err = db.QueryRow("select id from micro_time where bridgeid = $1", c.BridgeId).Scan(&maybeid)
+	if err == nil {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "{ \"error\": \"it already exists\" }\n")
+		return
+	}
+	timestamp := time.Unix(c.Spices.TimeStamp, 0)
+	_, err = db.Exec(
+		"insert into micro_time (bridgeid, triggers, userid, original) values ($1, $2, $3, $4)",
+		c.BridgeId, timestamp, c.UserId, time.Now(),
+	)
 	if err != nil {
 		makeAnError(w, err, http.StatusInternalServerError)
 		return
@@ -165,8 +212,14 @@ func miniProxy(f func(http.ResponseWriter, *http.Request, *sql.DB), c *sql.DB) f
 }
 
 type Message struct {
-	Bridge      int               `json:"bridge"`
+	Bridge int `json:"bridge"`
+	UserId int `json:"userid"`
 	Ingredients map[string]string `json:"ingredients"`
+}
+
+type MiniData struct {
+	Bridge int
+	User int
 }
 
 func masterThread(db *sql.DB) {
@@ -179,9 +232,10 @@ func masterThread(db *sql.DB) {
 		log.Fatal("BACKEND_PORT not found")
 	}
 	url := fmt.Sprintf("http://backend:%s/api/orchestrator", backendPort)
+	querry := "select bridgeid, userid from micro_time where triggers < $1"
 	for {
-		var bridges []int
-		var n int
+		var bridges []MiniData
+		var data MiniData
 
 		time.Sleep(time.Second)
 		ms, err := getTimeNow()
@@ -192,27 +246,33 @@ func masterThread(db *sql.DB) {
 		secs := ms / 1000
 		nsecs := (ms % 1000) * 1e6
 		timestamp := time.Unix(secs, nsecs)
-		querry := "select bridgeid from micro_time where triggers < $1"
 		rows, err := db.Query(querry, timestamp)
 		if err != nil {
 			fmt.Println("(x_x) <( here is what happend:", err.Error(), ")")
 			continue
 		}
 		for rows.Next() {
-			if err := rows.Scan(&n); err != nil {
+			if err := rows.Scan(&data.Bridge, &data.User); err != nil {
 				rows.Close()
 				continue
 			}
-			bridges = append(bridges, n)
+			bridges = append(bridges, data)
 		}
 		rows.Close()
 		if err := rows.Err(); err != nil {
 			continue
 		}
-		formatTime := timestamp.Format("2006-01-02 15:04:05")
+		msg.Ingredients["now"] = timestamp.Format(time.DateTime)
+		msg.Ingredients["now.datetime"] = msg.Ingredients["now"]
+		msg.Ingredients["now.timeonly"] = timestamp.Format(time.TimeOnly)
+		msg.Ingredients["now.dateonly"] = timestamp.Format(time.DateOnly)
+		msg.Ingredients["now.stamp"] = timestamp.Format(time.Stamp)
+		msg.Ingredients["now.iso"] = timestamp.Format("20060102150405")
+		msg.Ingredients["now.rfc822"] = timestamp.Format(time.RFC822)
+		msg.Ingredients["now.rfc850"] = timestamp.Format(time.RFC850)
 		for _, v := range bridges {
-			msg.Bridge = v
-			msg.Ingredients["time"] = formatTime
+			msg.Bridge = v.Bridge
+			msg.UserId = v.User
 			obj, err := json.Marshal(msg)
 			if err != nil {
 				continue
@@ -261,7 +321,7 @@ type Infos struct {
 
 func getRoutes(w http.ResponseWriter, req *http.Request) {
 	var list = []InfoRoute{
-		InfoRoute{
+		{
 			Name: "in",
 			Type: "action",
 			Desc: "Triggers in some amount of time.",
@@ -285,10 +345,22 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 				},
 			},
 		},
+		{
+			Name: "at",
+			Type: "action",
+			Desc: "Triggers at a specific moment.",
+			Spices: []InfoSpice{
+				{
+					Name: "timestamp",
+					Type: "number",
+					Title: "When to trigger.",
+				},
+			},
+		},
 	}
 	var infos = Infos{
-		Color:  "#222222",
-		Image:  "/assets/services/time.webp",
+		Color: "#222222",
+		Image: "/assets/time.webp",
 		Routes: list,
 	}
 	var data []byte
@@ -313,6 +385,7 @@ func main() {
 	fmt.Println("time microservice container is running !")
 	router := mux.NewRouter()
 	router.HandleFunc("/in", miniProxy(timeIn, db)).Methods("POST")
+	router.HandleFunc("/at", miniProxy(timeAt, db)).Methods("POST")
 	router.HandleFunc("/", getRoutes).Methods("GET")
 	log.Fatal(http.ListenAndServe(":80", router))
 }
