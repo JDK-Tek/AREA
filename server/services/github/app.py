@@ -6,6 +6,7 @@ import psycopg2
 import datetime as dt
 from dotenv import load_dotenv
 from flask import Flask, json, jsonify, request
+from urllib.parse import quote
 
 sys.stdout.reconfigure(line_buffering=True)
 load_dotenv("/usr/mount.d/.env")
@@ -987,7 +988,7 @@ def webhook():
 
 			if not userid_just_assigned:
 				return jsonify({"error": "Invalid JSON"}), 400
-
+	
 			# when an issue is assigned
 			if data.get("issue"):
 
@@ -1013,15 +1014,24 @@ def webhook():
 						check_this_userid = spices.get("check_this_userid")
 						if not check_this_userid or check_this_userid != userid_just_assigned:
 							continue
-		
-						requests.put(
+
+						r = requests.put(
 							f"http://backend:{BACKEND_PORT}/api/orchestrator",
 							json={
 								"bridge": bridge,
 								"userid": userid,
-								"ingredients": {}
+								"ingredients": {
+									"id": quote(str(data.get("issue", {}).get("number"))),
+									"owner": quote(str(data.get("repository", {}).get("owner", {}).get("login"))),
+									"repo": quote(str(data.get("repository", {}).get("name"))),
+									"title": quote(str(data.get("issue", {}).get("title"))),
+									"createdby": quote(str(data.get("issue", {}).get("user", {}).get("login"))),
+									"when": quote(str(data.get("issue", {}).get("created_at"))),
+									"body": quote(str(data.get("issue", {}).get("body")))
+								}
 							}
 						)
+						app.logger.info(f"{r.json()}, {r.status_code}")
 					return jsonify({"status": "ok"}), 200
 			
 			# when a pull request is assigned
@@ -1054,7 +1064,15 @@ def webhook():
 							json={
 								"bridge": bridge,
 								"userid": userid,
-								"ingredients": {}
+								"ingredients": {
+									"id": quote(str(data.get("pull_request", {}).get("number"))),
+									"owner": quote(str(data.get("repository", {}).get("owner", {}).get("login"))),
+									"repo": quote(str(data.get("repository", {}).get("name"))),
+									"title": quote(str(data.get("pull_request", {}).get("title"))),
+									"createdby": quote(str(data.get("pull_request", {}).get("user", {}).get("login"))),
+									"when": quote(str(data.get("pull_request", {}).get("created_at"))),
+									"body": quote(str(data.get("pull_request", {}).get("body")))
+								}
 							}
 						)
 					return jsonify({"status": "ok"}), 200
@@ -1087,14 +1105,23 @@ def webhook():
 						if not check_this_userid or check_this_userid != sender_userid:
 							continue
 						
-						requests.put(
+						r = requests.put(
 							f"http://backend:{BACKEND_PORT}/api/orchestrator",
 							json={
 								"bridge": bridge,
 								"userid": userid,
-								"ingredients": {}
+								"ingredients": {
+									"id": quote(str(data.get("issue", {}).get("number"))),
+									"owner": quote(str(data.get("repository", {}).get("owner", {}).get("login"))),
+									"repo": quote(str(data.get("repository", {}).get("name"))),
+									"title": quote(str(data.get("issue", {}).get("title"))),
+									"createdby": quote(str(data.get("issue", {}).get("user", {}).get("login"))),
+									"when": quote(str(data.get("issue", {}).get("created_at"))),
+									"body": quote(str(data.get("issue", {}).get("body")))
+								}
 							}
 						)
+						app.logger.info(f"{r.json()}, {r.status_code}")
 					return jsonify({"status": "ok"}), 200
 
 			# when a new pull request is created
@@ -1130,14 +1157,21 @@ def webhook():
 							json={
 								"bridge": bridge,
 								"userid": userid,
-								"ingredients": {}
+								"ingredients": {
+									"id": quote(str(data.get("pull_request", {}).get("number"))),
+									"owner": quote(str(data.get("repository", {}).get("owner", {}).get("login"))),
+									"repo": quote(str(data.get("repository", {}).get("name"))),
+									"title": quote(str(data.get("pull_request", {}).get("title"))),
+									"createdby": quote(str(data.get("pull_request", {}).get("user", {}).get("login"))),
+									"when": quote(str(data.get("pull_request", {}).get("created_at"))),
+									"body": quote(str(data.get("pull_request", {}).get("body")))
+								}
 							}
 						)
 					return jsonify({"status": "ok"}), 200
 
 		# when an issue is closed
 		if action == "closed":
-
 			# when an issue is closed
 			if data.get("issue"):
 				with db.cursor() as cur:
@@ -1167,7 +1201,15 @@ def webhook():
 							json={
 								"bridge": bridge,
 								"userid": userid,
-								"ingredients": {}
+								"ingredients": {
+									"id": quote(str(data.get("issue", {}).get("number"))),
+									"owner": quote(str(data.get("repository", {}).get("owner", {}).get("login"))),
+									"repo": quote(str(data.get("repository", {}).get("name"))),
+									"title": quote(str(data.get("issue", {}).get("title"))),
+									"createdby": quote(str(data.get("issue", {}).get("user", {}).get("login"))),
+									"when": quote(str(data.get("issue", {}).get("created_at"))),
+									"body": quote(str(data.get("issue", {}).get("body")))
+								}
 							}
 						)
 					return jsonify({"status": "ok"}), 200
@@ -1206,7 +1248,15 @@ def webhook():
 							json={
 								"bridge": bridge,
 								"userid": userid,
-								"ingredients": {}
+								"ingredients": {
+									"id": quote(str(data.get("pull_requested", {}).get("number"))),
+									"owner": quote(str(data.get("repository", {}).get("owner", {}).get("login"))),
+									"repo": quote(str(data.get("repository", {}).get("name"))),
+									"title": quote(str(data.get("pull_requested", {}).get("title"))),
+									"createdby": quote(str(data.get("pull_requested", {}).get("user", {}).get("login"))),
+									"when": quote(str(data.get("pull_requested", {}).get("created_at"))),
+									"body": quote(str(data.get("pull_requested", {}).get("body")))
+								}
 							}
 						)
 					return jsonify({"status": "ok"}), 200
@@ -1246,7 +1296,12 @@ def webhook():
 						json={
 							"bridge": bridge,
 							"userid": userid,
-							"ingredients": {}
+							"ingredients": {
+								"owner": quote(str(data.get("repository", {}).get("owner", {}).get("login"))),
+								"repo": quote(str(data.get("repository", {}).get("name"))),
+								"author": quote(str(data.get("pusher", {}).get("name"))),
+								"commitmsg": quote(str(data.get("head_commit", {}).get("message")))
+							}
 						}
 					)
 				return jsonify({"status": "ok"}), 200
@@ -1285,7 +1340,13 @@ def webhook():
 						json={
 							"bridge": bridge,
 							"userid": userid,
-							"ingredients": {}
+							"ingredients": {
+								"owner": quote(str(data.get("repository", {}).get("owner", {}).get("login"))),
+								"repo": quote(str(data.get("repository", {}).get("name"))),
+								"createdby": quote(str(data.get("sender", {}).get("login"))),
+								"when": quote(str(data.get("repository", {}).get("created_at"))),
+								"description": quote(str(data.get("repository", {}).get("description")))
+							}
 						}
 					)
 				return jsonify({"status": "ok"}), 200
