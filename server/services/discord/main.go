@@ -289,7 +289,7 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 	}
 	var infos = Infos{
 		Color: "#5865F2",
-		Image: "/assets/services/discord.webp",
+		Image: "/assets/discord.webp",
 		Routes: list,
 	}
 	var data []byte

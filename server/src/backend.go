@@ -54,7 +54,7 @@ type UserMessage struct {
 }
 
 func applyIngredients(str string, ingredients map[string]string) string {
-	var re = regexp.MustCompile(`\{(\w+)\}`)
+	var re = regexp.MustCompile(`\{([\w\.]+)\}`)
 
 	result := re.ReplaceAllStringFunc(str, func(match string) string {
 		key := match[1 : len(match) - 1]
@@ -93,7 +93,11 @@ func onUpdate(a area.AreaRequest) {
 	fmt.Println(ureq.Ingredients)
 
 	// fill the ingreients
-	jsonStr := string(message.Spices)
+	jsonStr, err := url.QueryUnescape(string(message.Spices))
+	if err != nil {
+		a.Error(err, http.StatusInternalServerError)
+		return
+	}
 	processedStr := applyIngredients(jsonStr, ureq.Ingredients)
 	message.Spices = json.RawMessage(processedStr)
 
@@ -425,6 +429,7 @@ func main() {
 	router.HandleFunc("/api/doctor", newProxy(&a, doctor)).Methods("GET")
 	router.HandleFunc("/api/change", newProxy(&a, auth.DoSomeChangePassword)).Methods("PUT")
 	router.HandleFunc("/about.json", newProxy(&a, createTheAbout)).Methods("GET")
+	router.PathPrefix("/assets").Handler(http.StripPrefix("/assets", http.FileServer(http.Dir("./assets"))))
 
     fmt.Println("=> server listens on port ", portString)
 	time.Sleep(time.Second * 2)
