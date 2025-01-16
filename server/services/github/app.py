@@ -595,6 +595,55 @@ def assigned_issue():
 
 	return jsonify({"status": "ok"}), 200
 
+# When you are assigned to a pull request
+ACTION_ASSIGNED_PULL_REQUEST = "assigned-pull-request"
+oreo.create_area(
+	ACTION_ASSIGNED_PULL_REQUEST,
+	NewOreo.TYPE_ACTIONS,
+	"When you are assigned to an issue",
+	[ ]
+)
+@app.route(f'/{ACTION_ASSIGNED_PULL_REQUEST}', methods=["POST"])
+def assigned_pull_request():
+	app.logger.info(f"{ACTION_ASSIGNED_PULL_REQUEST} endpoint hit")
+
+	# get data
+	data = request.json
+	if not data:
+		return jsonify({"error": "Invalid JSON"}), 400
+
+	userid = data.get("userid", 1)
+	bridge = data.get("bridge")
+	spices = data.get("spices", {})
+	if not userid or not bridge:
+		return jsonify({"error": f"Missing required fields: 'userid': {userid}, 'spices': {spices}, 'bridge': {bridge}"}), 400
+
+
+	with db.cursor() as cur:
+		cur.execute("SELECT userid FROM tokens " \
+			  "WHERE service = 'github' AND owner = %s", (
+				  userid,
+			  )
+		)
+		rows = cur.fetchone()
+		if not rows:
+			return jsonify({"error": "User not found"}), 404
+		spices["check_this_userid"] = int(rows[0])
+
+		cur.execute("INSERT INTO micro_github" \
+			  "(userid, bridgeid, triggers, spices) " \
+			  "VALUES (%s, %s, %s, %s)", (
+				  userid,
+				  bridge,
+				  ACTION_ASSIGNED_PULL_REQUEST,
+				  json.dumps(spices)
+			  )
+		)
+
+		db.commit()
+
+	return jsonify({"status": "ok"}), 200
+
 # Any new issue
 ACTION_ANY_NEW_ISSUE = "any-new-issue"
 oreo.create_area(
@@ -793,6 +842,57 @@ def new_pull_request():
 
 	return jsonify({"status": "ok"}), 200
 
+# Close pull request
+ACTION_CLOSE_PULL_REQUEST = "closed-pull-request"
+oreo.create_area(
+	ACTION_CLOSE_PULL_REQUEST,
+	NewOreo.TYPE_ACTIONS,
+	"Close a pull request",
+	[
+		{
+			"name": "owner",
+			"type": "input",
+			"title": "The owner of the repository"
+		},
+		{
+			"name": "repo",
+			"type": "input",
+			"title": "The repository name"
+		}
+	]
+)
+@app.route(f'/{ACTION_CLOSE_PULL_REQUEST}', methods=["POST"])
+def close_pull_request():
+	app.logger.info("close-pull-request endpoint hit")
+
+	# get data
+	data = request.json
+	if not data:
+		return jsonify({"error": "Invalid JSON"}), 400
+
+	userid = data.get("userid", 1)
+	bridge = data.get("bridge")
+	spices = data.get("spices", {})
+	github_owner = spices.get("owner")
+	github_repo = spices.get("repo")
+	if not userid or not bridge or not spices or not github_owner or not github_repo:
+		return jsonify({"error": f"Missing required fields: 'userid': {userid}, 'spices': {spices}, 'bridge': {bridge}"}), 400
+
+	with db.cursor() as cur:
+		cur.execute("INSERT INTO micro_github" \
+			  "(userid, bridgeid, triggers, spices) " \
+			  "VALUES (%s, %s, %s, %s)", (
+				  userid,
+				  bridge,
+				  ACTION_CLOSE_PULL_REQUEST,
+				  json.dumps(spices)
+			  )
+		)
+
+		db.commit()
+
+	return jsonify({"status": "ok"}), 200
+
 # New repository created by a user/organization
 ACTION_NEW_REPOSITORY = "new-repository"
 oreo.create_area(
@@ -882,7 +982,7 @@ def webhook():
 					}
 				)
 
-		# when an issue is assigned to the user
+		# when an issue/pr is assigned to the user
 		if action == "assigned":
 			assignee = data.get('assignee', {})
 			userid_just_assigned = assignee.get('id')
@@ -890,44 +990,80 @@ def webhook():
 			if not userid_just_assigned:
 				return jsonify({"error": "Invalid JSON"}), 400
 
-			with db.cursor() as cur:
-				cur.execute("SELECT bridgeid, userid, spices FROM micro_github " \
-					"WHERE triggers = %s", (
-						ACTION_ASSIGNED_ISSUE,
-					)
-				)
+			# when an issue is assigned
+			if data.get("issue"):
 
-				# check if the user has an action assigned
-				rows = cur.fetchall()
-				if not rows:
+				with db.cursor() as cur:
+					cur.execute("SELECT bridgeid, userid, spices FROM micro_github " \
+						"WHERE triggers = %s", (
+							ACTION_ASSIGNED_ISSUE,
+						)
+					)
+
+					# check if the user has an action assigned
+					rows = cur.fetchall()
+					if not rows:
+						return jsonify({"status": "ok"}), 200
+					
+					# get the bridge id
+					for row in rows:
+						bridge = row[0]
+						userid = row[1]
+						spices = json.loads(row[2])
+
+						# check if the user is the assignee
+						check_this_userid = spices.get("check_this_userid")
+						if not check_this_userid or check_this_userid != userid_just_assigned:
+							continue
+		
+						requests.put(
+							f"http://backend:{BACKEND_PORT}/api/orchestrator",
+							json={
+								"bridge": bridge,
+								"userid": userid,
+								"ingredients": {}
+							}
+						)
 					return jsonify({"status": "ok"}), 200
-				
-				# get the bridge id
-				for row in rows:
-					bridge = row[0]
-					userid = row[1]
-					spices = json.loads(row[2])
-
-					# check if the user is the assignee
-					check_this_userid = spices.get("check_this_userid")
-					if not check_this_userid or check_this_userid != userid_just_assigned:
-						continue
-	
-					requests.put(
-						f"http://backend:{BACKEND_PORT}/api/orchestrator",
-						json={
-							"bridge": bridge,
-							"userid": userid,
-							"ingredients": {}
-						}
+			
+			# when a pull request is assigned
+			if data.get("pull_request"):
+				with db.cursor() as cur:
+					cur.execute("SELECT bridgeid, userid, spices FROM micro_github " \
+						"WHERE triggers = %s", (
+							ACTION_ASSIGNED_PULL_REQUEST,
+						)
 					)
-				return jsonify({"status": "ok"}), 200
+
+					# check if the user has an action assigned
+					rows = cur.fetchall()
+					if not rows:
+						return jsonify({"status": "ok"}), 200
+					
+					# get the bridge id
+					for row in rows:
+						bridge = row[0]
+						userid = row[1]
+						spices = json.loads(row[2])
+
+						# check if the user is the assignee
+						check_this_userid = spices.get("check_this_userid")
+						if not check_this_userid or check_this_userid != userid_just_assigned:
+							continue
+		
+						requests.put(
+							f"http://backend:{BACKEND_PORT}/api/orchestrator",
+							json={
+								"bridge": bridge,
+								"userid": userid,
+								"ingredients": {}
+							}
+						)
+					return jsonify({"status": "ok"}), 200
 	
 
-		# when a new issue is created
-		# when a pull request is created
+		# when a new issue/pull request is created
 		if action == "opened":
-
 			# when a new issue is created
 			if data.get("issue"):
 
@@ -1004,37 +1140,78 @@ def webhook():
 		# when an issue is closed
 		if action == "closed":
 
-			with db.cursor() as cur:
-				cur.execute("SELECT bridgeid, userid, spices FROM micro_github " \
-					"WHERE triggers = %s", (
-						ACTION_ANY_CLOSED_ISSUE,
+			# when an issue is closed
+			if data.get("issue"):
+				with db.cursor() as cur:
+					cur.execute("SELECT bridgeid, userid, spices FROM micro_github " \
+						"WHERE triggers = %s", (
+							ACTION_ANY_CLOSED_ISSUE,
+						)
 					)
-				)
 
-				# check if the user has an action assigned
-				rows = cur.fetchall()
-				if not rows:
+					# check if the user has an action assigned
+					rows = cur.fetchall()
+					if not rows:
+						return jsonify({"status": "ok"}), 200
+					
+					# get the bridge id
+					for row in rows:
+						bridge = row[0]
+						userid = row[1]
+						spices = json.loads(row[2])
+
+						check_this_userid = spices.get("check_this_userid")
+						if not check_this_userid or check_this_userid != sender_userid:
+							continue
+		
+						requests.put(
+							f"http://backend:{BACKEND_PORT}/api/orchestrator",
+							json={
+								"bridge": bridge,
+								"userid": userid,
+								"ingredients": {}
+							}
+						)
 					return jsonify({"status": "ok"}), 200
-				
-				# get the bridge id
-				for row in rows:
-					bridge = row[0]
-					userid = row[1]
-					spices = json.loads(row[2])
 
-					check_this_userid = spices.get("check_this_userid")
-					if not check_this_userid or check_this_userid != sender_userid:
-						continue
-	
-					requests.put(
-						f"http://backend:{BACKEND_PORT}/api/orchestrator",
-						json={
-							"bridge": bridge,
-							"userid": userid,
-							"ingredients": {}
-						}
+			# when a pull request is closed
+			if data.get("pull_request"):
+				with db.cursor() as cur:
+					cur.execute("SELECT bridgeid, userid, spices FROM micro_github " \
+						"WHERE triggers = %s", (
+							ACTION_CLOSE_PULL_REQUEST,
+						)
 					)
-				return jsonify({"status": "ok"}), 200
+
+					# check if the user has an action assigned
+					rows = cur.fetchall()
+					if not rows:
+						return jsonify({"status": "ok"}), 200
+					
+					# get the bridge id
+					for row in rows:
+						bridge = row[0]
+						userid = row[1]
+						spices = json.loads(row[2])
+
+						github_owner = spices.get("owner")
+						github_repo = spices.get("repo")
+						pr_id = spices.get("id")
+						if not github_owner or not github_repo or not pr_id:
+							continue
+
+						if (f"{github_owner}/{github_repo}") != data.get("repository", {}).get("full_name"):
+							continue
+						
+						requests.put(
+							f"http://backend:{BACKEND_PORT}/api/orchestrator",
+							json={
+								"bridge": bridge,
+								"userid": userid,
+								"ingredients": {}
+							}
+						)
+					return jsonify({"status": "ok"}), 200
 
 		# when a new commit is pushed
 		if action == "requested":
