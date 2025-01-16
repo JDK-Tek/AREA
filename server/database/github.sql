@@ -5,5 +5,6 @@ create table if not exists micro_github (
     areauserid int not null,
     userid int not null,
     bridgeid int not null,
+    spices text not null,
     triggers varchar(255) not null --,
 );

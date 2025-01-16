@@ -5,7 +5,7 @@ import requests
 import psycopg2
 import datetime as dt
 from dotenv import load_dotenv
-from flask import Flask, jsonify, request
+from flask import Flask, json, jsonify, request
 
 sys.stdout.reconfigure(line_buffering=True)
 load_dotenv("/usr/mount.d/.env")
@@ -516,7 +516,7 @@ def assigned_issue():
 
 	area_user_id = data.get("id_user", 1)
 	bridge = data.get("bridge")
-	spices = data.get("spices")
+	spices = data.get("spices", {})
 	if not area_user_id or not bridge:
 		return jsonify({"error": f"Missing required fields: 'user_id': {area_user_id}, 'spices': {spices}, 'bridge': {bridge}"}), 400
 
@@ -533,12 +533,13 @@ def assigned_issue():
 		github_user_id = rows[0]
 
 		cur.execute("INSERT INTO micro_github" \
-			  "(areauserid, userid, bridgeid, triggers) " \
-			  "VALUES (%s, %s, %s, %s)", (
+			  "(areauserid, userid, bridgeid, triggers, spices) " \
+			  "VALUES (%s, %s, %s, %s, %s)", (
 				  area_user_id,
 				  github_user_id,
 				  bridge,
-				  ACTION_ASSIGNED_ISSUE
+				  ACTION_ASSIGNED_ISSUE,
+				  json.dumps(spices)
 			  )
 		)
 
@@ -547,14 +548,14 @@ def assigned_issue():
 	return jsonify({"status": "ok"}), 200
 
 # Any new issue
-ACTION_NEW_ISSUE = "new-issue"
+ACTION_ANY_NEW_ISSUE = "any-new-issue"
 oreo.create_area(
-	ACTION_NEW_ISSUE,
+	ACTION_ANY_NEW_ISSUE,
 	NewOreo.TYPE_ACTIONS,
 	"Any new issue",
 	[ ]
 )
-@app.route(f'/{ACTION_NEW_ISSUE}', methods=["POST"])
+@app.route(f'/{ACTION_ANY_NEW_ISSUE}', methods=["POST"])
 def new_issue():
 	app.logger.info("new-issue endpoint hit")
 
@@ -565,7 +566,7 @@ def new_issue():
 
 	area_user_id = data.get("id_user", 1)
 	bridge = data.get("bridge")
-	spices = data.get("spices")
+	spices = data.get("spices", {})
 	if not area_user_id or not bridge:
 		return jsonify({"error": f"Missing required fields: 'user_id': {area_user_id}, 'spices': {spices}, 'bridge': {bridge}"}), 400
 
@@ -581,12 +582,13 @@ def new_issue():
 		github_user_id = rows[0]
 
 		cur.execute("INSERT INTO micro_github" \
-			  "(areauserid, userid, bridgeid, triggers) " \
-			  "VALUES (%s, %s, %s, %s)", (
+			  "(areauserid, userid, bridgeid, triggers, spices) " \
+			  "VALUES (%s, %s, %s, %s, %s)", (
 				  area_user_id,
 				  github_user_id,
 				  bridge,
-				  ACTION_NEW_ISSUE
+				  ACTION_ANY_NEW_ISSUE,
+				  json.dumps(spices)
 			  )
 		)
 
@@ -595,14 +597,14 @@ def new_issue():
 	return jsonify({"status": "ok"}), 200
 
 # Any closed issue
-ACTION_CLOSED_ISSUE = "closed-issue"
+ACTION_ANY_CLOSED_ISSUE = "any-closed-issue"
 oreo.create_area(
-	ACTION_CLOSED_ISSUE,
+	ACTION_ANY_CLOSED_ISSUE,
 	NewOreo.TYPE_ACTIONS,
 	"Any closed issue",
 	[ ]
 )
-@app.route(f'/{ACTION_CLOSED_ISSUE}', methods=["POST"])
+@app.route(f'/{ACTION_ANY_CLOSED_ISSUE}', methods=["POST"])
 def closed_issue():
 	app.logger.info("closed-issue endpoint hit")
 
@@ -613,7 +615,7 @@ def closed_issue():
 
 	area_user_id = data.get("id_user", 1)
 	bridge = data.get("bridge")
-	spices = data.get("spices")
+	spices = data.get("spices", {})
 	if not area_user_id or not bridge:
 		return jsonify({"error": f"Missing required fields: 'user_id': {area_user_id}, 'spices': {spices}, 'bridge': {bridge}"}), 400
 
@@ -629,12 +631,75 @@ def closed_issue():
 		github_user_id = rows[0]
 
 		cur.execute("INSERT INTO micro_github" \
-			  "(areauserid, userid, bridgeid, triggers) " \
-			  "VALUES (%s, %s, %s, %s)", (
+			  "(areauserid, userid, bridgeid, triggers, spices) " \
+			  "VALUES (%s, %s, %s, %s, %s)", (
 				  area_user_id,
 				  github_user_id,
 				  bridge,
-				  ACTION_CLOSED_ISSUE
+				  ACTION_ANY_CLOSED_ISSUE,
+				  json.dumps(spices)
+			  )
+		)
+
+		db.commit()
+
+	return jsonify({"status": "ok"}), 200
+
+# New commit on a repository
+ACTION_NEW_COMMIT = "new-commit"
+oreo.create_area(
+	ACTION_NEW_COMMIT,
+	NewOreo.TYPE_ACTIONS,
+	"New commit on a repository",
+	[
+		{
+			"name": "owner",
+			"type": "input",
+			"title": "The owner of the repository"
+		},
+		{
+			"name": "repo",
+			"type": "input",
+			"title": "The repository name"
+		}
+	]
+)
+@app.route(f'/{ACTION_NEW_COMMIT}', methods=["POST"])
+def new_commit():
+	app.logger.info("new-commit endpoint hit")
+
+	# get data
+	data = request.json
+	if not data:
+		return jsonify({"error": "Invalid JSON"}), 400
+
+	area_user_id = data.get("id_user", 1)
+	bridge = data.get("bridge")
+	spices = data.get("spices", {})
+	github_owner = spices.get("owner")
+	github_repo = spices.get("repo")
+	if not area_user_id or not bridge or not spices or not github_owner or not github_repo:
+		return jsonify({"error": f"Missing required fields: 'user_id': {area_user_id}, 'spices': {spices}, 'bridge': {bridge}"}), 400
+
+	with db.cursor() as cur:
+		cur.execute("SELECT userid FROM tokens " \
+			  "WHERE service = 'github' AND owner = %s", (
+				  area_user_id,
+			  )
+		)
+		rows = cur.fetchone()
+		if not rows:
+			return jsonify({"error": "User not found"}), 404
+		github_user_id = rows[0]
+
+		cur.execute("INSERT INTO micro_github" \
+			  "(areauserid, userid, bridgeid, triggers, spices) " \
+			  "VALUES (%s, %s, %s, %s, %s)", (
+				  area_user_id,
+				  github_user_id,
+				  bridge,
+				  ACTION_NEW_COMMIT,
+				  json.dumps(spices)
 			  )
 		)
 
@@ -651,11 +716,14 @@ def webhook():
 	
 	data = request.json
 	action = data.get('action')
-	if not action:
-		app.logger.error("Invalid JSON")
-		return jsonify({"error": "Invalid JSON"}), 400
+	sender = data.get('sender', {})
+	github_userid = sender.get('id')
+	if not action or not github_userid:
+		app.logger.error(f"Invalid hook, missing action: {action} or sender: {github_userid}")
+		return jsonify({"error": f"Invalid hook, missing action: {action} or sender: {github_userid}"}), 400
 	
 	try:
+		# when an issue is assigned to the user
 		if action == "assigned":
 			assignee = data.get('assignee', {})
 			github_userid = assignee.get('id')
@@ -691,18 +759,14 @@ def webhook():
 				return jsonify({"status": "ok"}), 200
 	
 
+		# when a new issue is created
 		if action == "opened":
-			issue = data.get('issue', {})
-			github_userid = issue.get('user', {}).get('id')
-
-			if not github_userid:
-				return jsonify({"error": "Invalid JSON"}), 400
-
+		
 			with db.cursor() as cur:
 				cur.execute("SELECT bridgeid, areauserid FROM micro_github " \
 					"WHERE userid = %s AND triggers = %s", (
 						github_userid,
-						ACTION_NEW_ISSUE
+						ACTION_ANY_NEW_ISSUE
 					)
 				)
 
@@ -724,18 +788,15 @@ def webhook():
 						}
 					)
 				return jsonify({"status": "ok"}), 200
+
+		# when an issue is closed
 		if action == "closed":
-			issue = data.get('issue', {})
-			github_userid = issue.get('user', {}).get('id')
-
-			if not github_userid:
-				return jsonify({"error": "Invalid JSON"}), 400
 
 			with db.cursor() as cur:
 				cur.execute("SELECT bridgeid, areauserid FROM micro_github " \
 					"WHERE userid = %s AND triggers = %s", (
 						github_userid,
-						ACTION_CLOSED_ISSUE
+						ACTION_ANY_CLOSED_ISSUE
 					)
 				)
 
@@ -757,6 +818,49 @@ def webhook():
 						}
 					)
 				return jsonify({"status": "ok"}), 200
+
+		# when a new commit is pushed
+		if action == "requested":
+
+			with db.cursor() as cur:
+				cur.execute("SELECT bridgeid, areauserid, spices FROM micro_github " \
+					"WHERE userid = %s AND triggers = %s", (
+						github_userid,
+						ACTION_NEW_COMMIT
+					)
+				)
+
+				# check if the user has an action assigned
+				rows = cur.fetchall()
+				if not rows:
+					return jsonify({"status": "ok"}), 200
+				
+				# get the bridge id
+				for row in rows:
+					bridge = row[0]
+					areauserid = row[1]
+					spices = json.loads(row[2])
+
+					github_owner = spices.get("owner")
+					github_repo = spices.get("repo")
+					if not github_owner or not github_repo:
+						return jsonify({"error": "Missing spices"}), 500
+
+					app.logger.info(f"Github owner: {github_owner}, Github repo: {github_repo}, Full link: {github_owner}/{github_repo}")
+					if (f"{github_owner}/{github_repo}") != data.get("repository", {}).get("full_name"):
+						continue
+	
+
+					requests.put(
+						f"http://backend:{BACKEND_PORT}/api/orchestrator",
+						json={
+							"bridge": bridge,
+							"userid": areauserid,
+							"ingredients": {}
+						}
+					)
+				return jsonify({"status": "ok"}), 200
+
 				
 	except (Exception, psycopg2.Error) as err:
 		app.logger.error(str(err))
