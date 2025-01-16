@@ -214,8 +214,23 @@ func codeCallback(a area.AreaRequest) {
 	}, http.StatusOK)
 }
 
+type MiniAbout struct {
+	Color string `json:"color"`
+	Name string `json:"name"`
+	Image string `json:"image"`
+}
+
 func getAllServices(a area.AreaRequest) {
-	a.Reply(a.Area.Services, http.StatusOK)
+	var tmp MiniAbout
+	services := []MiniAbout{}
+	
+	for _, v := range a.Area.About.Server.Services {
+		tmp.Color = v.Color
+		tmp.Image = v.Icon
+		tmp.Name = v.Name
+		services = append(services, tmp)
+	}
+	a.Reply(services, http.StatusOK)
 }
 
 func createTheAbout(a area.AreaRequest) {
