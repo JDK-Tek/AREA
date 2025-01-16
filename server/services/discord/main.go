@@ -263,8 +263,8 @@ type InfoRoute struct {
 
 type Infos struct {
 	Color string `json:"color"`
-	Image string `json:"Image"`
-	Routes []InfoRoute `json:"routes"`
+	Image string `json:"image"`
+	Routes []InfoRoute `json:"areas"`
 }
 
 func getRoutes(w http.ResponseWriter, req *http.Request) {
@@ -288,7 +288,8 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 		},
 	}
 	var infos = Infos{
-		Color: "#ffff0000",
+		Color: "#5865F2",
+		Image: "https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/636e0a6cc3c481a15a141738_icon_clyde_white_RGB.png",
 		Routes: list,
 	}
 	var data []byte
@@ -315,6 +316,6 @@ func main() {
 	router.HandleFunc("/send", doSomeSend).Methods("POST")
 	router.HandleFunc("/oauth", getOAUTHLink).Methods("GET")
 	router.HandleFunc("/oauth", miniproxy(setOAUTHToken, db)).Methods("POST")
-	router.HandleFunc("/routes", getRoutes).Methods("GET")
+	router.HandleFunc("/", getRoutes).Methods("GET")
 	log.Fatal(http.ListenAndServe(":80", router))
 }

@@ -13,6 +13,7 @@ import (
 	"os"
 	"strconv"
 	"time"
+	"regexp"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -43,10 +44,26 @@ func newProxy(a *area.Area, f func(area.AreaRequest)) func(http.ResponseWriter, 
 
 type UpdateRequest struct {
 	BridgeID int `json:"bridge"`
+	Id int `json:"userid"`
+	Ingredients map[string]string `json:"ingredients"`
 }
 
 type UserMessage struct {
 	Spices json.RawMessage `json:"spices"`
+	Id int `json:"userid"`
+}
+
+func applyIngredients(str string, ingredients map[string]string) string {
+	var re = regexp.MustCompile(`\{(\w+)\}`)
+
+	result := re.ReplaceAllStringFunc(str, func(match string) string {
+		key := match[1 : len(match) - 1]
+		if value, found := ingredients[key]; found {
+			return value
+		}
+		return match
+	})
+	return result
 }
 
 func onUpdate(a area.AreaRequest) {
@@ -68,24 +85,31 @@ func onUpdate(a area.AreaRequest) {
 	err = a.Area.Database.
 		QueryRow("select service, name, spices from reactions where id = $1", reactid).
 		Scan(&service, &name, &message.Spices)
-	fmt.Println("bar")
 	if err != nil {
 		a.Error(err, http.StatusInternalServerError)
 		return
 	}
+
+	fmt.Println(ureq.Ingredients)
+
+	// fill the ingreients
+	jsonStr := string(message.Spices)
+	processedStr := applyIngredients(jsonStr, ureq.Ingredients)
+	message.Spices = json.RawMessage(processedStr)
+
+	// fill the message
+	message.Id = ureq.Id
 	obj, err := json.Marshal(message)
 	if err != nil {
 		a.Error(err, http.StatusInternalServerError)
 		return
 	}
-	fmt.Println("test")
-	url := fmt.Sprintf("http://reverse-proxy:42002/service/%s/%s", service, name)
+	url := fmt.Sprintf("http://reverse-proxy:%s/service/%s/%s", os.Getenv("REVERSEPROXY_PORT"), service, name)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(obj))
 	if err != nil {
 		a.Error(err, http.StatusBadGateway)
 		return
 	}
-	fmt.Println("foo")
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 	client := http.Client{}
@@ -108,7 +132,8 @@ func oauthGetter(a area.AreaRequest) {
 	service := vars["service"]
 	redirect := a.Request.URL.Query().Get("redirect")
 	url := fmt.Sprintf(
-		"http://reverse-proxy:42002/service/%s/oauth?redirect=%s",
+		"http://reverse-proxy:%s/service/%s/oauth?redirect=%s",
+		os.Getenv("REVERSEPROXY_PORT"),
 		service,
 		url.QueryEscape(redirect),
 	)
@@ -140,7 +165,9 @@ func oauthSetter(a area.AreaRequest) {
 	service := vars["service"]
 
 	url := fmt.Sprintf(
-		"http://reverse-proxy:42002/service/%s/oauth",
+		// "http://reverse-proxy:42002/service/%s/oauth?%s",
+		"http://reverse-proxy:%s/service/%s/oauth",
+		os.Getenv("REVERSEPROXY_PORT"),
 		service,
 	)
 
@@ -187,8 +214,23 @@ func codeCallback(a area.AreaRequest) {
 	}, http.StatusOK)
 }
 
+type MiniAbout struct {
+	Color string `json:"color"`
+	Name string `json:"name"`
+	Image string `json:"image"`
+}
+
 func getAllServices(a area.AreaRequest) {
-	a.Reply(a.Area.Services, http.StatusOK)
+	var tmp MiniAbout
+	services := []MiniAbout{}
+	
+	for _, v := range a.Area.About.Server.Services {
+		tmp.Color = v.Color
+		tmp.Image = v.Icon
+		tmp.Name = v.Name
+		services = append(services, tmp)
+	}
+	a.Reply(services, http.StatusOK)
 }
 
 func createTheAbout(a area.AreaRequest) {
@@ -196,7 +238,7 @@ func createTheAbout(a area.AreaRequest) {
 	a.Reply(a.Area.About, http.StatusOK)
 }
 
-func getRoutes(a area.AreaRequest) {
+func getServiceRoutes(a area.AreaRequest) {
 	vars := mux.Vars(a.Request)
 	service := vars["service"]
 	url := fmt.Sprintf(
@@ -241,6 +283,65 @@ func doctor(a area.AreaRequest) {
 		return
 	}
 	a.Reply(MessageWithID{Message: "i'm ok thanks", Authentificated: true, ID: id}, http.StatusOK)
+}
+
+func openWebhooks(a area.AreaRequest) {
+	vars := mux.Vars(a.Request)
+	service := vars["service"]
+	toCall := fmt.Sprintf(
+		"http://reverse-proxy:%s/service/%s/webhook",
+		os.Getenv("REVERSEPROXY_PORT"),
+		service,
+	)
+
+	// i copy all the querry parmas
+	queryParams := a.Request.URL.Query()
+	uri := fmt.Sprintf("%s?%s", toCall, queryParams.Encode())
+
+	// i copy the body
+	body, err := io.ReadAll(a.Request.Body)
+	if err != nil {
+		http.Error(a.Writter, "Failed to read request body", http.StatusInternalServerError)
+		return
+	}
+
+	// i create a request
+	req, err := http.NewRequest("POST", uri, bytes.NewReader(body))
+	if err != nil {
+		a.Error(err, http.StatusBadGateway)
+		return
+	}
+
+	// i copy the headers
+	for k, vs := range a.Request.Header {
+		for _, v := range vs {
+			req.Header.Add(k, v)
+		}
+	}
+
+	// snd the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		a.Error(err, http.StatusBadGateway)
+		return
+	}
+	defer resp.Body.Close()
+
+	// reecopy the headers
+	for key, values := range resp.Header {
+		for _, value := range values {
+			a.Writter.Header().Add(key, value)
+		}
+	}
+
+	// then i just like create thee response
+	rep, err := io.ReadAll(resp.Body)
+	if err != nil {
+		a.Error(err, http.StatusBadGateway)
+		return
+	}
+	a.Reply(rep, resp.StatusCode)
 }
 
 func main() {
@@ -304,15 +405,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	err = a.SetupTheAbout()
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	corsMiddleware := handlers.CORS(
-		handlers.AllowedOrigins([]string{"*"}),
-		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE"}),
-		handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
-	)
+    corsMiddleware := handlers.CORS(
+        handlers.AllowedOrigins([]string{"*"}),
+        handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE"}),
+        handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
+    )
 	router.HandleFunc("/api/login", newProxy(&a, auth.DoSomeLogin)).Methods("POST")
 	router.HandleFunc("/api/register", newProxy(&a, auth.DoSomeRegister)).Methods("POST")
 	router.HandleFunc("/api/area", newProxy(&a, arearoute.NewArea)).Methods("POST")
@@ -323,11 +420,18 @@ func main() {
 	router.HandleFunc("/api/applets", newProxy(&a, applet.GetApplets)).Methods("GET")
 	router.HandleFunc("/api/orchestrator", newProxy(&a, onUpdate)).Methods("PUT")
 	router.HandleFunc("/api/services", newProxy(&a, getAllServices)).Methods("GET")
-	router.HandleFunc("/api/services/{service}", newProxy(&a, getRoutes)).Methods("GET")
+	router.HandleFunc("/api/services/{service}", newProxy(&a, getServiceRoutes)).Methods("GET")
+	router.HandleFunc("/api/services/{service}/webhook", newProxy(&a, openWebhooks)).Methods("POST")
 	router.HandleFunc("/api/doctor", newProxy(&a, doctor)).Methods("GET")
 	router.HandleFunc("/api/change", newProxy(&a, auth.DoSomeChangePassword)).Methods("PUT")
 	router.HandleFunc("/about.json", newProxy(&a, createTheAbout)).Methods("GET")
 
-	fmt.Println("=> server listens on port ", portString)
-	log.Fatal(http.ListenAndServe(":"+portString, corsMiddleware(router)))
+    fmt.Println("=> server listens on port ", portString)
+	time.Sleep(time.Second * 2)
+	err = a.SetupTheAbout()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+    log.Fatal(http.ListenAndServe(":"+portString, corsMiddleware(router)))
+
 }

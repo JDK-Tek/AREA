@@ -166,11 +166,13 @@ func miniProxy(f func(http.ResponseWriter, *http.Request, *sql.DB), c *sql.DB) f
 
 type Message struct {
 	Bridge int `json:"bridge"`
+	Ingredients map[string]string `json:"ingredients"`
 }
 
 func masterThread(db *sql.DB) {
 	var msg Message
 
+	msg.Ingredients = make(map[string]string)
 	client := http.Client{}
 	backendPort := os.Getenv("BACKEND_PORT")
 	if backendPort == "" {
@@ -207,8 +209,10 @@ func masterThread(db *sql.DB) {
 		if err := rows.Err(); err != nil {
 			continue
 		}
+		formatTime := timestamp.Format("2006-01-02 15:04:05")
 		for _, v := range bridges {
 			msg.Bridge = v
+			msg.Ingredients["time"] = formatTime
 			obj, err := json.Marshal(msg)
 			if err != nil {
 				continue
@@ -251,8 +255,8 @@ type InfoRoute struct {
 
 type Infos struct {
 	Color string `json:"color"`
-	Image string `json:"Image"`
-	Routes []InfoRoute `json:"routes"`
+	Image string `json:"image"`
+	Routes []InfoRoute `json:"areas"`
 }
 
 func getRoutes(w http.ResponseWriter, req *http.Request) {
@@ -283,7 +287,8 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 		},
 	}
 	var infos = Infos{
-		Color: "#ff0000ff",
+		Color: "#ffffff",
+		Image: "https://img.icons8.com/ios/452/timer.png",
 		Routes: list,
 	}
 	var data []byte
@@ -308,6 +313,6 @@ func main() {
 	fmt.Println("time microservice container is running !")
 	router := mux.NewRouter()
 	router.HandleFunc("/in", miniProxy(timeIn, db)).Methods("POST")
-	router.HandleFunc("/routes", getRoutes).Methods("GET")
+	router.HandleFunc("/", getRoutes).Methods("GET")
 	log.Fatal(http.ListenAndServe(":80", router))
 }
