@@ -514,7 +514,7 @@ def new_notification():
 	if not data:
 		return jsonify({"error": "Invalid JSON"}), 400
 
-	area_user_id = data.get("id_user", 1)
+	area_user_id = data.get("userid", 1)
 	bridge = data.get("bridge")
 	spices = data.get("spices", {})
 	if not area_user_id or not bridge:
@@ -563,7 +563,7 @@ def assigned_issue():
 	if not data:
 		return jsonify({"error": "Invalid JSON"}), 400
 
-	area_user_id = data.get("id_user", 1)
+	area_user_id = data.get("userid", 1)
 	bridge = data.get("bridge")
 	spices = data.get("spices", {})
 	if not area_user_id or not bridge:
@@ -613,7 +613,7 @@ def new_issue():
 	if not data:
 		return jsonify({"error": "Invalid JSON"}), 400
 
-	area_user_id = data.get("id_user", 1)
+	area_user_id = data.get("userid", 1)
 	bridge = data.get("bridge")
 	spices = data.get("spices", {})
 	if not area_user_id or not bridge:
@@ -662,7 +662,7 @@ def closed_issue():
 	if not data:
 		return jsonify({"error": "Invalid JSON"}), 400
 
-	area_user_id = data.get("id_user", 1)
+	area_user_id = data.get("userid", 1)
 	bridge = data.get("bridge")
 	spices = data.get("spices", {})
 	if not area_user_id or not bridge:
@@ -722,7 +722,7 @@ def new_commit():
 	if not data:
 		return jsonify({"error": "Invalid JSON"}), 400
 
-	area_user_id = data.get("id_user", 1)
+	area_user_id = data.get("userid", 1)
 	bridge = data.get("bridge")
 	spices = data.get("spices", {})
 	github_owner = spices.get("owner")
@@ -755,6 +755,63 @@ def new_commit():
 		db.commit()
 
 	return jsonify({"status": "ok"}), 200
+
+# New repository created by a user/organization
+ACTION_NEW_REPOSITORY = "new-repository"
+oreo.create_area(
+	ACTION_NEW_REPOSITORY,
+	NewOreo.TYPE_ACTIONS,
+	"New repository created by a user/organization",
+	[
+		{
+			"name": "owner",
+			"type": "input",
+			"title": "The owner of the repository"
+		}
+	]
+)
+@app.route(f'/{ACTION_NEW_REPOSITORY}', methods=["POST"])
+def new_repository():
+	app.logger.info("new-repository endpoint hit")
+
+	# get data
+	data = request.json
+	if not data:
+		return jsonify({"error": "Invalid JSON"}), 400
+
+	area_user_id = data.get("userid", 1)
+	bridge = data.get("bridge")
+	spices = data.get("spices", {})
+	github_owner = spices.get("owner")
+	if not area_user_id or not bridge or not spices or not github_owner:
+		return jsonify({"error": f"Missing required fields: 'user_id': {area_user_id}, 'spices': {spices}, 'bridge': {bridge}"}), 400
+
+	with db.cursor() as cur:
+		cur.execute("SELECT userid FROM tokens " \
+			  "WHERE service = 'github' AND owner = %s", (
+				  area_user_id,
+			  )
+		)
+		rows = cur.fetchone()
+		if not rows:
+			return jsonify({"error": "User not found"}), 404
+		github_user_id = rows[0]
+
+		cur.execute("INSERT INTO micro_github" \
+			  "(areauserid, userid, bridgeid, triggers, spices) " \
+			  "VALUES (%s, %s, %s, %s, %s)", (
+				  area_user_id,
+				  github_user_id,
+				  bridge,
+				  ACTION_NEW_REPOSITORY,
+				  json.dumps(spices)
+			  )
+		)
+
+		db.commit()
+
+	return jsonify({"status": "ok"}), 200
+
 
 ##
 ## WEBHOOKS
@@ -917,10 +974,49 @@ def webhook():
 					if not github_owner or not github_repo:
 						return jsonify({"error": "Missing spices"}), 500
 
-					app.logger.info(f"Github owner: {github_owner}, Github repo: {github_repo}, Full link: {github_owner}/{github_repo}")
 					if (f"{github_owner}/{github_repo}") != data.get("repository", {}).get("full_name"):
 						continue
 	
+
+					requests.put(
+						f"http://backend:{BACKEND_PORT}/api/orchestrator",
+						json={
+							"bridge": bridge,
+							"userid": areauserid,
+							"ingredients": {}
+						}
+					)
+				return jsonify({"status": "ok"}), 200
+		
+		# when a new repository is created
+		if action == "created":
+			app.logger.info("New repository created")
+		
+			with db.cursor() as cur:
+				cur.execute("SELECT bridgeid, areauserid, spices FROM micro_github " \
+					"WHERE userid = %s AND triggers = %s", (
+						github_userid,
+						ACTION_NEW_REPOSITORY
+					)
+				)
+
+				# check if the user has an action assigned
+				rows = cur.fetchall()
+				if not rows:
+					return jsonify({"status": "ok"}), 200
+				
+				# get the bridge id
+				for row in rows:
+					bridge = row[0]
+					areauserid = row[1]
+					spices = json.loads(row[2])
+
+					github_owner = spices.get("owner")
+					if not github_owner:
+						return jsonify({"error": "Missing spices"}), 500
+
+					if github_owner != data.get("repository", {}).get("owner", {}).get("login"):
+						continue
 
 					requests.put(
 						f"http://backend:{BACKEND_PORT}/api/orchestrator",
