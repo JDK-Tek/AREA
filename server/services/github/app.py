@@ -742,6 +742,57 @@ def new_commit():
 
 	return jsonify({"status": "ok"}), 200
 
+# New pull request on a repository
+ACTION_NEW_PULL_REQUEST = "new-pull-request"
+oreo.create_area(
+	ACTION_NEW_PULL_REQUEST,
+	NewOreo.TYPE_ACTIONS,
+	"New pull request on a repository",
+	[
+		{
+			"name": "owner",
+			"type": "input",
+			"title": "The owner of the repository"
+		},
+		{
+			"name": "repo",
+			"type": "input",
+			"title": "The repository name"
+		}
+	]
+)
+@app.route(f'/{ACTION_NEW_PULL_REQUEST}', methods=["POST"])
+def new_pull_request():
+	app.logger.info("new-pull-request endpoint hit")
+
+	# get data
+	data = request.json
+	if not data:
+		return jsonify({"error": "Invalid JSON"}), 400
+
+	userid = data.get("userid", 1)
+	bridge = data.get("bridge")
+	spices = data.get("spices", {})
+	github_owner = spices.get("owner")
+	github_repo = spices.get("repo")
+	if not userid or not bridge or not spices or not github_owner or not github_repo:
+		return jsonify({"error": f"Missing required fields: 'userid': {userid}, 'spices': {spices}, 'bridge': {bridge}"}), 400
+
+	with db.cursor() as cur:
+		cur.execute("INSERT INTO micro_github" \
+			  "(userid, bridgeid, triggers, spices) " \
+			  "VALUES (%s, %s, %s, %s)", (
+				  userid,
+				  bridge,
+				  ACTION_NEW_PULL_REQUEST,
+				  json.dumps(spices)
+			  )
+		)
+
+		db.commit()
+
+	return jsonify({"status": "ok"}), 200
+
 # New repository created by a user/organization
 ACTION_NEW_REPOSITORY = "new-repository"
 oreo.create_area(
@@ -794,6 +845,7 @@ def new_repository():
 @app.route('/webhook', methods=["POST"])
 def webhook():
 	app.logger.info("webhook endpoint hit")
+	app.logger.info(f"Request: {request.json}")
 	
 	data = request.json
 	action = data.get('action')
@@ -871,40 +923,83 @@ def webhook():
 					)
 				return jsonify({"status": "ok"}), 200
 	
+
 		# when a new issue is created
+		# when a pull request is created
 		if action == "opened":
-		
-			with db.cursor() as cur:
-				cur.execute("SELECT bridgeid, userid, spices FROM micro_github " \
-					"WHERE triggers = %s", (
-						ACTION_ANY_NEW_ISSUE,
+
+			# when a new issue is created
+			if data.get("issue"):
+
+				with db.cursor() as cur:
+					cur.execute("SELECT bridgeid, userid, spices FROM micro_github " \
+						"WHERE triggers = %s", (
+							ACTION_ANY_NEW_ISSUE,
+						)
 					)
-				)
 
-				# check if the user has an action assigned
-				rows = cur.fetchall()
-				if not rows:
-					return jsonify({"status": "ok"}), 200
-				
-				# get the bridge id
-				for row in rows:
-					bridge = row[0]
-					userid = row[1]
-					spices = json.loads(row[2])
-
-					check_this_userid = spices.get("check_this_userid")
-					if not check_this_userid or check_this_userid != sender_userid:
-						continue
+					# check if the user has an action assigned
+					rows = cur.fetchall()
+					if not rows:
+						return jsonify({"status": "ok"}), 200
 					
-					requests.put(
-						f"http://backend:{BACKEND_PORT}/api/orchestrator",
-						json={
-							"bridge": bridge,
-							"userid": userid,
-							"ingredients": {}
-						}
+					# get the bridge id
+					for row in rows:
+						bridge = row[0]
+						userid = row[1]
+						spices = json.loads(row[2])
+
+						check_this_userid = spices.get("check_this_userid")
+						if not check_this_userid or check_this_userid != sender_userid:
+							continue
+						
+						requests.put(
+							f"http://backend:{BACKEND_PORT}/api/orchestrator",
+							json={
+								"bridge": bridge,
+								"userid": userid,
+								"ingredients": {}
+							}
+						)
+					return jsonify({"status": "ok"}), 200
+
+			# when a new pull request is created
+			if data.get("pull_request"):
+				with db.cursor() as cur:
+					cur.execute("SELECT bridgeid, userid, spices FROM micro_github " \
+						"WHERE triggers = %s", (
+							ACTION_NEW_PULL_REQUEST,
+						)
 					)
-				return jsonify({"status": "ok"}), 200
+
+					# check if the user has an action assigned
+					rows = cur.fetchall()
+					if not rows:
+						return jsonify({"status": "ok"}), 200
+					
+					# get the bridge id
+					for row in rows:
+						bridge = row[0]
+						userid = row[1]
+						spices = json.loads(row[2])
+
+						github_owner = spices.get("owner")
+						github_repo = spices.get("repo")
+						if not github_owner or not github_repo:
+							continue
+
+						if (f"{github_owner}/{github_repo}") != data.get("repository", {}).get("full_name"):
+							continue
+						
+						requests.put(
+							f"http://backend:{BACKEND_PORT}/api/orchestrator",
+							json={
+								"bridge": bridge,
+								"userid": userid,
+								"ingredients": {}
+							}
+						)
+					return jsonify({"status": "ok"}), 200
 
 		# when an issue is closed
 		if action == "closed":
@@ -980,7 +1075,7 @@ def webhook():
 						}
 					)
 				return jsonify({"status": "ok"}), 200
-		
+
 		# when a new repository is created
 		if action == "created":
 			app.logger.info("New repository created")
