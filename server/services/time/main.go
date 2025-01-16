@@ -166,11 +166,13 @@ func miniProxy(f func(http.ResponseWriter, *http.Request, *sql.DB), c *sql.DB) f
 
 type Message struct {
 	Bridge int `json:"bridge"`
+	Ingredients map[string]string `json:"ingredients"`
 }
 
 func masterThread(db *sql.DB) {
 	var msg Message
 
+	msg.Ingredients = make(map[string]string)
 	client := http.Client{}
 	backendPort := os.Getenv("BACKEND_PORT")
 	if backendPort == "" {
@@ -207,8 +209,10 @@ func masterThread(db *sql.DB) {
 		if err := rows.Err(); err != nil {
 			continue
 		}
+		formatTime := timestamp.Format("2006-01-02 15:04:05")
 		for _, v := range bridges {
 			msg.Bridge = v
+			msg.Ingredients["time"] = formatTime
 			obj, err := json.Marshal(msg)
 			if err != nil {
 				continue

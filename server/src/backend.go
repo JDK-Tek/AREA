@@ -13,6 +13,7 @@ import (
 	"os"
 	"strconv"
 	"time"
+	"regexp"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -52,6 +53,19 @@ type UserMessage struct {
 	Id int `json:"userid"`
 }
 
+func applyIngredients(str string, ingredients map[string]string) string {
+	var re = regexp.MustCompile(`\{(\w+)\}`)
+
+	result := re.ReplaceAllStringFunc(str, func(match string) string {
+		key := match[1 : len(match) - 1]
+		if value, found := ingredients[key]; found {
+			return value
+		}
+		return match
+	})
+	return result
+}
+
 func onUpdate(a area.AreaRequest) {
 	var message UserMessage
 	var ureq UpdateRequest
@@ -75,6 +89,15 @@ func onUpdate(a area.AreaRequest) {
 		a.Error(err, http.StatusInternalServerError)
 		return
 	}
+
+	fmt.Println(ureq.Ingredients)
+
+	// fill the ingreients
+	jsonStr := string(message.Spices)
+	processedStr := applyIngredients(jsonStr, ureq.Ingredients)
+	message.Spices = json.RawMessage(processedStr)
+
+	// fill the message
 	message.Id = ureq.Id
 	obj, err := json.Marshal(message)
 	if err != nil {
