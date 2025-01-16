@@ -211,6 +211,10 @@ def oauth():
 		area_bearer_token = retrieve_token(get_beared_token(request))
 		area_user_id = area_bearer_token.get("id", None) if area_bearer_token else None
 	
+		app.logger.info(f"Header: {request.headers}")
+		app.logger.info(f"Bear token: {area_bearer_token}")
+		app.logger.info(f"Area user id: {area_user_id}")
+
 		# user is not logged in an area account
 		if not area_bearer_token or not area_user_id:
 			try:
@@ -274,35 +278,19 @@ def oauth():
 		else:
 			try:
 				with db.cursor() as cur:
+					# check if the github account is already linked with an area account
 					cur.execute("SELECT owner FROM tokens " \
-				 		"WHERE userid = %s AND service = %s", (
-							 github_user_id,
-							 oreo.service,
+						"WHERE userid = %s AND service = %s", (
+							github_user_id,
+							oreo.service,
 						)
 					)
 					rows = cur.fetchone()
-			
-					# service account already linked with an other area account: forbiden
-					if rows and rows[0] != area_user_id:
-						return jsonify({ "error": "forbiden: user already logged in an other account"}), 403
-				
-					# service account already linked with the same area account: update token
-					elif rows and rows[0] == area_user_id:
-						cur.execute("UPDATE tokens " \
-				  			"SET token = %s, refresh = %s " \
-							"WHERE userid = %s AND service = %s", (
-								github_access_token,
-								github_refresh_token,
-								github_user_id,
-								oreo.service,
-							)
-						)
-						db.commit()
-				
-					# service account not linked with any area account: create new token
-					else:
+
+					# github account not linked with any area account: create new token
+					if not rows:
 						cur.execute("INSERT INTO tokens " \
-							"(service, token, refresh, userid, owner)" \
+							"(service, token, refresh, userid, owner) " \
 							"VALUES (%s, %s, %s, %s, %s)", (
 								oreo.service,
 								github_access_token,
@@ -311,9 +299,30 @@ def oauth():
 								area_user_id,
 							)
 						)
+
 						db.commit()
-					
-					return jsonify({ "token": generate_beared_token(area_user_id) }), 200
+						return jsonify({ "token": generate_beared_token(area_user_id) }), 200
+
+					# github account already linked with an area account (same account): update token
+					elif rows[0] == area_user_id:
+						cur.execute(
+							"UPDATE tokens " \
+							"SET token = %s, refresh = %s " \
+							"WHERE userid = %s AND service = %s " \
+							"RETURNING owner", (
+								github_access_token,
+								github_refresh_token,
+								github_user_id,
+								oreo.service,
+							)
+						)
+						area_user_id = cur.fetchone()[0]
+						db.commit()
+						return jsonify({ "token": generate_beared_token(area_user_id) }), 200
+
+					# github account already linked with an area account (different account):forbidden
+					else:
+						return jsonify({ "error": "Github account already linked with an area account" }), 403
 			except (Exception, psycopg2.Error) as err:
 				return jsonify({ "error":  str(err)}), 400
 
