@@ -403,7 +403,7 @@ def create_issue():
 
 
     if res.status_code != 201:
-        app.logger.info("Failed to create issue: %s", res.json())
+        app.logger.error("Failed to create issue: %s", res.json())
         return jsonify({
             "error": "Failed to create issue",
             "details": res.json()
@@ -482,7 +482,7 @@ def create_reply():
 
 
     if res.status_code != 201:
-        app.logger.info("Failed to create issue: %s", res.json())
+        app.logger.error("Failed to create issue: %s", res.json())
         return jsonify({
             "error": "Failed to create issue",
             "details": res.json()
@@ -530,7 +530,6 @@ def new_notification():
 		if not rows:
 			return jsonify({"error": "User not found"}), 404
 		spices["check_this_userid"] = int(rows[0])
-		app.logger.info(f"Spices: {spices}")
 
 		cur.execute("INSERT INTO micro_github" \
 			  "(userid, bridgeid, triggers, spices) " \
@@ -945,7 +944,6 @@ def new_repository():
 @app.route('/webhook', methods=["POST"])
 def webhook():
 	app.logger.info("webhook endpoint hit")
-	app.logger.info(f"Request: {request.json}")
 	
 	data = request.json
 	action = data.get('action')
@@ -1254,7 +1252,7 @@ def webhook():
 				return jsonify({"status": "ok"}), 200
 
 		# when a new repository is created
-		if action == "created":
+		if action == "created" and data.get("repository") and not data.get("label"):
 			app.logger.info("New repository created")
 		
 			with db.cursor() as cur:
