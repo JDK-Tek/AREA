@@ -515,38 +515,60 @@ func checkTeamsMessages(w http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(w).Encode(messageList)
 }
 
-type Spice struct {
+type InfoSpice struct {
 	Name string `json:"name"`
 	Type string `json:"type"`
+	Title string `json:"title"`
+	Extra []string `json:"extra"`
 }
 
-type Route struct {
+type InfoRoute struct {
 	Type string `json:"type"`
 	Name string `json:"name"`
-	Spices []Spice `json:"spices"`
+	Desc string `json:"description"`
+	Spices []InfoSpice `json:"spices"`
+}
+
+type Infos struct {
+	Color string `json:"color"`
+	Image string `json:"image"`
+	Routes []InfoRoute `json:"areas"`
 }
 
 func getRoutes(w http.ResponseWriter, req *http.Request) {
-	var list = []Route{
-		Route{
+	var list = []InfoRoute{
+		InfoRoute{
 			Name: "send",
 			Type: "reaction",
-			Spices: []Spice{
+			Desc: "Sends an email.",
+			Spices: []InfoSpice{
 				{
-					Name: "channel",
-					Type: "number",
+					Name: "to",
+					Type: "text",
+					Title: "email to be sending",
 				},
 				{
-					Name: "message",
+					Name: "subject",
 					Type: "text",
+					Title: "The subject",
+				},
+				{
+					Name: "body",
+					Type: "text",
+					Title: "The message you want to send.",
 				},
 			},
 		},
 	}
+	var infos = Infos{
+		Color: "#5865F2",
+		Image: "https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/636e0a6cc3c481a15a141738_icon_clyde_white_RGB.png",
+		Routes: list,
+	}
 	var data []byte
 	var err error
 
-	data, err = json.Marshal(list)
+	data, err = json.Marshal(infos)
 	if err != nil {
 		http.Error(w, `{ "error":  "marshal" }`, http.StatusInternalServerError)
 		return
