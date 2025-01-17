@@ -161,7 +161,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		fmt.Fprintln(w, "sign", err.Error())
 		return
 	}
-	fmt.Fprintf(w, `{"token": "%s"}\n`, tokenStr)
+	fmt.Fprintf(w, "{\"token\": \"%s\"}\n", tokenStr)
 }
 
 func doSomeSend(w http.ResponseWriter, req *http.Request) {

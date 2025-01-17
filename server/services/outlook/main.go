@@ -171,7 +171,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		return
 	}
 	fmt.Println("Sucess login with outlook, token = ", tokenStr)
-	fmt.Fprintf(w, `{"token": "%s"}\n`, tokenStr)
+	fmt.Fprintf(w, "{\"token\": \"%s\"}\n", tokenStr)
 }
 
 func sendTeamsMessage(w http.ResponseWriter, req *http.Request) {
