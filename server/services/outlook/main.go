@@ -570,6 +570,6 @@ func main() {
 	router.HandleFunc("/sendTeamsMessage", sendTeamsMessage).Methods("POST")
 	router.HandleFunc("/checkEmail", checkEmail).Methods("GET")
 	router.HandleFunc("/checkTeamsMessages", checkTeamsMessages).Methods("POST")
-	router.HandleFunc("/routes", getRoutes).Methods("GET")
+	router.HandleFunc("/", getRoutes).Methods("GET")
 	log.Fatal(http.ListenAndServe(":80", router))
 }
