@@ -268,6 +268,7 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     fmt.Println("Decoded body:", requestBody)
 
     userID := requestBody.UserID
+	userID = 1
     fmt.Println("Extracted userID:", userID)
 
     var outlookToken string
