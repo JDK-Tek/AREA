@@ -236,7 +236,6 @@ func sendTeamsMessage(w http.ResponseWriter, req *http.Request) {
 func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     fmt.Println("Headers received:", req.Header)
 
-    // Lire le corps de la requête en tant que bytes pour l'afficher
     bodyBytes, err := io.ReadAll(req.Body)
     if err != nil {
         w.WriteHeader(http.StatusInternalServerError)
@@ -244,21 +243,17 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
         return
     }
 
-    // Afficher le corps brut de la requête
     fmt.Println("Request Body:", string(bodyBytes))
 
-    // Recréer un lecteur pour la requête afin de permettre le décodage ultérieur
     req.Body = io.NopCloser(bytes.NewReader(bodyBytes))
 
     var requestBody struct {
         UserID int `json:"userid"`
-        Reaction struct {
-            Spices struct {
-                To      string `json:"to"`
-                Subject string `json:"subject"`
-                Body    string `json:"body"`
-            } `json:"spices"`
-        } `json:"reaction"`
+        Spices struct {
+            Message string `json:"message"`
+            To      string `json:"to"`
+            Subject string `json:"subject"`
+        } `json:"spices"`
     }
 
     decoder := json.NewDecoder(req.Body)
@@ -295,8 +290,8 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
         return
     }
 
-    emailContent := requestBody.Reaction.Spices
-    if emailContent.To == "" || emailContent.Subject == "" || emailContent.Body == "" {
+    emailContent := requestBody.Spices
+    if emailContent.To == "" || emailContent.Subject == "" || emailContent.Message == "" {
         w.WriteHeader(http.StatusBadRequest)
         fmt.Fprintf(w, "{ \"error\": \"Missing email details\" }\n")
         return
@@ -307,7 +302,7 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
             "subject": emailContent.Subject,
             "body": map[string]interface{}{
                 "contentType": "Text",
-                "content":     emailContent.Body,
+                "content":     emailContent.Message,
             },
             "toRecipients": []map[string]interface{}{
                 {
@@ -354,7 +349,6 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
         fmt.Fprintf(w, "{ \"error\": \"Failed to send email\" }\n")
     }
 }
-
 
 
 func connectToDatabase() (*sql.DB, error) {
