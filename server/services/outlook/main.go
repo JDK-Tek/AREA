@@ -234,13 +234,14 @@ func sendTeamsMessage(w http.ResponseWriter, req *http.Request) {
 }
 
 func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
-	fmt.Println("caac je me fait call")
+	fmt.Println("caca je me fait call")
 	authHeader := req.Header.Get("Authorization")
 	if authHeader == "" {
 		w.WriteHeader(http.StatusUnauthorized)
 		fmt.Fprintf(w, "{ \"error\": \"Authorization header is missing\" }\n")
 		return
 	}
+	fmt.Println("pipi")
 
 	tokenString := authHeader[len("Bearer "):]
 
@@ -249,12 +250,14 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	_, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		return secretBytes, nil
 	})
+	fmt.Println("zizi")
 
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		fmt.Fprintf(w, "{ \"error\": \"Invalid token: %s\" }\n", err.Error())
 		return
 	}
+	fmt.Println("popo")
 
 	owner, ok := claims["id"].(float64)
 	if !ok {
@@ -262,6 +265,7 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		fmt.Fprintf(w, "{ \"error\": \"Invalid token format\" }\n")
 		return
 	}
+	fmt.Println("proute")
 
 	var outlookToken string
 	err = db.QueryRow("SELECT token FROM tokens WHERE owner = $1 AND service = 'outlook'", int(owner)).Scan(&outlookToken)
@@ -275,12 +279,14 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		}
 		return
 	}
+	fmt.Println("zozo")
 
 	if outlookToken == "" {
 		w.WriteHeader(http.StatusUnauthorized)
 		fmt.Fprintf(w, "{ \"error\": \"No Outlook token available\" }\n")
 		return
 	}
+	fmt.Println("abab")
 
 	var emailContent EmailContent
 	decoder := json.NewDecoder(req.Body)
@@ -290,6 +296,7 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
 		return
 	}
+	fmt.Println("zuzu")
 
 	emailData := map[string]interface{}{
 		"message": map[string]interface{}{
@@ -308,6 +315,7 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		},
 		"saveToSentItems": "true",
 	}
+	fmt.Println("pmpm")
 	emailBytes, err := json.Marshal(emailData)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -315,6 +323,7 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		return
 	}
 
+	fmt.Println("aiai")
 	// send
 	reqEmail, err := http.NewRequest("POST", "https://graph.microsoft.com/v1.0/me/sendMail", bytes.NewBuffer(emailBytes))
 	b, err := io.ReadAll(reqEmail.Body)
