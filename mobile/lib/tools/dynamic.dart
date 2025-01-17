@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 class Dynamic extends StatefulWidget {
   const Dynamic({
@@ -24,9 +23,9 @@ class _DynamicState extends State<Dynamic> {
   void initState() {
     super.initState();
     final extraParams = widget.extraParams ?? {};
-    List<String> items = extraParams['items'] ?? [];
+    List<dynamic> items = extraParams['items'] ?? [];
     if (items.isNotEmpty) {
-      dropdownValue = extraParams['currentValue'] ?? items[0];
+      dropdownValue = items[0];
     } else {
       dropdownValue = '';
     }

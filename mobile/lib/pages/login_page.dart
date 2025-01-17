@@ -1,3 +1,5 @@
+import 'package:area/pages/OutlookOAuthPage.dart';
+import 'package:area/pages/SpotifyOAuthPage.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:area/tools/user_ouput.dart';
@@ -196,6 +198,8 @@ class _LoginPage extends State<LoginPage> {
                   u: "api/tmp"),
               const DiscordLoginButton(),
               const RobloxLoginButton(),
+              const OutlookLoginButton(),
+              const SpotifyLoginButton(),
             ])
           ],
         ),

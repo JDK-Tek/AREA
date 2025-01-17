@@ -91,7 +91,7 @@ class _OutlookAuthPageState extends State<OutlookAuthPage> {
         NavigationDelegate(
           onNavigationRequest: (NavigationRequest request) {
             if (request.url
-                .startsWith("https://area-jeepg.vercel.app/connected")) {
+                .startsWith("https://area.jepgo.root.sx/connected")) {
               final uri = Uri.parse(request.url);
               final code = uri.queryParameters['code'];
               if (code != null) {

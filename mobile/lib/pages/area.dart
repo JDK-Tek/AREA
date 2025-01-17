@@ -1,7 +1,9 @@
 import 'package:area/pages/home_page.dart';
 import 'package:area/tools/dynamic.dart';
 import 'package:area/tools/providers.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as https;
 import 'dart:convert';
 import 'package:provider/provider.dart';
@@ -14,7 +16,7 @@ class CreateAutomationPage extends StatefulWidget {
 }
 
 class CreateAutomationPageState extends State<CreateAutomationPage> {
-  Map<String, dynamic> services = {};
+  List<Map<String, dynamic>> services = [];
   List<dynamic> selectedTriggers = [];
   List<dynamic> selectedReactions = [];
   List<Map<String, dynamic>> triggerValues = [];
@@ -23,66 +25,54 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
   @override
   void initState() {
     super.initState();
-    _loadServices();
+    _makeDemand("/about.json");
   }
 
-  void _loadServices() {
-    services = {
-      "time": {
-        "name": "time",
-        "icon": "https://img.icons8.com/ios/452/timer.png",
-        "color": "#ffffff",
-        "actions": [
-          {
-            "name": "in",
-            "description": "Triggers in some amount of time.",
-            "spices": [
-              {
-                "name": "howmuch",
-                "type": "number",
-                "title": "How much time to wait.",
-                "extraParams": null,
-              },
-              {
-                "name": "unit",
-                "type": "dropdown",
-                "title": "The unit to wait.",
-                "extraParams": ["weeks", "days", "hours", "minutes", "seconds"]
-              }
-            ]
-          }
-        ],
-        "reactions": []
-      },
-      "discord": {
-        "name": "discord",
-        "icon":
-            "https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/636e0a6cc3c481a15a141738_icon_clyde_white_RGB.png",
-        "color": "#5865F2",
-        "actions": [],
-        "reactions": [
-          {
-            "name": "send",
-            "description": "Sends a message in a channel.",
-            "spices": [
-              {
-                "name": "channel",
-                "type": "text",
-                "title": "The Discord channel ID.",
-                "extraParams": null,
-              },
-              {
-                "name": "message",
-                "type": "text",
-                "title": "The message to send.",
-                "extraParams": null,
-              }
-            ]
-          }
-        ]
+  Future<void> _makeDemand(String u) async {
+    final Uri uri =
+        Uri.https(Provider.of<IPState>(context, listen: false).ip, u);
+    late final https.Response rep;
+
+    try {
+      rep = await https.get(uri);
+    } catch (e) {
+      if (mounted) {
+        _showDialog("Error", "Could not make request: $e");
       }
-    };
-    setState(() {});
+      return;
+    }
+
+    if (rep.statusCode >= 500) {
+      if (mounted) {
+        _showDialog("Error",
+            "Failed with status: ${rep.statusCode}. ${rep.reasonPhrase ?? 'Unknown error'}");
+      }
+      return;
+    }
+
+    Map<String, dynamic> responseBody;
+    try {
+      responseBody = jsonDecode(rep.body);
+    } catch (e) {
+      if (mounted) {
+        _showDialog("Error", "Invalid JSON format: $e");
+      }
+      return;
+    }
+
+    if (responseBody.containsKey('server') &&
+        responseBody['server'].containsKey('services')) {
+      final List<dynamic> servicesList = responseBody['server']['services'];
+      if (mounted) {
+        setState(() {
+          services = List<Map<String, dynamic>>.from(servicesList);
+        });
+      }
+    } else {
+      if (mounted) {
+        _showDialog("Error", "Key 'server.services' not found in response.");
+      }
+    }
   }
 
   Map<String, dynamic> _buildDynamicConfig(
@@ -105,11 +95,18 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
                   const SizedBox(height: 8),
                   Dynamic(
                     title: spice['type'],
-                    extraParams: {'items': spice['extraParams']},
+                    extraParams: {
+                      'items': (spice['extra'] is List<String>)
+                          ? spice['extra']
+                          : (spice['extra']
+                                  ?.map((e) => e.toString())
+                                  .toList() ??
+                              [])
+                    },
                     onValueChanged: (key, value) {
                       setState(() {
                         if (spice['type'] == "number") {
-                          tempValues[spice['name']] = int.parse(value);
+                          tempValues[spice['name']] = int.tryParse(value) ?? 0;
                         } else {
                           tempValues[spice['name']] = value;
                         }
@@ -127,12 +124,22 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
     return tempValues;
   }
 
+  Color _colorFromHex(String hexColor) {
+    if (hexColor.isEmpty) return Colors.grey;
+    hexColor = hexColor.toUpperCase().replaceAll("#", "");
+    if (hexColor.length == 6) {
+      hexColor = "FF$hexColor";
+    }
+    return Color(int.tryParse(hexColor, radix: 16) ?? 0xFF000000);
+  }
+
   void _addService(String type) {
-    final items = services.values
-        .where((service) => service[type].isNotEmpty)
+    final items = services
+        .where((service) => service[type] != null && service[type].isNotEmpty)
         .map((service) => {
               "name": service['name'],
               "icon": service['icon'],
+              "color": service['color'],
               "actionsOrReactions": service[type]
             })
         .toList();
@@ -151,6 +158,7 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
                 height: 40,
               ),
               title: Text(item['name']),
+              tileColor: _colorFromHex(item['color']),
               onTap: () {
                 _selectService(type, item['actionsOrReactions'], item['name']);
               },
@@ -172,24 +180,30 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
             return ListTile(
               title: Text(option['name']),
               subtitle: Text(option['description']),
-              onTap: () {
+              onTap: () async {
+                final config = _buildDynamicConfig(
+                    selectedTriggers, option['spices'], index);
                 setState(() {
                   if (type == "actions") {
                     selectedTriggers.add({
                       "service": serviceName,
                       "name": option['name'],
-                      "icon": services[serviceName]['icon'],
+                      "icon": services
+                          .firstWhere((s) => s['name'] == serviceName)['icon'],
+                      "color": services
+                          .firstWhere((s) => s['name'] == serviceName)['color']
                     });
-                    triggerValues.add(_buildDynamicConfig(
-                        selectedTriggers, option['spices'], index));
+                    triggerValues.add(config);
                   } else {
                     selectedReactions.add({
                       "service": serviceName,
                       "name": option['name'],
-                      "icon": services[serviceName]['icon'],
+                      "icon": services
+                          .firstWhere((s) => s['name'] == serviceName)['icon'],
+                      "color": services
+                          .firstWhere((s) => s['name'] == serviceName)['color']
                     });
-                    reactionValues.add(_buildDynamicConfig(
-                        selectedReactions, option['spices'], index));
+                    reactionValues.add(config);
                   }
                 });
               },
@@ -211,23 +225,28 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
     }
 
     final automation = {
-      "actions": selectedTriggers.map((trigger) {
-        return {
-          "service": trigger['service'],
-          "name": trigger['name'],
-          "spices": triggerValues[selectedTriggers.indexOf(trigger)],
-        };
-      }).toList(),
-      "reactions": selectedReactions.map((reaction) {
-        return {
-          "service": reaction['service'],
-          "name": reaction['name'],
-          "spices": reactionValues[selectedReactions.indexOf(reaction)],
-        };
-      }).toList(),
+      "action": selectedTriggers
+          .map((trigger) {
+            return {
+              "service": trigger['service'],
+              "name": trigger['name'],
+              "spices": triggerValues[selectedTriggers.indexOf(trigger)],
+            };
+          })
+          .toList()
+          .first,
+      "reaction": selectedReactions
+          .map((reaction) {
+            return {
+              "service": reaction['service'],
+              "name": reaction['name'],
+              "spices": reactionValues[selectedReactions.indexOf(reaction)],
+            };
+          })
+          .toList()
+          .first,
     };
 
-    print(jsonEncode(automation));
     _sendRequest(automation);
   }
 
@@ -275,10 +294,41 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
     );
   }
 
+  int currentPageIndex = 1;
   @override
   Widget build(BuildContext context) {
+    final List<String> dest = ["/applets", "/create", "/services", "/plus"];
     return SafeArea(
       child: Scaffold(
+        bottomNavigationBar: NavigationBar(
+          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+          backgroundColor: Colors.black,
+          indicatorColor: Colors.grey,
+          shadowColor: Colors.transparent,
+          surfaceTintColor: Colors.transparent,
+          selectedIndex: 1,
+          onDestinationSelected: (int index) {
+            setState(() {
+              currentPageIndex = index;
+              context.go(dest[index]);
+            });
+          },
+          destinations: const [
+            NavigationDestination(
+                icon: Icon(Icons.folder, color: Colors.white),
+                label: 'Applets'),
+            NavigationDestination(
+                icon: Icon(Icons.add_circle_outline, color: Colors.white),
+                label: 'Create'),
+            NavigationDestination(
+                icon: Icon(Icons.cloud, color: Colors.white),
+                label: 'Services'),
+            NavigationDestination(
+                icon: Icon(CupertinoIcons.ellipsis, color: Colors.white),
+                label: 'Developers'),
+          ],
+        ),
+        backgroundColor: Colors.white,
         body: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -304,6 +354,7 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
               ...selectedTriggers.map((trigger) => ListTile(
                     title: Text(trigger['name']),
                     leading: Image.network(trigger['icon']),
+                    tileColor: _colorFromHex(trigger['color']),
                     trailing: IconButton(
                       icon: const Icon(Icons.delete),
                       onPressed: () {
@@ -336,12 +387,13 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
               ...selectedReactions.map((reaction) => ListTile(
                     title: Text(reaction['name']),
                     leading: Image.network(reaction['icon']),
+                    tileColor: _colorFromHex(reaction['color']),
                     trailing: IconButton(
                       icon: const Icon(Icons.delete),
                       onPressed: () {
                         setState(() {
                           reactionValues
-                              .removeAt(selectedTriggers.indexOf(reaction));
+                              .removeAt(selectedReactions.indexOf(reaction));
                           selectedReactions.remove(reaction);
                         });
                       },

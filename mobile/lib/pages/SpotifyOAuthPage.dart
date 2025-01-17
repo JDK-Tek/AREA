@@ -91,7 +91,7 @@ class _SpotifyAuthPageState extends State<SpotifyAuthPage> {
         NavigationDelegate(
           onNavigationRequest: (NavigationRequest request) {
             if (request.url
-                .startsWith("https://area-jeepg.vercel.app/connected")) {
+                .startsWith("https://area.jepgo.root.sx/connected")) {
               final uri = Uri.parse(request.url);
               final code = uri.queryParameters['code'];
               if (code != null) {
@@ -148,7 +148,6 @@ class _SpotifyAuthPageState extends State<SpotifyAuthPage> {
     final String body = "{ \"code\": \"$a\" }";
     final Uri uri =
         Uri.https(Provider.of<IPState>(context, listen: false).ip, u);
-    //final Uri uri = Uri.http("172.20.10.3:1234", u);
     late final http.Response rep;
     late Map<String, dynamic> content;
     late String? str;

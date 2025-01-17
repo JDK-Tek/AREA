@@ -84,27 +84,6 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
       u = content;
       url = content;
     });
-    // switch ((rep.statusCode / 100) as int) {
-    //   case 2:
-    //     str = content;
-    //     if (str != "error") {
-    //       _token = str;
-    //       u = str;
-    //       url = str;
-    //     } else {
-    //       _errorMessage("Enter a valid email and password !");
-    //     }
-    //     break;
-    //   case 4:
-    //     str = content;
-    //     if (str != "") {
-    //       _errorMessage(str);
-    //     }
-    //     break;
-    //   case 5:
-    //     _errorMessage("Enter a valid email and password !");
-    //   default:
-    //     break;
   }
 
   void _initializeWebView() {
@@ -114,7 +93,7 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
         NavigationDelegate(
           onNavigationRequest: (NavigationRequest request) {
             if (request.url
-                .startsWith("https://area-jeepg.vercel.app/connected")) {
+                .startsWith("https://area.jepgo.root.sx/connected")) {
               final uri = Uri.parse(request.url);
               final code = uri.queryParameters['code'];
               if (code != null) {
