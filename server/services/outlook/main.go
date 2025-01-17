@@ -238,6 +238,7 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	authHeader := req.Header.Get("Authorization")
 	if authHeader == "" {
 		w.WriteHeader(http.StatusUnauthorized)
+		fmt.Println("error Authorization")
 		fmt.Fprintf(w, "{ \"error\": \"Authorization header is missing\" }\n")
 		return
 	}
