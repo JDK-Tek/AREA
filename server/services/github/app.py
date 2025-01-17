@@ -123,7 +123,7 @@ app = Flask(__name__)
 oreo = NewOreo(
 	service="github",
 	color="#24292e",
-	image="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
+	image="/assets/github.webp"
 )
 
 
@@ -1299,8 +1299,9 @@ def webhook():
 							"ingredients": {
 								"owner": quote(str(data.get("repository", {}).get("owner", {}).get("login"))),
 								"repo": quote(str(data.get("repository", {}).get("name"))),
-								"author": quote(str(data.get("pusher", {}).get("name"))),
-								"commitmsg": quote(str(data.get("head_commit", {}).get("message")))
+								"author": quote(str(data.get("check_suite", {}).get("head_commit", {}).get("author", {}).get("name"))),
+								"commitmsg": quote(str(data.get("check_suite", {}).get("head_commit", {}).get("message"))),
+								"createdate": quote(str(data.get("check_suite", {}).get("head_commit", {}).get("timestamp")))
 							}
 						}
 					)
