@@ -23,13 +23,13 @@ import (
 const API = "https://tools.aimylogic.com/api/now?tz=Europe/Paris"
 
 type Spices struct {
-	HowMuch int `json:"howmuch"`
-	Unit string `json:"unit"`
+	HowMuch int    `json:"howmuch"`
+	Unit    string `json:"unit"`
 }
 
 type Content struct {
-	Spices Spices `json:"spices"`
-	BridgeId int `json:"bridge"`
+	Spices   Spices `json:"spices"`
+	BridgeId int    `json:"bridge"`
 }
 
 type Response struct {
@@ -85,9 +85,9 @@ func getTimeAndContent(w http.ResponseWriter, req *http.Request) (c Content, n i
 
 func spices2Seconds(spices Spices) int64 {
 	var association = map[string]int{
-		"weeks": 7 * 24 * 3600,
-		"days": 24 * 3600,
-		"hours": 3600,
+		"weeks":   7 * 24 * 3600,
+		"days":    24 * 3600,
+		"hours":   3600,
 		"minutes": 60,
 		"seconds": 1,
 	}
@@ -165,7 +165,7 @@ func miniProxy(f func(http.ResponseWriter, *http.Request, *sql.DB), c *sql.DB) f
 }
 
 type Message struct {
-	Bridge int `json:"bridge"`
+	Bridge      int               `json:"bridge"`
 	Ingredients map[string]string `json:"ingredients"`
 }
 
@@ -240,22 +240,22 @@ func masterThread(db *sql.DB) {
 }
 
 type InfoSpice struct {
-	Name string `json:"name"`
-	Type string `json:"type"`
-	Title string `json:"title"`
+	Name  string   `json:"name"`
+	Type  string   `json:"type"`
+	Title string   `json:"title"`
 	Extra []string `json:"extra"`
 }
 
 type InfoRoute struct {
-	Type string `json:"type"`
-	Name string `json:"name"`
-	Desc string `json:"description"`
+	Type   string      `json:"type"`
+	Name   string      `json:"name"`
+	Desc   string      `json:"description"`
 	Spices []InfoSpice `json:"spices"`
 }
 
 type Infos struct {
-	Color string `json:"color"`
-	Image string `json:"image"`
+	Color  string      `json:"color"`
+	Image  string      `json:"image"`
 	Routes []InfoRoute `json:"areas"`
 }
 
@@ -267,13 +267,13 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 			Desc: "Triggers in some amount of time.",
 			Spices: []InfoSpice{
 				{
-					Name: "howmuch",
-					Type: "number",
+					Name:  "howmuch",
+					Type:  "number",
 					Title: "How much time to wait.",
 				},
 				{
-					Name: "unit",
-					Type: "dropdown",
+					Name:  "unit",
+					Type:  "dropdown",
 					Title: "The unit to wait.",
 					Extra: []string{
 						"weeks",
@@ -287,8 +287,8 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 		},
 	}
 	var infos = Infos{
-		Color: "#ffffff",
-		Image: "https://img.icons8.com/ios/452/timer.png",
+		Color:  "#222222",
+		Image:  "/assets/services/time.webp",
 		Routes: list,
 	}
 	var data []byte
@@ -300,7 +300,7 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-    fmt.Fprintln(w, string(data))
+	fmt.Fprintln(w, string(data))
 }
 
 func main() {

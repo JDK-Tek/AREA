@@ -16,50 +16,11 @@ import DatePicker from "./spices/DatePicker";
 import TimePicker from "./spices/TimePicker";
 import InputBox from "./spices/InputBox";
 
-const simulatedConfiguration = 
-        {
-          "type": "reaction",
-          "name": "When a new song is added to a playlist",
-          "spices": [
-            {
-                title: "Enter the channel ID",
-                name: "channel",
-                type: "number",
-            },
-            {
-                title: "Enter the message",
-                name: "message",
-                type: "text",
-            },
-            {
-                title: "Select the tag",
-                name: "tag",
-                type: "dropdown",
-                values: ["none", "everyone", "here", "Front Web"],
-            },
-            {
-                title: "Select the date",
-                name: "date",
-                type: "datepicker",
-            },
-            {
-                title: "Select the time",
-                "name": "time test",
-                "type": "timestamp",
-            },
-            {
-                title: "Enter the email",
-                "name": "email",
-                "type": "email"
-            }
-          ]
-        }
-
 function checkRequest(config, request) {
     const spices = config.spices;
     const missingParameters = [];
 
-    spices.map((spice) => {
+    spices.forEach((spice) => {
         if (!request[spice.name]) {
             if (missingParameters.length === 0) {
                 missingParameters.push("Missing parameters: ");
@@ -70,7 +31,7 @@ function checkRequest(config, request) {
     return missingParameters;
 }
 
-export default function ServiceFeatureConfiguration({ action, color, setError, setErrorMsg, setArea, reset }) {
+export default function ServiceFeatureConfiguration({ action, feature, service, setArea, setError, setErrorMsg, reset }) {
     const [request, setRequest] = useState({});
 
     const handleValueChange = (name, value) => {
@@ -81,57 +42,56 @@ export default function ServiceFeatureConfiguration({ action, color, setError, s
     };
 
     const renderInput = (spice) => {
-        const { type, name, values } = spice;
-        const value = request[name] || (type === "dropdown" ? values[0] : "");
+        const value = request[spice.name] || (spice.type === "dropdown" ? spice.extra[0] : "");
     
-        switch (type) {
+        switch (spice.type) {
             case "text":
                 return (
                     <TextBox
-                        key={name}
+                        key={spice.name}
                         value={value}
-                        setValue={(val) => handleValueChange(name, val)}
+                        setValue={(val) => handleValueChange(spice.name, val)}
                     />
                 );
             case "number":
                 return (
                     <NumberInputBox
-                        key={name}
+                        key={spice.name}
                         value={value}
-                        setValue={(val) => handleValueChange(name, val)}
+                        setValue={(val) => handleValueChange(spice.name, parseInt(val, 10))}
                     />
                 );
             case "dropdown":
                 return (
                     <DropdownBox
-                        key={name}
-                        options={values}
+                        key={spice.name}
+                        options={spice.extra}
                         selected={value}
-                        onSelect={(val) => handleValueChange(name, val)}
+                        onSelect={(val) => handleValueChange(spice.name, val)}
                     />
                 );
             case "datepicker":
                 return (
                     <DatePicker
-                        key={name}
+                        key={spice.name}
                         value={value}
-                        setValue={(val) => handleValueChange(name, val)}
+                        setValue={(val) => handleValueChange(spice.name, val)}
                     />
                 );
             case "timestamp":
                 return (
                     <TimePicker
-                        key={name}
+                        key={spice.name}
                         value={value}
-                        setValue={(val) => handleValueChange(name, val)}
+                        setValue={(val) => handleValueChange(spice.name, val)}
                     />
                 );
-            case "email":
+            case "input":
                 return (
                     <InputBox
-                        key={name}
+                        key={spice.name}
                         value={value}
-                        setValue={(val) => handleValueChange(name, val)}
+                        setValue={(val) => handleValueChange(spice.name, val)}
                     />
                 );
             default:
@@ -143,15 +103,11 @@ export default function ServiceFeatureConfiguration({ action, color, setError, s
         <div className="p-5 h-full flex flex-col justify-start bg-[#1d1d1d] overflow-auto font-spartan">
             <label
                 className="font-bold text-2xl mb-3"
-                style={{ color: color.normal }}
-            >{simulatedConfiguration.name}</label>
+            >{feature.description}</label>
             <div className="border-b-[1px] border-chartgray-200 mb-10"></div>
-            {simulatedConfiguration.spices.map((spice, index) => (
+            {feature.spices.map((spice, index) => (
                 <div key={spice.name} className="flex flex-col mb-10">
-                    <label
-                        className="text-lg"
-                        style={{ color: color.hover }}
-                    >
+                    <label className="text-lg">
                         {spice.title}
                     </label>
                     {renderInput(spice)}
@@ -159,9 +115,9 @@ export default function ServiceFeatureConfiguration({ action, color, setError, s
             ))}
             <div className="">
                 <Button
-                    text={"Add the new " + (action ? "action" : "reaction")}
+                    text={"Add the new " + (feature ? "feature" : "reaction")}
                     onClick={() => {
-                        const requestCheck = checkRequest(simulatedConfiguration, request);
+                        const requestCheck = checkRequest(feature, request);
                         
                         if (requestCheck.length > 0) {
                             let msg = "";
@@ -176,12 +132,24 @@ export default function ServiceFeatureConfiguration({ action, color, setError, s
                             if (action) {
                                 setArea((prevArea) => ({
                                     ...prevArea,
-                                    actions: [...prevArea.actions, {title: simulatedConfiguration.name, color: color.normal, spices: request}],
+                                    actions: [...prevArea.actions, {
+                                        service: service.name,
+                                        name: feature.name,
+                                        title: feature.description,
+                                        color: service.color,
+                                        spices: request
+                                    }],
                                 }));
                             } else {
                                 setArea((prevArea) => ({
                                     ...prevArea,
-                                    reactions: [...prevArea.reactions, {title: simulatedConfiguration.name, color: color.normal, spices: request}],
+                                    reactions: [...prevArea.reactions, {
+                                        service: service.name,
+                                        name: feature.name,
+                                        title: feature.description,
+                                        color: service.color,
+                                        spices: request
+                                    }],
                                 }));
                             }
 
@@ -192,7 +160,9 @@ export default function ServiceFeatureConfiguration({ action, color, setError, s
                     }}
                     styleClolor="bg-chartpurple-200 hover:bg-chartpurple-100 text-white"
                 />
-                {/* JSON.stringify(request, null, 2) */}
+                {/* <pre className="mt-4 bg-gray-100 text-black p-4 rounded-md">
+                {JSON.stringify(request, null, 2)}
+               </pre>  */}
             </div>
         </div>
     );

@@ -37,8 +37,6 @@ function App() {
         <Route path={listRoutes.clientapk} element={<MobileClientDownload />} />
         <Route path={listRoutes.connected} element={<Connected />} />
 
-
-        {/* <Route path="/applet/discord/1" element={<AreaDiscord1 />} /> */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </div>

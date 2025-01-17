@@ -5,7 +5,9 @@
 ** SidePannel
 */
 
+import axios from "axios";
 import { useEffect, useRef, useState } from "react";
+
 import FindService from "./Service/FindService";
 import FindFeature from "./Feature/FindFeature";
 import ServiceFeatureConfiguration from "./ServiceFeatureConfiguration";
@@ -22,6 +24,23 @@ export default function SidePannel({ action, open, setOpen, setArea }) {
     const isResizing = useRef(false);
     const [error, setError] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
+
+    const [aboutjson, setAboutjson] = useState(null);
+
+    useEffect(() => {
+        const getAboutJson = async () => {
+            axios.get(`${process.env.REACT_APP_BACKEND_URL}/about.json`, { headers: { "Content-Type": "application/json" } })
+                .then((response) => {
+                    setAboutjson(response.data);
+                })
+                .catch((error) => {
+                    setError(true);
+                    setErrorMsg("Error when trying to get about.json: " + error);
+                });
+        };
+        getAboutJson();
+
+    }, [aboutjson]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -94,10 +113,11 @@ export default function SidePannel({ action, open, setOpen, setArea }) {
                 feature ?
                     <ServiceFeatureConfiguration
                         action={action}
-                        color={service.color}
+                        feature={feature}
+                        service={service}
+                        setArea={setArea}
                         setError={setError}
                         setErrorMsg={setErrorMsg}
-                        setArea={setArea}
                         reset={() => {
                             setOpen(false);
                             setFeature(null);
@@ -109,12 +129,17 @@ export default function SidePannel({ action, open, setOpen, setArea }) {
                     <FindFeature
                         dark={true}
                         setFeature={setFeature}
-                        color={service.color}
+                        service={service}
+                        action={action ? "action" : "reaction"}
                     />
                     :
                     <FindService
                         dark={true}
                         setService={setService}
+                        setError={setError}
+                        setErrorMsg={setErrorMsg}
+                        aboutjson={aboutjson}
+                        filtre={action ? "action" : "reaction"}
                     />
                 }
             </div>

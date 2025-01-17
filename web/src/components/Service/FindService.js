@@ -5,17 +5,13 @@
 ** FindService
 */
 
-import axios from "axios";
 import { useEffect, useState } from "react";
 
 import matchPattern from "../../utils/matchPattern";
 import SearchInput from '../SearchInputBox'
 import ServiceKit from "./ServiceKit";
-import Notification from '../Notification'
 
-export default function FindService({ dark, setService }) {
-    const [services, setServices] = useState([]);
-    const [error, setError] = useState("");
+export default function FindService({ aboutjson, dark, setService, filtre = null }) {
 
     const [search, setSearch] = useState("");
     const [filteredServices, setFilteredServices] = useState([]);
@@ -34,37 +30,29 @@ export default function FindService({ dark, setService }) {
             borderColor: "border-gray-300 focus:border-blue-500"
         }
 
-    useEffect(() => {
-        const getServices = async () => {
-            axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/services`, {headers: {"Content-Type": "application/json"}})
-            .then((response) => {
-                setServices(response.data.res)
-            })
-            .catch((error) => {
-                setError("Error when trying to get all services: " + error)
-            });
-        };
-        getServices();
-    }, [setServices, setError]);
+    
 
     useEffect(() => {
-        if (search === "") {
-            setFilteredServices(services);
+        if (!aboutjson) return;
+
+        if (search === "" && !filtre) {
+            setFilteredServices(aboutjson.server.services);
             return;
         }
 
         let fstmp = [];
-        services.forEach((service) => {
+        aboutjson.server.services.forEach((service) => {
             if (matchPattern(search, service.name)) {
-                fstmp.push(service);
+                if (filtre === "action" && service.actions.length > 0) fstmp.push(service);
+                else if (filtre === "reaction" && service.reactions.length > 0) fstmp.push(service);
+                else if (!filtre) fstmp.push(service);   
             }
         });
         setFilteredServices(fstmp);
-    }, [search, setFilteredServices, services]);
+    }, [search, setFilteredServices, aboutjson]);
 
     return (
         <div className="h-full flex flex-col justify-start">
-            {error && <Notification error={true} msg={error} setError={setError}/>}
 
             <SearchInput
                 placeholder={"Search for a service"}

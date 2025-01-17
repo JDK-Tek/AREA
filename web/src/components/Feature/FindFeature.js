@@ -5,30 +5,15 @@
 ** FindService
 */
 
-import axios from "axios";
 import { useEffect, useState } from "react";
 
 import matchPattern from "../../utils/matchPattern";
 import SearchInput from '../SearchInputBox'
 import FeaturesKit from "./FeaturesKit";
-import Notification from '../Notification'
 
-export default function FindFeature({ dark, setFeature, color }) {
-    const [features, setFeatures] = useState({
-        color: "",
-        colorHover: "",
-        feat: []
-    });
-
-    const [error, setError] = useState("");
-
+export default function FindFeature({ dark, setFeature, service, action = null }) {
     const [search, setSearch] = useState("");
-    const [filteredFeature, setFilteredFeature] = useState({
-        color: "",
-        colorHover: "",
-        feat: []
-    });
-    
+    const [filteredFeature, setFilteredFeature] = useState([]);
 
     const mode = dark ?
         {
@@ -45,42 +30,33 @@ export default function FindFeature({ dark, setFeature, color }) {
         }
 
     useEffect(() => {
-        setFeatures({
-            color: color.normal,
-            colorHover: color.hover,
-            feat: [
-                { title: "When a new song is added to a playlist"},
-                { title: "When a new song is played on a playlist"},
-                { title: "When an followed artist releases a new album"},
-                { title: "When an user likes one of your playlists"},
-                { title: "When an user follows you"}
-            ]
-        })
-    }, [setFeatures, setError]);
-
-    useEffect(() => {
-        if (search === "") {
-            setFilteredFeature(features);
-            return;
-        }
 
         let fstmp = [];
-        features.feat.forEach((service) => {
-            if (matchPattern(search, service.title)) {
-                fstmp.push(service);
-            }
-        });
-        const searchFeature = {
-            color: features.color,
-            colorHover: features.colorHover,
-            feat: fstmp
+        if (!action || action == "action") {
+            service.actions.forEach((a) => {
+                if (search === "") {
+                    fstmp.push(a);
+                } else if (matchPattern(search, a.description)) {
+                    fstmp.push(a);
+                }
+            });
+        } 
+        if (!action || action == "reaction") {
+            service.reactions.forEach((r) => {
+                if (search === "") {
+                    fstmp.push(r);
+                } else if (matchPattern(search, r.description)) {
+                    fstmp.push(r);
+                }
+            });
         }
-        setFilteredFeature(searchFeature);
-    }, [search, setFilteredFeature, features]);
+
+        setFilteredFeature(fstmp);
+    }, [search, setFilteredFeature]);
+
 
     return (
         <div className="h-full flex flex-col justify-start">
-            {error && <Notification error={true} msg={error} setError={setError}/>}
 
             <SearchInput
                 placeholder={"Search for a service"}
@@ -93,7 +69,12 @@ export default function FindFeature({ dark, setFeature, color }) {
             />
             
             <div className="mt-5 overflow-y-auto max-h-[calc(85vh-4rem-64px)]">
-                <FeaturesKit features={filteredFeature} bgColor={"bg-[#1d1d1d]"} setFeature={setFeature}/>
+                <FeaturesKit 
+                    features={filteredFeature}
+                    bgColor={"bg-[#1d1d1d]"}
+                    setFeature={setFeature}
+                    color={service.color}
+                />
             </div>
         </div>
     )
