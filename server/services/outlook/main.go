@@ -107,6 +107,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		fmt.Fprintln(w, "read body", err.Error())
 		return
 	}
+	fmt.Println("token value = ", rep.Body)
 	if err := json.Unmarshal(body, &responseData); err != nil {
 		fmt.Fprintln(w, "unmarshal json", err.Error())
 		return
@@ -170,6 +171,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		return
 	}
 	fmt.Fprintf(w, `{"token": "%s"}\n`, tokenStr)
+	fmt.Println("Sucess login with outlook !")
 }
 
 func sendTeamsMessage(w http.ResponseWriter, req *http.Request) {
