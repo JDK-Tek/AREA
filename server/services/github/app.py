@@ -492,7 +492,86 @@ def create_reply():
     app.logger.info(f"User {user.get('id')} created a new reply in {owner}/{repo}, to the '{id}' issue/pr")
     return jsonify({"status": "Reply created"}), 200
 
+# Create a new gist
+oreo.create_area(
+	"create-gist",
+	NewOreo.TYPE_REACTIONS,
+	"Create a new gist",
+	[
+		{
+			"name": "description",
+			"type": "input",
+			"title": "The description of the gist"
+		},
+		{
+			"name": "filename",
+			"type": "input",
+			"title": "The filename of the gist"
+		},
+		{
+			"name": "filecontent",
+			"type": "text",
+			"title": "The content of the gist"
+		},
+		{
+			"name": "secret",
+			"type": "dropdown",
+			"title": "Secret gist ?",
+			"extra": ["yes", "no"]
+		}
+	]
+)
+@app.route('/create-gist', methods=["POST"])
+def create_gist():
+	app.logger.info("create-gist endpoint hit")
+	user = retrieve_token(get_beared_token(request))
+	if not user:
+		app.logger.error("Invalid area token")
+		return jsonify({"error": "Invalid area token"}), 401
 
+	access_token = retrieve_user_token(user.get("id"))
+	if not access_token:
+		app.logger.error("Invalid github token")
+		return jsonify({"error": "Invalid github token"}), 401
+
+	if not request.is_json:
+		app.logger.error("Request is not valid JSON")
+		return jsonify({"error": "Invalid JSON"}), 400
+
+	spices = request.json.get("spices", {})
+	description = spices.get("description")
+	filename = spices.get("filename")
+	filecontent = spices.get("filecontent", "")
+	secret = spices.get("secret", "no")
+
+	github_submit_url = f"{GITHUB_API_URL}/gists"
+	headers = {
+		"User-Agent": "area/1.0",
+		"Authorization": f"Bearer {access_token}",
+		"Accept": "application/vnd.github+json"
+	}
+	body = {
+		"description": description,
+		"public": secret == "no",
+		"files": {
+			filename: {
+				"content": filecontent
+			}
+		}
+	}
+
+	res = requests.post(github_submit_url, headers=headers, json=body)
+
+
+	if res.status_code != 201:
+		app.logger.error("Failed to create gist: %s", res.json())
+		return jsonify({
+			"error": "Failed to create gist",
+			"details": res.json()
+		}), res.status_code
+
+	app.logger.info(f"User {user.get('id')} created a new gist: {description}")
+	return jsonify({"status": "Gist created"}), 200
 
 ##
 ## ACTIONS
