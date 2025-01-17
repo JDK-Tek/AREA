@@ -112,11 +112,11 @@ export default function SidePannel({ action, open, setOpen, setArea }) {
                 {
                 feature ?
                     <ServiceFeatureConfiguration
-                        action={action}
-                        color={service.color}
+                        feature={feature}
+                        service={service}
+                        setArea={setArea}
                         setError={setError}
                         setErrorMsg={setErrorMsg}
-                        setArea={setArea}
                         reset={() => {
                             setOpen(false);
                             setFeature(null);

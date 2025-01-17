@@ -5,13 +5,11 @@
 ** FindService
 */
 
-import axios from "axios";
 import { useEffect, useState } from "react";
 
 import matchPattern from "../../utils/matchPattern";
 import SearchInput from '../SearchInputBox'
 import FeaturesKit from "./FeaturesKit";
-import Notification from '../Notification'
 
 export default function FindFeature({ dark, setFeature, service, action = null }) {
     const [search, setSearch] = useState("");
@@ -53,7 +51,6 @@ export default function FindFeature({ dark, setFeature, service, action = null }
             });
         }
 
-        console.log(fstmp);
         setFilteredFeature(fstmp);
     }, [search, setFilteredFeature]);
 
