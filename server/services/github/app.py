@@ -86,6 +86,23 @@ def retrieve_user_token(id):
 	except (Exception, psycopg2.Error) as err:
 		return None
 
+def get_token_from_id(id, service):
+	try:
+		with db.cursor() as cur:
+			cur.execute("SELECT token FROM tokens " \
+				"WHERE owner = %s AND service = %s", (
+					id,
+					service,
+				)
+			)
+			rows = cur.fetchone()
+			if not rows:
+				return None
+			return rows[0]
+	except (Exception, psycopg2.Error) as err:
+		return None
+	
+
 ## #
 ##
 ## INITIALIZATION
@@ -335,8 +352,9 @@ def oauth():
 ##
 
 # Create a new issue
+REACTION_CREATE_ISSUE = "create-issue"
 oreo.create_area(
-	"create-issue",
+	f"{REACTION_CREATE_ISSUE}",
 	NewOreo.TYPE_REACTIONS,
 	"Create a new issue in a repository",
 	[
@@ -362,22 +380,20 @@ oreo.create_area(
 		}
 	]
 )
-@app.route('/create-issue', methods=["POST"])
+@app.route(f'/{REACTION_CREATE_ISSUE}', methods=["POST"])
 def create_issue():
-    app.logger.info("create-issue endpoint hit")
-    user = retrieve_token(get_beared_token(request))
-    if not user:
-        app.logger.error("Invalid area token")
-        return jsonify({"error": "Invalid area token"}), 401
-
-    access_token = retrieve_user_token(user.get("id"))
-    if not access_token:
-        app.logger.error("Invalid github token")
-        return jsonify({"error": "Invalid github token"}), 401
-
+    app.logger.info(f"{REACTION_CREATE_ISSUE} endpoint hit")
+    
     if not request.is_json:
         app.logger.error("Request is not valid JSON")
         return jsonify({"error": "Invalid JSON"}), 400
+
+    userid = request.json.get("userid")
+    if not userid:
+        app.logger.error("Missing required fields: 'userid'")
+        return jsonify({"error": "Missing required fields"}), 400
+
+    access_token = get_token_from_id(request.json.get("userid"), "github")
 
     spices = request.json.get("spices", {})
     owner = spices.get("owner")
@@ -410,13 +426,14 @@ def create_issue():
             "details": res.json()
         }), res.status_code
 
-    app.logger.info(f"User {user.get('id')} created a new issue in {owner}/{repo}: {title}")
+    app.logger.info(f"User {userid} created a new issue in {owner}/{repo}: {title}")
     return jsonify({"status": "Issue created"}), 200
 
 
 # Create a new reply to an issue / pull request
+REACTION_CREATE_REPLY = "create-reply"
 oreo.create_area(
-	"create-reply",
+	f"{REACTION_CREATE_REPLY}",
 	NewOreo.TYPE_REACTIONS,
 	"Create a new reply to an issue or pull request",
 	[
@@ -442,22 +459,20 @@ oreo.create_area(
 		}
 	]
 )
-@app.route('/create-reply', methods=["POST"])
+@app.route(f'/{REACTION_CREATE_REPLY}', methods=["POST"])
 def create_reply():
-    app.logger.info("create-reply endpoint hit")
-    user = retrieve_token(get_beared_token(request))
-    if not user:
-        app.logger.error("Invalid area token")
-        return jsonify({"error": "Invalid area token"}), 401
-
-    access_token = retrieve_user_token(user.get("id"))
-    if not access_token:
-        app.logger.error("Invalid github token")
-        return jsonify({"error": "Invalid github token"}), 401
+    app.logger.info(f"{REACTION_CREATE_REPLY} endpoint hit")
 
     if not request.is_json:
         app.logger.error("Request is not valid JSON")
         return jsonify({"error": "Invalid JSON"}), 400
+
+    userid = request.json.get("userid")
+    if not userid:
+        app.logger.error("Missing required fields: 'userid'")
+        return jsonify({"error": "Missing required fields"}), 400
+
+    access_token = get_token_from_id(request.json.get("userid"), "github")
 
     spices = request.json.get("spices", {})
     id = spices.get("id")
@@ -489,12 +504,13 @@ def create_reply():
             "details": res.json()
         }), res.status_code
 
-    app.logger.info(f"User {user.get('id')} created a new reply in {owner}/{repo}, to the '{id}' issue/pr")
+    app.logger.info(f"User {userid} created a new reply in {owner}/{repo}, to the '{id}' issue/pr")
     return jsonify({"status": "Reply created"}), 200
 
 # Create a new gist
+REACTION_CREATE_GIST = "create-gist"
 oreo.create_area(
-	"create-gist",
+	f"{REACTION_CREATE_GIST}",
 	NewOreo.TYPE_REACTIONS,
 	"Create a new gist",
 	[
@@ -521,22 +537,20 @@ oreo.create_area(
 		}
 	]
 )
-@app.route('/create-gist', methods=["POST"])
+@app.route(f'/{REACTION_CREATE_GIST}', methods=["POST"])
 def create_gist():
-	app.logger.info("create-gist endpoint hit")
-	user = retrieve_token(get_beared_token(request))
-	if not user:
-		app.logger.error("Invalid area token")
-		return jsonify({"error": "Invalid area token"}), 401
-
-	access_token = retrieve_user_token(user.get("id"))
-	if not access_token:
-		app.logger.error("Invalid github token")
-		return jsonify({"error": "Invalid github token"}), 401
+	app.logger.info(f"{REACTION_CREATE_GIST} endpoint hit")
 
 	if not request.is_json:
 		app.logger.error("Request is not valid JSON")
 		return jsonify({"error": "Invalid JSON"}), 400
+
+	userid = request.json.get("userid")
+	if not userid:
+		app.logger.error("Missing required fields: 'userid'")
+		return jsonify({"error": "Missing required fields"}), 400
+
+	access_token = get_token_from_id(request.json.get("userid"), "github")
 
 	spices = request.json.get("spices", {})
 	description = spices.get("description")
@@ -570,7 +584,7 @@ def create_gist():
 			"details": res.json()
 		}), res.status_code
 
-	app.logger.info(f"User {user.get('id')} created a new gist: {description}")
+	app.logger.info(f"User {userid} created a new gist: {description}")
 	return jsonify({"status": "Gist created"}), 200
 
 ##
