@@ -86,7 +86,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	data := url.Values{}
 	err := json.NewDecoder(req.Body).Decode(&res)
 	if err != nil {
-		fmt.Fprintln(w, "decodeeee = ", err.Error())
+		fmt.Fprintln(w, "decodeeee", "caca")
 		return
 	}
 	data.Set("client_id", clientid)
