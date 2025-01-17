@@ -183,6 +183,7 @@ func oauthSetter(a area.AreaRequest) {
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Authorization", a.Request.Header.Get("Authorization"))
 
 	client := http.Client{}
 	rep, err := client.Do(req)
