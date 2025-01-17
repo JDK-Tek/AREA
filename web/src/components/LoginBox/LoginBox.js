@@ -110,6 +110,7 @@ export default function LoginBox ( {setToken, setError} ) {
             <div className="flex flex-row space-x-4 justify-center pt-4">
                 <LRButton text="Connect with Discord" handleClick={() => handleOauth("discord")} /> 
                 <LRButton text="Connect with Reddit" handleClick={() => handleOauth("reddit")} /> 
+                <LRButton text="Connect with Github" handleClick={() => handleOauth("github")} /> 
             </div>
         </LRBox>
     )
