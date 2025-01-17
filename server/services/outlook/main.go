@@ -577,7 +577,7 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 					Title: "The subject",
 				},
 				{
-					Name: "body",
+					Name: "message",
 					Type: "text",
 					Title: "The message you want to send.",
 				},
