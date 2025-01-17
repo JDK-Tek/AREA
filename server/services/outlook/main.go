@@ -538,7 +538,7 @@ type Infos struct {
 func getRoutes(w http.ResponseWriter, req *http.Request) {
 	var list = []InfoRoute{
 		InfoRoute{
-			Name: "send",
+			Name: "sendEmail",
 			Type: "reaction",
 			Desc: "Sends an email.",
 			Spices: []InfoSpice{
