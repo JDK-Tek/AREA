@@ -234,39 +234,42 @@ func sendTeamsMessage(w http.ResponseWriter, req *http.Request) {
 }
 
 func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
-	fmt.Println("caca je me fait call")
+	fmt.Println("enter")
 	authHeader := req.Header.Get("Authorization")
 	if authHeader == "" {
+		fmt.Println("error auth")
 		w.WriteHeader(http.StatusUnauthorized)
-		fmt.Println("error Authorization")
 		fmt.Fprintf(w, "{ \"error\": \"Authorization header is missing\" }\n")
 		return
 	}
-	fmt.Println("pipi")
-
+	fmt.Println("after auth")
 	tokenString := authHeader[len("Bearer "):]
-
 	secretBytes := []byte(os.Getenv("BACKEND_KEY"))
 	claims := jwt.MapClaims{}
 	_, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		fmt.Println("error token")
 		return secretBytes, nil
 	})
-	fmt.Println("zizi")
+
+	fmt.Println("after token")
 
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
+		fmt.Println("invalid token")
 		fmt.Fprintf(w, "{ \"error\": \"Invalid token: %s\" }\n", err.Error())
 		return
 	}
-	fmt.Println("popo")
+	fmt.Println("after invalid token")
 
 	owner, ok := claims["id"].(float64)
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
+		fmt.Println("invalid token format")
 		fmt.Fprintf(w, "{ \"error\": \"Invalid token format\" }\n")
 		return
 	}
-	fmt.Println("proute")
+
+	fmt.Println("after invalid token format")
 
 	var outlookToken string
 	err = db.QueryRow("SELECT token FROM tokens WHERE owner = $1 AND service = 'outlook'", int(owner)).Scan(&outlookToken)
@@ -280,24 +283,37 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		}
 		return
 	}
-	fmt.Println("zozo")
 
 	if outlookToken == "" {
 		w.WriteHeader(http.StatusUnauthorized)
 		fmt.Fprintf(w, "{ \"error\": \"No Outlook token available\" }\n")
 		return
 	}
-	fmt.Println("abab")
 
-	var emailContent EmailContent
+	var requestBody struct {
+		Reaction struct {
+			Spices struct {
+				To      string `json:"to"`
+				Subject string `json:"subject"`
+				Body    string `json:"body"`
+			} `json:"spices"`
+		} `json:"reaction"`
+	}
+
 	decoder := json.NewDecoder(req.Body)
-	err = decoder.Decode(&emailContent)
+	err = decoder.Decode(&requestBody)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
 		return
 	}
-	fmt.Println("zuzu")
+
+	emailContent := requestBody.Reaction.Spices
+	if emailContent.To == "" || emailContent.Subject == "" || emailContent.Body == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "{ \"error\": \"Missing email details\" }\n")
+		return
+	}
 
 	emailData := map[string]interface{}{
 		"message": map[string]interface{}{
@@ -306,7 +322,7 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 				"contentType": "Text",
 				"content":     emailContent.Body,
 			},
-			"toRecipients": []map[string]interface{}{ 
+			"toRecipients": []map[string]interface{}{
 				{
 					"emailAddress": map[string]string{
 						"address": emailContent.To,
@@ -316,7 +332,7 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		},
 		"saveToSentItems": "true",
 	}
-	fmt.Println("pmpm")
+
 	emailBytes, err := json.Marshal(emailData)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -324,11 +340,7 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		return
 	}
 
-	fmt.Println("aiai")
-	// send
 	reqEmail, err := http.NewRequest("POST", "https://graph.microsoft.com/v1.0/me/sendMail", bytes.NewBuffer(emailBytes))
-	b, err := io.ReadAll(reqEmail.Body)
-	fmt.Println("reponse outlook = ", string(b))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
@@ -355,6 +367,7 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		fmt.Fprintf(w, "{ \"error\": \"Failed to send email\" }\n")
 	}
 }
+
 
 
 func connectToDatabase() (*sql.DB, error) {
