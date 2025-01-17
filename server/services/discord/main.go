@@ -88,43 +88,52 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	data.Set("redirect_uri", os.Getenv("REDIRECT"))
 	rep, err := http.PostForm(API_OAUTH, data);
 	if err != nil {
-		fmt.Fprintln(w, "postform", err.Error())
+		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
 		return
 	}
 	defer rep.Body.Close()
 	body, err := io.ReadAll(rep.Body)
 	if err != nil {
-		fmt.Fprintln(w, "read body", err.Error())
+		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
 		return
 	}
 	if err := json.Unmarshal(body, &responseData); err != nil {
-		fmt.Fprintln(w, "unmarshal json", err.Error())
+		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
 		return
 	}
-	tok.Token = responseData["access_token"].(string)
-	tok.Refresh = responseData["refresh_token"].(string)
+	var ok bool
+	tok.Token, ok = responseData["access_token"].(string)
+	if !ok {
+		fmt.Fprintln(w, "{ \"error\": \"cant get access token\" }")
+		return
+	}
+	tok.Refresh, ok = responseData["refresh_token"].(string)
+	if !ok {
+		fmt.Fprintln(w, "{ \"error\": \"cant get refresh token\" }")
+		return
+	}
 
 	// make the request for the user
 	req, err = http.NewRequest("GET", API_USER, nil)
 	if err != nil {
-		fmt.Fprintln(w, "request error", err.Error())
+		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
 		return
 	}
 	req.Header.Set("Authorization", "Bearer "+tok.Token)
 	client := &http.Client{}
 	rep, err = client.Do(req)
 	if err != nil {
-		fmt.Fprintln(w, "client do", err.Error())
+		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
 		return
 	}
 	defer rep.Body.Close()
 	err = json.NewDecoder(rep.Body).Decode(&user)
 	if err != nil {
-		fmt.Fprintln(w, "decode", err.Error())
+		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
 		return
 	}
 	if tok.Token == "" || tok.Refresh == "" {
-		fmt.Fprintln(w, "error: token is empty")
+		fmt.Fprintln(w, "{ \"error\": \"token is empty\" }")
 		return
 	}
 
@@ -158,10 +167,10 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenStr, err := token.SignedString(secretBytes)
 	if err != nil {
-		fmt.Fprintln(w, "sign", err.Error())
+		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
 		return
 	}
-	fmt.Fprintf(w, `{"token": "%s"}\n`, tokenStr)
+	fmt.Fprintf(w, "{\"token\": \"%s\"}\n", tokenStr)
 }
 
 func doSomeSend(w http.ResponseWriter, req *http.Request) {
