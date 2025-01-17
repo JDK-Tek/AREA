@@ -174,6 +174,65 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	fmt.Fprintf(w, "{\"token\": \"%s\"}\n", tokenStr)
 }
 
+func sendTeamsMessage(w http.ResponseWriter, req *http.Request) {
+	var teamsContent TeamsContent
+	decoder := json.NewDecoder(req.Body)
+	err := decoder.Decode(&teamsContent)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+		return
+	}
+
+	token := os.Getenv("OUTLOOK_TOKEN")
+	if token == "" {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "{ \"error\": \"token is missing\" }\n")
+		return
+	}
+
+	messageData := map[string]interface{}{
+		"body": map[string]interface{}{
+			"content": teamsContent.Message,
+		},
+	}
+	messageBytes, err := json.Marshal(messageData)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+		return
+	}
+
+	teamsMessageURL := fmt.Sprintf("https://graph.microsoft.com/v1.0/teams/%s/channels/%s/messages", teamsContent.TeamID, teamsContent.ChannelID)
+
+	reqTeams, err := http.NewRequest("POST", teamsMessageURL, bytes.NewBuffer(messageBytes))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+		return
+	}
+
+	reqTeams.Header.Set("Authorization", "Bearer "+token)
+	reqTeams.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(reqTeams)
+	if err != nil {
+		w.WriteHeader(http.StatusBadGateway)
+		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusOK {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, "{ \"status\": \"Message sent successfully\" }\n")
+	} else {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "{ \"error\": \"Failed to send message\" }\n")
+	}
+}
+
 func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     fmt.Println("Headers received:", req.Header)
 
@@ -307,7 +366,6 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
         fmt.Fprintf(w, "{ \"error\": \"Failed to send email\" }\n")
     }
 }
-
 
 func connectToDatabase() (*sql.DB, error) {
 	dbPassword := os.Getenv("DB_PASSWORD")
