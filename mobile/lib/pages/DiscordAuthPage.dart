@@ -1,6 +1,4 @@
 import 'dart:convert';
-import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:area/pages/login_page.dart';
 import 'package:area/tools/providers.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -11,21 +9,12 @@ import 'package:go_router/go_router.dart';
 class DiscordLoginButton extends StatelessWidget {
   const DiscordLoginButton({super.key});
   Future<void> _launchURL(BuildContext context) async {
-    bool tmp = await _checkConnectivity();
-
-    if (!context.mounted) return;
-    if (!tmp) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginPage()),
-      );
-    } else {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const DiscordAuthPage()),
-      );
-    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const DiscordAuthPage()),
+    );
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -98,7 +87,7 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
         NavigationDelegate(
           onNavigationRequest: (NavigationRequest request) {
             if (request.url
-                .startsWith("https://area.jepgo.root.sx/connected")) {
+                .startsWith("https://dev.area.jepgo.root.sx/connected")) {
               final uri = Uri.parse(request.url);
               final code = uri.queryParameters['code'];
               if (code != null) {
