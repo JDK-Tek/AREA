@@ -31,7 +31,7 @@ function checkRequest(config, request) {
     return missingParameters;
 }
 
-export default function ServiceFeatureConfiguration({ feature, service, setArea, setError, setErrorMsg, reset }) {
+export default function ServiceFeatureConfiguration({ action, feature, service, setArea, setError, setErrorMsg, reset }) {
     const [request, setRequest] = useState({});
 
     const handleValueChange = (name, value) => {
@@ -129,15 +129,27 @@ export default function ServiceFeatureConfiguration({ feature, service, setArea,
                             setErrorMsg(msg);
                             return;
                         } else {
-                            if (feature) {
+                            if (action) {
                                 setArea((prevArea) => ({
                                     ...prevArea,
-                                    actions: [...prevArea.actions, {title: feature.description, color: service.color, spices: request}],
+                                    actions: [...prevArea.actions, {
+                                        service: service.name,
+                                        name: feature.name,
+                                        title: feature.description,
+                                        color: service.color,
+                                        spices: request
+                                    }],
                                 }));
                             } else {
                                 setArea((prevArea) => ({
                                     ...prevArea,
-                                    reactions: [...prevArea.reactions, {title: feature.description, color: service.color, spices: request}],
+                                    reactions: [...prevArea.reactions, {
+                                        service: service.name,
+                                        name: feature.name,
+                                        title: feature.description,
+                                        color: service.color,
+                                        spices: request
+                                    }],
                                 }));
                             }
 

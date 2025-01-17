@@ -112,6 +112,7 @@ export default function SidePannel({ action, open, setOpen, setArea }) {
                 {
                 feature ?
                     <ServiceFeatureConfiguration
+                        action={action}
                         feature={feature}
                         service={service}
                         setArea={setArea}

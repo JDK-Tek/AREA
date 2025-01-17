@@ -14,7 +14,7 @@ import SidePannel from "../../components/SidePannel"
 import Button from "../../components/Button";
 import InputBox from "../../components/spices/InputBox";
 
-function Triger({title, color, onClick}) {
+function Triger({title, color, spices, onClick}) {
     return (
         <div
             className="flex items-center justify-between w-full border-b-2 shadow-sm pl-4 pr-4 p-1"
@@ -42,6 +42,7 @@ export default function CreateArea() {
         reactions: []
     });
 
+    console.log(area)
     return (
         <div className="relative">
             <HeaderBar activeBackground={true} />
@@ -77,8 +78,10 @@ export default function CreateArea() {
                         <div className="p-5">
                             {area.actions.map((action, index) =>
                                 <Triger
+                                    key={index}
                                     title={action.title}
                                     color={action.color}
+                                    spices={action.spices}
                                     onClick={() => {
                                         setArea((prevArea) => ({
                                             ...prevArea,
@@ -106,6 +109,7 @@ export default function CreateArea() {
                                 <Triger
                                     title={reaction.title}
                                     color={reaction.color}
+                                    spices={reaction.spices}
                                     onClick={() => {
                                         setArea((prevArea) => ({
                                             ...prevArea,
