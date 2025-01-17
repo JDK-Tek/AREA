@@ -14,11 +14,13 @@ import ServiceKit from "./ServiceKit";
 import Notification from '../Notification'
 
 export default function FindService({ dark, setService }) {
-    const [services, setServices] = useState([]);
     const [error, setError] = useState("");
+    const [errorMsg, setErrorMsg] = useState("");
 
     const [search, setSearch] = useState("");
     const [filteredServices, setFilteredServices] = useState([]);
+
+    const [aboutjson, setAboutjson] = useState(null);
 
     const mode = dark ?
         {
@@ -34,37 +36,42 @@ export default function FindService({ dark, setService }) {
             borderColor: "border-gray-300 focus:border-blue-500"
         }
 
-    useEffect(() => {
-        const getServices = async () => {
-            axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/services`, {headers: {"Content-Type": "application/json"}})
-            .then((response) => {
-                setServices(response.data.res)
-            })
-            .catch((error) => {
-                setError("Error when trying to get all services: " + error)
-            });
-        };
-        getServices();
-    }, [setServices, setError]);
+        useEffect(() => {
+            const getAboutJson = async () => {
+                axios.get(`${process.env.REACT_APP_BACKEND_URL}/about.json`, { headers: { "Content-Type": "application/json" } })
+                    .then((response) => {
+                        setAboutjson(response.data);
+                    })
+                    .catch((error) => {
+                        setError(true);
+                        setErrorMsg("Error when trying to get about.json: " + error);
+                    });
+            };
+            getAboutJson();
+    
+        }, [aboutjson]);
+    
 
     useEffect(() => {
+        if (!aboutjson) return;
+
         if (search === "") {
-            setFilteredServices(services);
+            setFilteredServices(aboutjson.server.services);
             return;
         }
 
         let fstmp = [];
-        services.forEach((service) => {
+        aboutjson.server.services.forEach((service) => {
             if (matchPattern(search, service.name)) {
                 fstmp.push(service);
             }
         });
         setFilteredServices(fstmp);
-    }, [search, setFilteredServices, services]);
+    }, [search, setFilteredServices, aboutjson]);
 
     return (
         <div className="h-full flex flex-col justify-start">
-            {error && <Notification error={true} msg={error} setError={setError}/>}
+            {error && <Notification error={true} msg={errorMsg} setError={setError}/>}
 
             <SearchInput
                 placeholder={"Search for a service"}

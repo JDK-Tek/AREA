@@ -5,7 +5,9 @@
 ** SidePannel
 */
 
+import axios from "axios";
 import { useEffect, useRef, useState } from "react";
+
 import FindService from "./Service/FindService";
 import FindFeature from "./Feature/FindFeature";
 import ServiceFeatureConfiguration from "./ServiceFeatureConfiguration";
@@ -115,6 +117,8 @@ export default function SidePannel({ action, open, setOpen, setArea }) {
                     <FindService
                         dark={true}
                         setService={setService}
+                        setError={setError}
+                        setErrorMsg={setErrorMsg}
                     />
                 }
             </div>

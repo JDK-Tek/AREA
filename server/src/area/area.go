@@ -36,7 +36,7 @@ type AboutClient struct {
 
 type AboutSevice struct {
 	Name string `json:"name"`
-	Icon string `json:"icon"`
+	Icon string `json:"image"`
 	Color string `json:"color"`
 	Actions []AboutSomething `json:"actions"`
 	Reactions []AboutSomething `json:"reactions"`
