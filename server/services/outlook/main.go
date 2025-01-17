@@ -295,7 +295,7 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 				"contentType": "Text",
 				"content":     emailContent.Body,
 			},
-			"toRecipients": []map[string]interface{}{
+			"toRecipients": []map[string]interface{}{ 
 				{
 					"emailAddress": map[string]string{
 						"address": emailContent.To,
@@ -305,7 +305,6 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		},
 		"saveToSentItems": "true",
 	}
-
 	emailBytes, err := json.Marshal(emailData)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -313,6 +312,7 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		return
 	}
 
+	// send
 	reqEmail, err := http.NewRequest("POST", "https://graph.microsoft.com/v1.0/me/sendMail", bytes.NewBuffer(emailBytes))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
