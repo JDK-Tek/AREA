@@ -1,14 +1,14 @@
 package main
 
 import (
-	"bytes"
+	//"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
-	"io"
+	//"io"
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
