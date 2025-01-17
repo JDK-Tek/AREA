@@ -265,11 +265,6 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     }
 
     userID := requestBody.UserID
-    if userID == 0 {
-        w.WriteHeader(http.StatusBadRequest)
-        fmt.Fprintf(w, "{ \"error\": \"Missing userid in request\" }\n")
-        return
-    }
 
     var outlookToken string
     err = db.QueryRow("SELECT token FROM tokens WHERE owner = $1 AND service = 'outlook'", userID).Scan(&outlookToken)
