@@ -316,6 +316,8 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 
 	// send
 	reqEmail, err := http.NewRequest("POST", "https://graph.microsoft.com/v1.0/me/sendMail", bytes.NewBuffer(emailBytes))
+	b, err := io.ReadAll(reqEmail.Body)
+	fmt.Println("reponse outlook = ", string(b))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
