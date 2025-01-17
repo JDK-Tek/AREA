@@ -7,18 +7,17 @@
 
 import Feature from "./Feature";
 
-export default function FeaturesKit({ features, bgColor = "", setFeature }) {
+export default function FeaturesKit({ features, bgColor = "", setFeature, color }) {
 
     return (
         <div className={`grid grid-cols-1 gap-4 ${bgColor} p-5`}>
-            {features && features.feat && features.feat.map((feature, index) => (
+
+            {features && features.map((feature, index) => (
                 <Feature
-                    id={1}
                     key={index}
-                    title={feature.title}
-                    color={features.color}
-                    colorHover={features.colorHover}
+                    feature={feature}
                     setFeature={setFeature}
+                    color={color}
                 />
             ))}
         </div>

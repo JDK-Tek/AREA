@@ -124,7 +124,7 @@ class NewOreo:
 		self.areas.append({
 			"name": name,
 			"type": type,
-			"title": title,
+			"description": title,
 			"spices": spices
 		})
 
@@ -693,7 +693,7 @@ ACTION_ASSIGNED_PULL_REQUEST = "assigned-pull-request"
 oreo.create_area(
 	ACTION_ASSIGNED_PULL_REQUEST,
 	NewOreo.TYPE_ACTIONS,
-	"When you are assigned to an issue",
+	"When you are assigned to a pull request",
 	[ ]
 )
 @app.route(f'/{ACTION_ASSIGNED_PULL_REQUEST}', methods=["POST"])

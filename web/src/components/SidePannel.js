@@ -25,6 +25,23 @@ export default function SidePannel({ action, open, setOpen, setArea }) {
     const [error, setError] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
 
+    const [aboutjson, setAboutjson] = useState(null);
+
+    useEffect(() => {
+        const getAboutJson = async () => {
+            axios.get(`${process.env.REACT_APP_BACKEND_URL}/about.json`, { headers: { "Content-Type": "application/json" } })
+                .then((response) => {
+                    setAboutjson(response.data);
+                })
+                .catch((error) => {
+                    setError(true);
+                    setErrorMsg("Error when trying to get about.json: " + error);
+                });
+        };
+        getAboutJson();
+
+    }, [aboutjson]);
+
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (panelRef.current && !panelRef.current.contains(event.target)) {
@@ -111,7 +128,8 @@ export default function SidePannel({ action, open, setOpen, setArea }) {
                     <FindFeature
                         dark={true}
                         setFeature={setFeature}
-                        color={service.color}
+                        service={service}
+                        action={action ? "action" : "reaction"}
                     />
                     :
                     <FindService
@@ -119,6 +137,8 @@ export default function SidePannel({ action, open, setOpen, setArea }) {
                         setService={setService}
                         setError={setError}
                         setErrorMsg={setErrorMsg}
+                        aboutjson={aboutjson}
+                        filtre={action ? "action" : "reaction"}
                     />
                 }
             </div>
