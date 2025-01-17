@@ -79,6 +79,24 @@ def retrieve_user_token(id):
 	except (Exception, psycopg2.Error) as err:
 		return None
 
+def get_token_from_id(id, service):
+	try:
+		with db.cursor() as cur:
+			cur.execute("SELECT token FROM tokens " \
+				"WHERE owner = %s AND service = %s", (
+					id,
+					service,
+				)
+			)
+			rows = cur.fetchone()
+			if not rows:
+				return None
+			return rows[0]
+	except (Exception, psycopg2.Error) as err:
+		return None
+	
+
+
 ## #
 ##
 ## INITIALIZATION
@@ -212,7 +230,6 @@ def oauth():
 			return jsonify({"error": "Failed to fetch user info"}), user_info_response.status_code
 
 		user_info = user_info_response.json()
-		reddit_user_name = user_info.get("name")
 		reddit_user_id = user_info.get("id")
 
 
@@ -221,13 +238,16 @@ def oauth():
 
 
 
-
 		# data treatment
 		area_bearer_token = retrieve_token(get_beared_token(request))
-		area_user_id = area_bearer_token.get("id", None) if area_bearer_token else None
+		userid = area_bearer_token.get("id", None) if area_bearer_token else None
 	
+		app.logger.info(f"Header: {request.headers}")
+		app.logger.info(f"Bear token: {area_bearer_token}")
+		app.logger.info(f"Area user id: {userid}")
+
 		# user is not logged in an area account
-		if not area_bearer_token or not area_user_id:
+		if not area_bearer_token or not userid:
 			try:
 				with db.cursor() as cur:
 					cur.execute("SELECT owner FROM tokens " \
@@ -245,7 +265,7 @@ def oauth():
 							"DEFAULT VALUES " \
 							"RETURNING id"
 						)
-						area_user_id = cur.fetchone()[0]
+						userid = cur.fetchone()[0]
 
 						# create new token linked with the new area account
 						cur.execute("INSERT INTO tokens " \
@@ -255,12 +275,12 @@ def oauth():
 		 						reddit_access_token,
 								reddit_refresh_token,
 								reddit_user_id,
-								area_user_id,
+								userid,
 							)
 						)
 
 						db.commit()
-						return jsonify({ "token": generate_beared_token(area_user_id) }), 200
+						return jsonify({ "token": generate_beared_token(userid) }), 200
 				
 					# service account already linked with an area account: update token
 					else:
@@ -276,10 +296,10 @@ def oauth():
 								)
 						)
 						
-						area_user_id = cur.fetchone()[0]
+						userid = cur.fetchone()[0]
 			
 						db.commit()
-						return jsonify({ "token": generate_beared_token(area_user_id) }), 200
+						return jsonify({ "token": generate_beared_token(userid) }), 200
 			except (Exception, psycopg2.Error) as err:
 				return jsonify({ "error":  str(err)}), 400
 
@@ -289,46 +309,51 @@ def oauth():
 		else:
 			try:
 				with db.cursor() as cur:
+					# check if the reddit account is already linked with an area account
 					cur.execute("SELECT owner FROM tokens " \
-				 		"WHERE userid = %s AND service = %s", (
-							 reddit_user_id,
-							 oreo.service,
+						"WHERE userid = %s AND service = %s", (
+							reddit_user_id,
+							oreo.service,
 						)
 					)
 					rows = cur.fetchone()
-			
-					# service account already linked with an other area account: forbiden
-					if rows and rows[0] != area_user_id:
-						return jsonify({ "error": "forbiden: user already logged in an other account"}), 403
-				
-					# service account already linked with the same area account: update token
-					elif rows and rows[0] == area_user_id:
-						cur.execute("UPDATE tokens " \
-				  			"SET token = %s, refresh = %s " \
-							"WHERE userid = %s AND service = %s", (
-								reddit_access_token,
-								reddit_refresh_token,
-								reddit_user_id,
-								oreo.service,
-							)
-						)
-						db.commit()
-				
-					# service account not linked with any area account: create new token
-					else:
+
+					# reddit account not linked with any area account: create new token
+					if not rows:
 						cur.execute("INSERT INTO tokens " \
-							"(service, token, refresh, userid, owner)" \
+							"(service, token, refresh, userid, owner) " \
 							"VALUES (%s, %s, %s, %s, %s)", (
 								oreo.service,
 								reddit_access_token,
 								reddit_refresh_token,
 								reddit_user_id,
-								area_user_id,
+								userid,
 							)
 						)
+
 						db.commit()
-					
-					return jsonify({ "token": generate_beared_token(area_user_id) }), 200
+						return jsonify({ "token": generate_beared_token(userid) }), 200
+
+					# reddit account already linked with an area account (same account): update token
+					elif rows[0] == userid:
+						cur.execute(
+							"UPDATE tokens " \
+							"SET token = %s, refresh = %s " \
+							"WHERE userid = %s AND service = %s " \
+							"RETURNING owner", (
+								reddit_access_token,
+								reddit_refresh_token,
+								reddit_user_id,
+								oreo.service,
+							)
+						)
+						userid = cur.fetchone()[0]
+						db.commit()
+						return jsonify({ "token": generate_beared_token(userid) }), 200
+
+					# reddit account already linked with an area account (different account):forbidden
+					else:
+						return jsonify({ "error": "reddit account already linked with an area account" }), 403
 			except (Exception, psycopg2.Error) as err:
 				return jsonify({ "error":  str(err)}), 400
 
@@ -369,19 +394,17 @@ oreo.create_area(
 @app.route('/submit-new-post', methods=["POST"])
 def submit_new_post():
     app.logger.info("submit-new-post endpoint hit")
-    user = retrieve_token(get_beared_token(request))
-    if not user:
-        app.logger.error("Invalid area token")
-        return jsonify({"error": "Invalid area token"}), 401
-
-    access_token = retrieve_user_token(user.get("id"))
-    if not access_token:
-        app.logger.error(f"Invalid {oreo.service} token")
-        return jsonify({"error": f"Invalid {oreo.service} token"}), 401
 
     if not request.is_json:
         app.logger.error("Request is not valid JSON")
         return jsonify({"error": "Invalid JSON"}), 400
+
+    userid = request.json.get("userid")
+    if not userid:
+        app.logger.error(f"Missing required fields: 'userid'")
+        return jsonify({"error": "Missing required fields"}), 400
+
+    access_token = get_token_from_id(request.json.get("userid"), "reddit")
 
     spices = request.json.get("spices", {})
     subreddit = spices.get("subreddit")
@@ -413,7 +436,7 @@ def submit_new_post():
             "details": res.json()
         }), res.status_code
 
-    app.logger.info(f"User {user.get('id')} submitted a post on r/{subreddit}: {title}")
+    app.logger.info(f"User {userid} submitted a post on r/{subreddit}: {title}")
     return jsonify({"status": "Post submitted"}), 200
 
 
@@ -443,19 +466,17 @@ oreo.create_area(
 @app.route('/submit-new-link', methods=["POST"])
 def submit_new_link():
     app.logger.info("submit-new-link endpoint hit")
-    user = retrieve_token(get_beared_token(request))
-    if not user:
-        app.logger.error("Invalid area token")
-        return jsonify({"error": "Invalid area token"}), 401
-
-    access_token = retrieve_user_token(user.get("id"))
-    if not access_token:
-        app.logger.error(f"Invalid {oreo.service} token")
-        return jsonify({"error": f"Invalid {oreo.service} token"}), 401
 
     if not request.is_json:
         app.logger.error("Request is not valid JSON")
         return jsonify({"error": "Invalid JSON"}), 400
+
+    userid = request.json.get("userid")
+    if not userid:
+        app.logger.error("Missing required fields: 'userid'")
+        return jsonify({"error": "Missing required fields"}), 400
+
+    access_token = get_token_from_id(request.json.get("userid"), "reddit")
 
     spices = request.json.get("spices", {})
     subreddit = spices.get("subreddit")
@@ -487,7 +508,7 @@ def submit_new_link():
             "details": res.json()
         }), res.status_code
 
-    app.logger.info(f"User {user.get('id')} submitted a link on r/{subreddit}: {title}")
+    app.logger.info(f"User {userid} submitted a link on r/{subreddit}: {title}")
     return jsonify({"status": "Link submitted"}), 200
 
 
@@ -512,19 +533,17 @@ oreo.create_area(
 @app.route('/reply-post', methods=["POST"])
 def reply_post():
     app.logger.info("reply-post endpoint hit")
-    user = retrieve_token(get_beared_token(request))
-    if not user:
-        app.logger.error("Invalid area token")
-        return jsonify({"error": "Invalid area token"}), 401
-
-    access_token = retrieve_user_token(user.get("id"))
-    if not access_token:
-        app.logger.error(f"Invalid {oreo.service} token")
-        return jsonify({"error": f"Invalid {oreo.service} token"}), 401
 
     if not request.is_json:
         app.logger.error("Request is not valid JSON")
         return jsonify({"error": "Invalid JSON"}), 400
+
+    userid = request.json.get("userid")
+    if not userid:
+        app.logger.error("Missing required fields: 'userid'")
+        return jsonify({"error": "Missing required fields"}), 400
+
+    access_token = get_token_from_id(request.json.get("userid"), "reddit")
 
     spices = request.json.get("spices", {})
     post_id = spices.get("post_id")
@@ -554,7 +573,7 @@ def reply_post():
             "details": res.json()
         }), res.status_code
 
-    app.logger.info(f"User {user.get('id')} reply to the '{post_id}': {reply_msg}")
+    app.logger.info(f"User {userid} reply to the '{post_id}': {reply_msg}")
     return jsonify({"status": "Reply submitted"}), 200
 
 
@@ -579,19 +598,17 @@ oreo.create_area(
 @app.route('/reply-message', methods=["POST"])
 def reply_message():
     app.logger.info("reply-message endpoint hit")
-    user = retrieve_token(get_beared_token(request))
-    if not user:
-        app.logger.error("Invalid area token")
-        return jsonify({"error": "Invalid area token"}), 401
-
-    access_token = retrieve_user_token(user.get("id"))
-    if not access_token:
-        app.logger.error(f"Invalid {oreo.service} token")
-        return jsonify({"error": f"Invalid {oreo.service} token"}), 401
 
     if not request.is_json:
         app.logger.error("Request is not valid JSON")
         return jsonify({"error": "Invalid JSON"}), 400
+
+    userid = request.json.get("userid")
+    if not userid:
+        app.logger.error(f"Missing required fields: 'userid'")
+        return jsonify({"error": "Missing required fields"}), 400
+
+    access_token = get_token_from_id(request.json.get("userid"), "reddit")
 
     spices = request.json.get("spices", {})
     message_id = spices.get("message_id")
@@ -621,7 +638,7 @@ def reply_message():
             "details": res.json()
         }), res.status_code
 
-    app.logger.info(f"User {user.get('id')} replied to message '{message_id}': {reply_msg}")
+    app.logger.info(f"User {userid} replied to message '{message_id}': {reply_msg}")
     return jsonify({"status": "Reply submitted"}), 200
 
 
