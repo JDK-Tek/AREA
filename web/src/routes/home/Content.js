@@ -22,7 +22,7 @@ export default function Content({ setError }) {
         const getServices = async () => {
             axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/services`, {headers: {"Content-Type": "application/json"}})
             .then((response) => {
-                setServices(response.data.res)
+                setServices(response.data)
             })
             .catch((error) => {
                 setError("Error when trying to get all services: " + error)
@@ -30,7 +30,7 @@ export default function Content({ setError }) {
         };
         getServices();
     }, [setServices, setError]);
-
+    
     useEffect(() => {
         const getApplets = async () => {
             axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/applets`, {headers: {"Content-Type": "application/json"}})
@@ -43,13 +43,13 @@ export default function Content({ setError }) {
         };
         getApplets();
     }, [setApplets, setError]);
-
+    
     useEffect(() => {
         if (service) {
-            window.location.href = `/services/${service.id}`;
+            window.location.href = `/services/${service.name}`;
         }
     }, [service]);
-
+    
     return (
         <div className="pb-14">
             <AppletKit

@@ -140,7 +140,7 @@ app = Flask(__name__)
 oreo = NewOreo(
 	service="github",
 	color="#24292e",
-	image="/assets/github.webp"
+	image="/assets/services/github.webp"
 )
 
 
