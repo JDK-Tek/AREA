@@ -42,16 +42,25 @@ while True:
 app = Flask(__name__)
 runtime_routes = []
 
-@app.route("/print", methods=["POST"])
-def roblox_print():
+class Command:
+    def __init__(self, name: str, data: dict[str, str]):
+        self.name = name
+        self.extra = " ".join([k + " " + v for k, v in data.items()])
+        self.str = self.name + " " + self.extra
+
+    def __str__(self):
+        return self.str
+
+@app.route("/newpart", methods=["POST"])
+def newpart():
     data = Request.json
     areaid = data.get("userid")
-    spices = data.get("spices")
-    command = spices.get("command")
+    spices: dict = data.get("spices")
+
     gameid = spices.get("gameid")
-    # "select userid from tokens where owner = %s limit 1", areaid
-    # "update micro_roblox set command = %s where robloxid = %d"
-    # => "update micro_roblox set command = %s from tokens where micro_roblox.robloxid = tokens.userid and tokens.owner = %d and micro_roblox.gameid = %d", command, areaid, gameid
+    spices.pop("gameid")
+    command = Command("newarea", spices)
+
     try:
         with db.cursor() as cur:
             print(command, gameid, file=stderr)
@@ -64,12 +73,9 @@ def roblox_print():
                 "and micro_roblox.gameid = %s ",
                 (command, str(areaid), "roblox", gameid,)
             )
-            print("foo", file=stderr)
             db.commit()
-            print("bar", file=stderr)
         return jsonify({ "status": "ok" }), 200
     except (Exception, psycopg2.Error) as err:
-        print("hello", file=stderr)
         return jsonify({ "error":  str(err)}), 400
 
 @app.route("/webhook", methods=["POST"])
@@ -77,7 +83,6 @@ def webhook():
     data = Request.json
     robloxid = data.get("robloxid")
     gameid = data.get("gameid")
-    # => "insert into micro_roblox (robloxid, gameid) values (%d, %d) on conflict (gameid) do nothing", robloxid, gameid
     try:
         with db.cursor() as cur:
             print(robloxid, gameid, file=stderr)
@@ -90,8 +95,6 @@ def webhook():
             )
             db.commit()
         while True:
-            # "select command from micro_roblox where robloxid = %d and command is not null", robloxid
-            # => "update micro_roblox set command = null where robloxid = %d and command is not null returning command", robloxid
             with db.cursor() as cur:
                 cur.execute(
                      "select command from micro_roblox "\
@@ -115,6 +118,43 @@ def webhook():
         return jsonify({ "error": "postgres says <(" + str(err) + ")"}), 400
     except Exception as err:
         return jsonify({ "error": str(err)}), 400
+
+@app.route("/", methods=["GET"])
+def routes():
+    x = {
+        "color": "#000000",
+        "image": "/assets/roblox.png",
+        "areas": [
+            {
+                "name": "newpart",
+                "description": "Creates a new part",
+                "spices": [
+                    {
+                        "name": "color",
+                        "type": "text",
+                        "title": "The color of the part."
+                    },
+                    {
+                        "name": "position",
+                        "type": "text",
+                        "title": "3 numbers for the part coordinates."
+                    },
+                    {
+                        "name": "size",
+                        "type": "text",
+                        "title": "3 numbers for the part size."
+                    },
+                    {
+                        "name": "anchored",
+                        "type": "dropdown",
+                        "title": "Is the part anchored.",
+                        "extra": ["true", "false"]
+                    }
+                ]
+            }
+        ]
+    }
+    return jsonify(x), 200
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=80)
