@@ -188,18 +188,26 @@ func oauthSetter(a area.AreaRequest) {
 	}
 	defer rep.Body.Close()
 
-	body, err := io.ReadAll(rep.Body)
-	if err != nil {
-		a.Error(err, http.StatusBadGateway)
-		return
-	}
+	a.Writter.Header().Set("Content-Type", rep.Header.Get("Content-Type"))
+    a.Writter.WriteHeader(rep.StatusCode)
+    _, err = io.Copy(a.Writter, rep.Body)
+    if err != nil {
+        http.Error(a.Writter, err.Error(), http.StatusInternalServerError)
+    }
 
-	var jsonResponse map[string]interface{}
-	if err := json.Unmarshal(body, &jsonResponse); err != nil {
-		a.Error(err, http.StatusInternalServerError)
-		return
-	}
-	a.Reply(jsonResponse, http.StatusOK)
+	// body, err := io.ReadAll(rep.Body)
+	// if err != nil {
+	// 	a.Error(err, http.StatusBadGateway)
+	// 	return
+	// }
+
+	// var jsonResponse map[string]interface{}
+	// if err := json.Unmarshal(body, &jsonResponse); err != nil {
+	// 	a.Error(err, http.StatusInternalServerError)
+	// 	return
+	// }
+	// a.Reply(jsonResponse, http.StatusOK)
+	
 }
 
 func codeCallback(a area.AreaRequest) {
