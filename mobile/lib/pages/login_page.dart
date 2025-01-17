@@ -1,13 +1,10 @@
+import 'package:area/pages/OutlookOAuthPage.dart';
+import 'package:area/pages/SpotifyOAuthPage.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:restart_app/restart_app.dart';
 import 'package:area/tools/user_ouput.dart';
 import 'package:area/pages/DiscordAuthPage.dart';
 import 'package:area/pages/OAuthRoblox.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:area/pages/OutlookOAuthPage.dart';
-import 'package:area/pages/SpotifyOAuthPage.dart';
-import 'package:area/pages/GithubOAuthPage.dart';
 import 'dart:async';
 
 class UserBox extends StatefulWidget {
@@ -169,110 +166,44 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPage extends State<LoginPage> {
-  bool connect = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _checkConnectivity();
-  }
-
-  Future<void> _checkConnectivity() async {
-    var connectivityResult = await (Connectivity().checkConnectivity());
-
-    if (connectivityResult == ConnectivityResult.none) {
-      setState(() {
-        connect = false;
-      });
-    }
-    else {
-      setState(() {
-        connect = true;
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return SafeArea(
         child: Scaffold(
       backgroundColor: const Color(0xffe1e4ed),
-      body: connect
-          ? SingleChildScrollView(
-              child: Stack(
-                children: [
-                  const AnimatedBackground(),
-                  Column(children: [
-                    Align(
-                      alignment: Alignment.topLeft,
-                      child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color.fromARGB(0, 0, 0, 0),
-                            foregroundColor: const Color.fromARGB(0, 0, 0, 0),
-                            shadowColor: const Color.fromARGB(0, 0, 0, 0),
-                          ),
-                          onPressed: () {
-                            context.go("/applets");
-                          },
-                          child: Icon(Icons.arrow_back,
-                              color: Colors.white,
-                              size: MediaQuery.of(context).size.height * 0.05)),
+      body: SingleChildScrollView(
+        child: Stack(
+          children: [
+            const AnimatedBackground(),
+            Column(children: [
+              Align(
+                alignment: Alignment.topLeft,
+                child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color.fromARGB(0, 0, 0, 0),
+                      foregroundColor: const Color.fromARGB(0, 0, 0, 0),
+                      shadowColor: const Color.fromARGB(0, 0, 0, 0),
                     ),
-                    const UserOuput(
-                        title: "login",
-                        icon: Icons.email,
-                        obscureText: true,
-                        u: "api/tmp"),
-                    const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        DiscordLoginButton(),
-                        RobloxLoginButton(),
-                      ],
-                    ),
-                    const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        OutlookLoginButton(),
-                        SpotifyLoginButton(),
-                      ],
-                    ),
-                    const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        GithubLoginButton(),
-                      ],
-                    ),
-                  ])
-                ],
+                    onPressed: () {
+                      context.go("/applets");
+                    },
+                    child: Icon(Icons.arrow_back,
+                        color: Colors.white,
+                        size: MediaQuery.of(context).size.height * 0.05)),
               ),
-            )
-          : SingleChildScrollView(
-              child: Stack(
-                children: [
-                  const AnimatedBackground(),
-                  Column(
-                    children: [
-                      Center(
-                        child: Container(
-                            color: const Color.fromARGB(255, 37, 32, 32),
-                            child: const Text(
-                                style: TextStyle(color: Colors.red, fontSize: 30),
-                                "No internet, please check your connection and restart your application.")),
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          setState(() {
-                          _checkConnectivity();  
-                          });
-                        },
-                        child: const Text("Restart ?", style: TextStyle(color: Colors.black,),
-                      )
-                  )],
-                  )
-                ],
-              ),
-            ),
+              const UserOuput(
+                  title: "login",
+                  icon: Icons.email,
+                  obscureText: true,
+                  u: "api/tmp"),
+              const DiscordLoginButton(),
+              const RobloxLoginButton(),
+              const OutlookLoginButton(),
+              const SpotifyLoginButton(),
+            ])
+          ],
+        ),
+      ),
     ));
   }
 }

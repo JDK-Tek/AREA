@@ -23,9 +23,9 @@ class _DynamicState extends State<Dynamic> {
   void initState() {
     super.initState();
     final extraParams = widget.extraParams ?? {};
-    List<String> items = extraParams['items'] ?? [];
+    List<dynamic> items = extraParams['items'] ?? [];
     if (items.isNotEmpty) {
-      dropdownValue = extraParams['currentValue'] ?? items[0];
+      dropdownValue = items[0];
     } else {
       dropdownValue = '';
     }
@@ -45,6 +45,22 @@ class _DynamicState extends State<Dynamic> {
 
     final widgetMap = {
       "text": () {
+        return SizedBox(
+          width: 200,
+          child: TextField(
+            controller: textController,
+            focusNode: _focusNode,
+            decoration: InputDecoration(
+              labelText: "Enter ${widget.title}",
+              border: const OutlineInputBorder(),
+            ),
+            onChanged: (value) {
+              widget.onValueChanged(widget.title, value);
+            },
+          ),
+        );
+      },
+      "input": () {
         return SizedBox(
           width: 200,
           child: TextField(

@@ -10,16 +10,6 @@ import 'package:go_router/go_router.dart';
 
 class DiscordLoginButton extends StatelessWidget {
   const DiscordLoginButton({super.key});
-
-  Future<bool> _checkConnectivity() async {
-    var connectivityResult = await (Connectivity().checkConnectivity());
-
-    if (connectivityResult == ConnectivityResult.none) {
-      return false;
-    }
-    return true;
-  }
-
   Future<void> _launchURL(BuildContext context) async {
     bool tmp = await _checkConnectivity();
 
@@ -69,11 +59,8 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
   Future<void> _initialize() async {
     await _makeDemand("api/oauth/discord");
     setState(() {
-      print(url);
       _initializeWebView();
 
-      // print("finishghghghghghghghghghghghh");
-      // print(u);
       _isWebViewInitialized = true;
     });
   }
@@ -102,27 +89,6 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
       u = content;
       url = content;
     });
-    // switch ((rep.statusCode / 100) as int) {
-    //   case 2:
-    //     str = content;
-    //     if (str != "error") {
-    //       _token = str;
-    //       u = str;
-    //       url = str;
-    //     } else {
-    //       _errorMessage("Enter a valid email and password !");
-    //     }
-    //     break;
-    //   case 4:
-    //     str = content;
-    //     if (str != "") {
-    //       _errorMessage(str);
-    //     }
-    //     break;
-    //   case 5:
-    //     _errorMessage("Enter a valid email and password !");
-    //   default:
-    //     break;
   }
 
   void _initializeWebView() {
@@ -132,7 +98,7 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
         NavigationDelegate(
           onNavigationRequest: (NavigationRequest request) {
             if (request.url
-                .startsWith("https://area-jeepg.vercel.app/connected")) {
+                .startsWith("https://area.jepgo.root.sx/connected")) {
               final uri = Uri.parse(request.url);
               final code = uri.queryParameters['code'];
               if (code != null) {
