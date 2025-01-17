@@ -84,30 +84,25 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	clientid := os.Getenv("OUTLOOK_CLIENT_ID")
 	clientsecret := os.Getenv("OUTLOOK_CLIENT_SECRET")
 	data := url.Values{}
-	fmt.Println("ici")
 	err := json.NewDecoder(req.Body).Decode(&res)
 	if err != nil {
-		fmt.Fprintln(w, "decodeeee", "caca")
+		fmt.Fprintln(w, "decodeeee", err.Error())
 		return
 	}
-	fmt.Println("la")
 	data.Set("client_id", clientid)
 	data.Set("client_secret", clientsecret)
 	data.Set("grant_type", "authorization_code")
 	data.Set("code", res.Code)
 	data.Set("redirect_uri", os.Getenv("REDIRECT"))
 	rep, err := http.PostForm(API_OAUTH_OUTLOOK, data)
-	//defer rep.Body.Close()
-	body, err := io.ReadAll(rep.Body)
-	fmt.Println("code = ", string(body))
-	fmt.Fprintln(w, "tmp = ", string(body))
-	return
+	// fmt.Fprintln(w, "tmp = ", string(body))
+	// return
 	if err != nil {
 		fmt.Fprintln(w, "postform", err.Error())
 		return
 	}
 	defer rep.Body.Close()
-	//body, err := io.ReadAll(rep.Body)
+	body, err := io.ReadAll(rep.Body)
 	if err != nil {
 		fmt.Fprintln(w, "read body", err.Error())
 		return
