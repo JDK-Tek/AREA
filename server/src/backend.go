@@ -274,19 +274,45 @@ type Message struct {
 	Authentificated bool   `json:"authentificated"`
 }
 
-type MessageWithID struct {
-	Message         string `json:"message"`
-	Authentificated bool   `json:"authentificated"`
-	ID              int    `json:"id"`
+type MessageWithIDAndOauths struct {
+	Message string `json:"message"`
+	Authentificated bool `json:"authentificated"`
+	ID int `json:"id"`
+	Oauths []string `json:"oauths"`
 }
 
 func doctor(a area.AreaRequest) {
+	// cheeck for no token
 	id, err := a.AssertToken()
 	if err != nil {
 		a.Reply(Message{Message: "i'm ok thanks", Authentificated: false}, http.StatusOK)
 		return
 	}
-	a.Reply(MessageWithID{Message: "i'm ok thanks", Authentificated: true, ID: id}, http.StatusOK)
+
+	// check for oauths
+	rows, err := a.Area.Database.Query("select service from tokens where owner = $1", id)
+	if err != nil {
+		a.Reply(Message{Message: "i'm ill: " + err.Error(), Authentificated: true}, http.StatusOK)
+		return
+	}
+	defer rows.Close()
+	
+	// check for no oauths
+	var stuff string
+	x := MessageWithIDAndOauths{Message: "i'm ok thanks", Authentificated: true, ID: id, Oauths: []string{}}
+	for rows.Next() {
+		if err := rows.Scan(&stuff); err != nil {
+			a.Reply(Message{Message: "i'm ill: " + err.Error(), Authentificated: true}, http.StatusOK)
+			return
+		}
+		fmt.Println(stuff)
+		x.Oauths = append(x.Oauths, stuff)
+	}
+	if err := rows.Err(); err != nil {
+		a.Reply(Message{Message: "i'm ill: " + err.Error(), Authentificated: true}, http.StatusOK)
+		return
+	}
+	a.Reply(x, http.StatusOK)
 }
 
 func openWebhooks(a area.AreaRequest) {
