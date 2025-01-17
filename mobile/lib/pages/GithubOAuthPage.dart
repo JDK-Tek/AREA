@@ -1,15 +1,13 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:area/pages/login_page.dart';
-import 'package:area/tools/providers.dart';
-import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:go_router/go_router.dart';
 
-class OutlookLoginButton extends StatelessWidget {
-  const OutlookLoginButton({super.key});
+class GithubLoginButton extends StatelessWidget {
+  const GithubLoginButton({super.key});
 
   Future<bool> _checkConnectivity() async {
     var connectivityResult = await (Connectivity().checkConnectivity());
@@ -32,7 +30,7 @@ class OutlookLoginButton extends StatelessWidget {
     } else {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const OutlookAuthPage()),
+        MaterialPageRoute(builder: (context) => const GithubAuthPage()),
       );
     }
   }
@@ -41,19 +39,19 @@ class OutlookLoginButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ElevatedButton(
       onPressed: () => _launchURL(context),
-      child: const Text('Se connecter avec outlook'),
+      child: const Text('Se connecter avec Github'),
     );
   }
 }
 
-class OutlookAuthPage extends StatefulWidget {
-  const OutlookAuthPage({super.key});
+class GithubAuthPage extends StatefulWidget {
+  const GithubAuthPage({super.key});
 
   @override
-  State<OutlookAuthPage> createState() => _OutlookAuthPageState();
+  State<GithubAuthPage> createState() => _GithubAuthPageState();
 }
 
-class _OutlookAuthPageState extends State<OutlookAuthPage> {
+class _GithubAuthPageState extends State<GithubAuthPage> {
   bool _isWebViewInitialized = false;
   String url = "";
   late WebViewController _webViewController;
@@ -67,17 +65,20 @@ class _OutlookAuthPageState extends State<OutlookAuthPage> {
   }
 
   Future<void> _initialize() async {
-    await _makeDemand("api/oauth/outlook");
+    await _makeDemand("api/oauth/github");
     setState(() {
+      print(url);
       _initializeWebView();
 
+      // print("finishghghghghghghghghghghghh");
+      // print(u);
       _isWebViewInitialized = true;
     });
   }
 
   Future<void> _makeDemand(String u) async {
-    final Uri uri =
-        Uri.https(Provider.of<IPState>(context, listen: false).ip, u);
+    final Uri uri = Uri.https("api.area.jepgo.root.sx", u);
+    //final Uri uri = Uri.http("172.20.10.3:1234", u);
     late final http.Response rep;
     late String content;
 
@@ -108,14 +109,14 @@ class _OutlookAuthPageState extends State<OutlookAuthPage> {
         NavigationDelegate(
           onNavigationRequest: (NavigationRequest request) {
             if (request.url
-                .startsWith("https://dev.area.jepgo.root.sx/connected")) {
+                .startsWith("https://area-jeepg.vercel.app/connected")) {
               final uri = Uri.parse(request.url);
               final code = uri.queryParameters['code'];
               if (code != null) {
                 setState(() {
                   _authCode = code;
                   if (_authCode != "") {
-                    _makeRequest(_authCode, "api/oauth/outlook");
+                    _makeRequest(_authCode, "api/oauth/github");
                     if (!context.mounted) return;
                     context.go("/");
                   }
@@ -163,8 +164,8 @@ class _OutlookAuthPageState extends State<OutlookAuthPage> {
 
   Future<void> _makeRequest(String a, String u) async {
     final String body = "{ \"code\": \"$a\" }";
-    final Uri uri =
-        Uri.https(Provider.of<IPState>(context, listen: false).ip, u);
+    final Uri uri = Uri.https("api.area.jepgo.root.sx", u);
+    //final Uri uri = Uri.http("172.20.10.3:1234", u);
     late final http.Response rep;
     late Map<String, dynamic> content;
     late String? str;
@@ -174,15 +175,13 @@ class _OutlookAuthPageState extends State<OutlookAuthPage> {
     } catch (e) {
       return _errorMessage("$e");
     }
-    content = jsonDecode(rep.body);
-
-    switch ((rep.statusCode / 100)) {
+    content = jsonDecode(rep.body) as Map<String, dynamic>;
+    switch ((rep.statusCode / 100) as int) {
       case 2:
         str = content['token']?.toString();
         if (str != null) {
           _token = str;
           if (mounted) {
-            Provider.of<UserState>(context, listen: false).setToken(_token!);
             context.go("/");
           }
         } else {
@@ -205,7 +204,7 @@ class _OutlookAuthPageState extends State<OutlookAuthPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("outlook Authentication")),
+      appBar: AppBar(title: const Text("Github Authentication")),
       body: _isWebViewInitialized
           ? WebViewWidget(controller: _webViewController)
           : const Center(child: CircularProgressIndicator()),

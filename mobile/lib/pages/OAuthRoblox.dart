@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:area/tools/providers.dart';
 import 'package:flutter/material.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:area/pages/login_page.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -9,11 +11,30 @@ import 'package:go_router/go_router.dart';
 class RobloxLoginButton extends StatelessWidget {
   const RobloxLoginButton({super.key});
 
+  Future<bool> _checkConnectivity() async {
+    var connectivityResult = await (Connectivity().checkConnectivity());
+
+    if (connectivityResult == ConnectivityResult.none) {
+      return false;
+    }
+    return true;
+  }
+
   Future<void> _launchURL(BuildContext context) async {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const RobloxAuthPage()),
-    );
+    bool tmp = await _checkConnectivity();
+
+    if (!context.mounted) return;
+    if (!tmp) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const RobloxAuthPage()),
+      );
+    }
   }
 
   @override

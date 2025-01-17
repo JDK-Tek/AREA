@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:area/pages/login_page.dart';
 import 'package:area/tools/providers.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -8,12 +10,21 @@ import 'package:go_router/go_router.dart';
 
 class DiscordLoginButton extends StatelessWidget {
   const DiscordLoginButton({super.key});
-  
   Future<void> _launchURL(BuildContext context) async {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const DiscordAuthPage()),
-    );
+    bool tmp = await _checkConnectivity();
+
+    if (!context.mounted) return;
+    if (!tmp) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const DiscordAuthPage()),
+      );
+    }
   }
 
   @override
@@ -34,7 +45,6 @@ class DiscordAuthPage extends StatefulWidget {
 
 class _DiscordAuthPageState extends State<DiscordAuthPage> {
   bool _isWebViewInitialized = false;
-  String u = "ooo";
   String url = "";
   late WebViewController _webViewController;
   String _authCode = "";
