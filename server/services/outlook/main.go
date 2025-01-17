@@ -234,6 +234,7 @@ func sendTeamsMessage(w http.ResponseWriter, req *http.Request) {
 }
 
 func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
+	fmt.Println("caac je me fait call")
 	authHeader := req.Header.Get("Authorization")
 	if authHeader == "" {
 		w.WriteHeader(http.StatusUnauthorized)
