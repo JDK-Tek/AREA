@@ -174,75 +174,16 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	fmt.Fprintf(w, "{\"token\": \"%s\"}\n", tokenStr)
 }
 
-func sendTeamsMessage(w http.ResponseWriter, req *http.Request) {
-	var teamsContent TeamsContent
-	decoder := json.NewDecoder(req.Body)
-	err := decoder.Decode(&teamsContent)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
-		return
-	}
-
-	token := os.Getenv("OUTLOOK_TOKEN")
-	if token == "" {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "{ \"error\": \"token is missing\" }\n")
-		return
-	}
-
-	messageData := map[string]interface{}{
-		"body": map[string]interface{}{
-			"content": teamsContent.Message,
-		},
-	}
-	messageBytes, err := json.Marshal(messageData)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
-		return
-	}
-
-	teamsMessageURL := fmt.Sprintf("https://graph.microsoft.com/v1.0/teams/%s/channels/%s/messages", teamsContent.TeamID, teamsContent.ChannelID)
-
-	reqTeams, err := http.NewRequest("POST", teamsMessageURL, bytes.NewBuffer(messageBytes))
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
-		return
-	}
-
-	reqTeams.Header.Set("Authorization", "Bearer "+token)
-	reqTeams.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-	resp, err := client.Do(reqTeams)
-	if err != nil {
-		w.WriteHeader(http.StatusBadGateway)
-		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
-		return
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusOK {
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, "{ \"status\": \"Message sent successfully\" }\n")
-	} else {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "{ \"error\": \"Failed to send message\" }\n")
-	}
-}
-
 func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     fmt.Println("Headers received:", req.Header)
 
     bodyBytes, err := io.ReadAll(req.Body)
     if err != nil {
         w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error reading request body:", err.Error())
         fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
         return
     }
-
     fmt.Println("Request Body:", string(bodyBytes))
 
     req.Body = io.NopCloser(bytes.NewReader(bodyBytes))
@@ -260,38 +201,48 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     err = decoder.Decode(&requestBody)
     if err != nil {
         w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error decoding JSON:", err.Error())
         fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
         return
     }
 
+    fmt.Println("Decoded body:", requestBody)
+
     userID := requestBody.UserID
+    fmt.Println("Extracted userID:", userID)
 
     var outlookToken string
     err = db.QueryRow("SELECT token FROM tokens WHERE owner = $1 AND service = 'outlook'", userID).Scan(&outlookToken)
     if err != nil {
         if err == sql.ErrNoRows {
             w.WriteHeader(http.StatusNotFound)
+            fmt.Println("No Outlook token found for user:", userID)
             fmt.Fprintf(w, "{ \"error\": \"No Outlook token found for user\" }\n")
         } else {
             w.WriteHeader(http.StatusInternalServerError)
+            fmt.Println("Database error:", err.Error())
             fmt.Fprintf(w, "{ \"error\": \"Database error: %s\" }\n", err.Error())
         }
         return
     }
 
+    fmt.Println("Outlook token found:", outlookToken)
+
     if outlookToken == "" {
         w.WriteHeader(http.StatusUnauthorized)
+        fmt.Println("No Outlook token available for user:", userID)
         fmt.Fprintf(w, "{ \"error\": \"No Outlook token available\" }\n")
         return
     }
 
-    emailContent := requestBody.Spices
-    if emailContent.To == "" || emailContent.Subject == "" || emailContent.Message == "" {
+    if requestBody.Spices.To == "" || requestBody.Spices.Subject == "" || requestBody.Spices.Message == "" {
         w.WriteHeader(http.StatusBadRequest)
+        fmt.Println("Missing email details:", requestBody.Spices)
         fmt.Fprintf(w, "{ \"error\": \"Missing email details\" }\n")
         return
     }
 
+    emailContent := requestBody.Spices
     emailData := map[string]interface{}{
         "message": map[string]interface{}{
             "subject": emailContent.Subject,
@@ -310,37 +261,49 @@ func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
         "saveToSentItems": "true",
     }
 
+    fmt.Println("Email data to be sent:", emailData)
+
     emailBytes, err := json.Marshal(emailData)
     if err != nil {
         w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error marshaling email data:", err.Error())
         fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
         return
     }
 
+    fmt.Println("Email data marshaled successfully:", string(emailBytes))
+
     reqEmail, err := http.NewRequest("POST", "https://graph.microsoft.com/v1.0/me/sendMail", bytes.NewBuffer(emailBytes))
     if err != nil {
         w.WriteHeader(http.StatusBadRequest)
+        fmt.Println("Error creating email request:", err.Error())
         fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
         return
     }
 
     reqEmail.Header.Set("Authorization", "Bearer "+outlookToken)
     reqEmail.Header.Set("Content-Type", "application/json")
+    fmt.Println("Email request headers set:", reqEmail.Header)
 
     client := &http.Client{}
     resp, err := client.Do(reqEmail)
     if err != nil {
         w.WriteHeader(http.StatusBadGateway)
+        fmt.Println("Error sending email:", err.Error())
         fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
         return
     }
     defer resp.Body.Close()
 
+    fmt.Println("Email response status code:", resp.StatusCode)
+
     if resp.StatusCode == http.StatusOK {
         w.WriteHeader(http.StatusOK)
+        fmt.Println("Email sent successfully")
         fmt.Fprintf(w, "{ \"status\": \"Email sent successfully\" }\n")
     } else {
         w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Failed to send email, response code:", resp.StatusCode)
         fmt.Fprintf(w, "{ \"error\": \"Failed to send email\" }\n")
     }
 }
