@@ -99,6 +99,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	rep, err := http.PostForm(API_OAUTH_OUTLOOK, data)
 	//defer rep.Body.Close()
 	body, err := io.ReadAll(rep.Body)
+	fmt.Println("code = ", string(body))
 	fmt.Fprintln(w, "tmp = ", string(body))
 	return
 	if err != nil {
