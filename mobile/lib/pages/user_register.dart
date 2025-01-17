@@ -130,16 +130,13 @@ class _UserRegister extends State<UserRegister> {
                       ? MediaQuery.of(context).size.height
                       : MediaQuery.of(context).size.height * 0.5,
                   width: MediaQuery.of(context).size.width * 0.75,
-                  //color: const Color(0xff222222),
                   decoration: BoxDecoration(
                     color: const Color(0xff222222),
                     borderRadius: BorderRadius.circular(15),
                   ),
                   child: Column(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      //crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        //const Space(height: 15),
                         const Text(
                           "REGISTER",
                           style: TextStyle(color: Colors.white, fontSize: 20),
@@ -148,7 +145,6 @@ class _UserRegister extends State<UserRegister> {
                             "Welcome, we are delighted to have you among us",
                             style: TextStyle(
                                 color: Color(0xff8c52ff), fontSize: 12)),
-                        //const Space(height: 50),
                         SizedBox(
                           height: 50,
                           width: 300,

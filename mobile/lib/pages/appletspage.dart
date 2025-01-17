@@ -1,7 +1,11 @@
+import 'dart:convert';
+import 'package:http/http.dart' as https;
+import 'package:area/tools/providers.dart';
 import 'package:flutter/material.dart';
 import 'package:area/pages/home_page.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:provider/provider.dart';
 
 class AppletsPage extends StatefulWidget {
   const AppletsPage({super.key});
@@ -41,10 +45,10 @@ class AppletPageState extends State<AppletsPage> {
         ],
       ),
       backgroundColor: Colors.white,
-      body: SingleChildScrollView(
+      body: const SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [const HeaderSection(), AppletSection()],
+          children: [HeaderSection(), AppletSection()],
         ),
       ),
     ));
@@ -56,6 +60,7 @@ class Applet extends StatelessWidget {
   final String icon1;
   final String icon2;
   final String nameAREA;
+  final String color;
   final VoidCallback press;
 
   const Applet({
@@ -65,14 +70,24 @@ class Applet extends StatelessWidget {
     required this.nameService,
     required this.nameAREA,
     required this.press,
+    required this.color,
   });
+
+  Color _colorFromHex(String hexColor) {
+    if (hexColor.isEmpty) return Colors.grey;
+    hexColor = hexColor.toUpperCase().replaceAll("#", "");
+    if (hexColor.length == 6) {
+      hexColor = "FF$hexColor";
+    }
+    return Color(int.tryParse(hexColor, radix: 16) ?? 0xFF000000);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
         width: MediaQuery.of(context).size.width <
                 MediaQuery.of(context).size.height
-            ? MediaQuery.of(context).size.width * 0.48
+            ? MediaQuery.of(context).size.width * 0.65
             : MediaQuery.of(context).size.width * 0.38,
         height: MediaQuery.of(context).size.width <
                 MediaQuery.of(context).size.height
@@ -84,6 +99,7 @@ class Applet extends StatelessWidget {
               press();
             },
             style: ElevatedButton.styleFrom(
+              backgroundColor: _colorFromHex(color),
               padding: const EdgeInsets.all(9),
               shape: const RoundedRectangleBorder(
                 borderRadius: BorderRadius.all(Radius.elliptical(15, 15)),
@@ -124,8 +140,8 @@ class Applet extends StatelessWidget {
                         style: TextStyle(
                             fontSize: MediaQuery.of(context).size.width <
                                     MediaQuery.of(context).size.height
-                                ? MediaQuery.of(context).size.width * 0.04
-                                : MediaQuery.of(context).size.width * 0.02,
+                                ? MediaQuery.of(context).size.width * 0.05
+                                : MediaQuery.of(context).size.width * 0.03,
                             fontWeight: FontWeight.w900,
                             color: const Color.fromARGB(255, 255, 255, 255),
                             fontFamily: 'Nunito-Bold'),
@@ -142,8 +158,8 @@ class Applet extends StatelessWidget {
                       style: TextStyle(
                           fontSize: MediaQuery.of(context).size.width <
                                   MediaQuery.of(context).size.height
-                              ? MediaQuery.of(context).size.width * 0.045
-                              : MediaQuery.of(context).size.width * 0.02,
+                              ? MediaQuery.of(context).size.width * 0.05
+                              : MediaQuery.of(context).size.width * 0.03,
                           fontWeight: FontWeight.w900,
                           color: const Color.fromARGB(255, 255, 255, 255),
                           fontFamily: 'Nunito-Bold'),
@@ -155,18 +171,85 @@ class Applet extends StatelessWidget {
   }
 }
 
-class AppletSection extends StatelessWidget {
-  AppletSection({super.key});
+class AppletSection extends StatefulWidget {
+  const AppletSection({super.key});
 
-  final List<Applet> applets = [
-    Applet(
-      nameService: "Discord",
-      nameAREA: "In 10sec receive message on Discord",
-      icon1: "https://img.icons8.com/ios/452/discord.png",
-      icon2: "https://img.icons8.com/ios/452/timer.png",
-      press: () {},
-    ),
-  ];
+  @override
+  State<AppletSection> createState() => _AppletSectionState();
+}
+
+class _AppletSectionState extends State<AppletSection> {
+  List<Map<String, dynamic>> applets = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _makeDemand("/api/applets");
+  }
+
+  Future<void> _makeDemand(String u) async {
+    final Uri uri =
+        Uri.https(Provider.of<IPState>(context, listen: false).ip, u);
+    late final https.Response rep;
+
+    try {
+      rep = await https.get(uri);
+    } catch (e) {
+      if (mounted) {
+        _showDialog("Error", "Could not make request: $e");
+      }
+      return;
+    }
+
+    if (rep.statusCode >= 500) {
+      if (mounted) {
+        _showDialog("Error",
+            "Failed with status: ${rep.statusCode}. ${rep.reasonPhrase ?? 'Unknown error'}");
+      }
+      return;
+    }
+
+    Map<String, dynamic> responseBody;
+    try {
+      responseBody = jsonDecode(rep.body);
+    } catch (e) {
+      if (mounted) {
+        _showDialog("Error", "Invalid JSON format: $e");
+      }
+      return;
+    }
+
+    if (responseBody.containsKey('res')) {
+      final List<dynamic> appletsList = responseBody['res'];
+      if (mounted) {
+        setState(() {
+          applets = List<Map<String, dynamic>>.from(appletsList);
+        });
+      }
+    } else {
+      if (mounted) {
+        _showDialog("Error", "Key 'server.applets' not found in response.");
+      }
+    }
+  }
+
+  void _showDialog(String title, String message) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text("OK"),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -196,11 +279,16 @@ class AppletSection extends StatelessWidget {
           Wrap(
             spacing: MediaQuery.of(context).size.width <
                     MediaQuery.of(context).size.height
-                ? MediaQuery.of(context).size.width * 0.040
+                ? MediaQuery.of(context).size.width * 0.05
                 : MediaQuery.of(context).size.width * 0.02,
             alignment: WrapAlignment.center,
             children: applets
-                .map((applet) => _buildAppletCard(context, applet))
+                .map((applet) => _buildAppletCard(
+                    applet["service"]["name"],
+                    applet["name"],
+                    applet["service"]["logo"],
+                    applet["service"]["logopartner"],
+                    applet["service"]["color"]["normal"]))
                 .toList(),
           ),
         ],
@@ -208,15 +296,15 @@ class AppletSection extends StatelessWidget {
     );
   }
 
-  Widget _buildAppletCard(BuildContext context, Applet applet) {
+  Widget _buildAppletCard(String nameService, String nameAREA, String icon1,
+      String icon2, String color) {
     return Applet(
-      nameService: applet.nameService,
-      nameAREA: applet.nameAREA,
-      icon1: applet.icon1,
-      icon2: applet.icon2,
-      press: () {
-        context.go("/discordarea");
-      },
+      nameService: nameService,
+      nameAREA: nameAREA,
+      icon1: icon1,
+      icon2: icon2,
+      color: color,
+      press: () {},
     );
   }
 }

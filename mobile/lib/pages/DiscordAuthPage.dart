@@ -8,9 +8,7 @@ import 'package:go_router/go_router.dart';
 
 class DiscordLoginButton extends StatelessWidget {
   const DiscordLoginButton({super.key});
-  final String discordLoginUrl =
-      'https://discord.com/oauth2/authorize?client_id=1314608006486429786&response_type=code&redirect_uri=https%3A%2F%2Farea-jeepg.vercel.app%2Fconnected&scope=identify+guilds+email';
-
+  
   Future<void> _launchURL(BuildContext context) async {
     Navigator.push(
       context,
@@ -51,11 +49,8 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
   Future<void> _initialize() async {
     await _makeDemand("api/oauth/discord");
     setState(() {
-      print(url);
       _initializeWebView();
 
-      // print("finishghghghghghghghghghghghh");
-      // print(u);
       _isWebViewInitialized = true;
     });
   }

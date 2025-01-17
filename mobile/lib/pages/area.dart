@@ -246,7 +246,6 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
           .toList()
           .first,
     };
-
     _sendRequest(automation);
   }
 

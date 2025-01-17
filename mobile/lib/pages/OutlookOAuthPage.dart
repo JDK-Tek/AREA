@@ -48,11 +48,8 @@ class _OutlookAuthPageState extends State<OutlookAuthPage> {
   Future<void> _initialize() async {
     await _makeDemand("api/oauth/outlook");
     setState(() {
-      print(url);
       _initializeWebView();
 
-      // print("finishghghghghghghghghghghghh");
-      // print(u);
       _isWebViewInitialized = true;
     });
   }
@@ -60,7 +57,6 @@ class _OutlookAuthPageState extends State<OutlookAuthPage> {
   Future<void> _makeDemand(String u) async {
     final Uri uri =
         Uri.https(Provider.of<IPState>(context, listen: false).ip, u);
-    //final Uri uri = Uri.http("172.20.10.3:1234", u);
     late final http.Response rep;
     late String content;
 
@@ -91,7 +87,7 @@ class _OutlookAuthPageState extends State<OutlookAuthPage> {
         NavigationDelegate(
           onNavigationRequest: (NavigationRequest request) {
             if (request.url
-                .startsWith("https://area.jepgo.root.sx/connected")) {
+                .startsWith("https://dev.area.jepgo.root.sx/connected")) {
               final uri = Uri.parse(request.url);
               final code = uri.queryParameters['code'];
               if (code != null) {
@@ -148,7 +144,6 @@ class _OutlookAuthPageState extends State<OutlookAuthPage> {
     final String body = "{ \"code\": \"$a\" }";
     final Uri uri =
         Uri.https(Provider.of<IPState>(context, listen: false).ip, u);
-    //final Uri uri = Uri.http("172.20.10.3:1234", u);
     late final http.Response rep;
     late Map<String, dynamic> content;
     late String? str;
@@ -158,8 +153,9 @@ class _OutlookAuthPageState extends State<OutlookAuthPage> {
     } catch (e) {
       return _errorMessage("$e");
     }
-    content = jsonDecode(rep.body) as Map<String, dynamic>;
-    switch ((rep.statusCode / 100) as int) {
+    content = jsonDecode(rep.body);
+
+    switch ((rep.statusCode / 100)) {
       case 2:
         str = content['token']?.toString();
         if (str != null) {

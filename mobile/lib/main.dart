@@ -1,5 +1,4 @@
 import 'package:area/pages/appletspage.dart';
-import 'package:area/pages/discordarea.dart';
 import 'package:area/pages/servicepage.dart';
 import 'package:flutter/material.dart';
 import 'package:area/pages/home_page.dart';
@@ -70,15 +69,6 @@ class MyApp extends StatelessWidget {
         path: '/applets',
         builder: (context, state) {
           return const AppletsPage();
-        },
-      ),
-      GoRoute(
-        path: '/discordarea',
-        builder: (context, state) {
-          return DiscordAreaPage(onActionChanged: (channelId, messageTemplate) {
-              debugPrint("Channel ID : $channelId");
-              debugPrint("Template : $messageTemplate");
-            },);
         },
       ),
       GoRoute(

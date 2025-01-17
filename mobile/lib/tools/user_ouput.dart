@@ -1,5 +1,3 @@
-// ignore_for_file: avoid_print
-
 import 'dart:convert';
 import 'package:area/tools/providers.dart';
 import 'package:flutter/material.dart';
@@ -36,7 +34,6 @@ class _UserOuput extends State<UserOuput> {
 
   @override
   void initState() {
-    // Initialisation des contrôleurs dans le State
     emailFocusNode = FocusNode();
     passwordFocusNode = FocusNode();
     nameController = TextEditingController();
@@ -54,11 +51,6 @@ class _UserOuput extends State<UserOuput> {
   }
 
   Map<String, String> createHeader() {
-    // need to be cancel
-
-    // if (_token == null) {
-    //   //throw Exception("Error: missing Token");
-    // }
     Map<String, String> headers = {
       "token": _token,
     };
@@ -66,14 +58,9 @@ class _UserOuput extends State<UserOuput> {
   }
 
   void switchPage() {
-    //context.go("/home");
   }
 
   void badPassword() {
-    //context.go("/home");
-    // Navigator.pop(context);
-    // Navigator.push(
-    //     context, MaterialPageRoute(builder: (context) => const LoginPage(token: "tmp",)));
   }
 
   Future<T?> _errorMessage<T>(String message) async {
@@ -105,8 +92,6 @@ class _UserOuput extends State<UserOuput> {
     try {
       rep = await https.post(uri, body: body);
     } catch (e) {
-      print("error in post req");
-      print("$e");
       _errorMessage("$e");
       return false;
     }
@@ -114,10 +99,7 @@ class _UserOuput extends State<UserOuput> {
       _errorMessage(rep.body);
       return false;
     }
-    print(rep.body);
-    print(rep.statusCode);
     content = jsonDecode(rep.body) as Map<String, dynamic>;
-    print("success");
     str = content['token']?.toString();
     if (str != null) {
       _token = str;
@@ -145,16 +127,13 @@ class _UserOuput extends State<UserOuput> {
                       ? MediaQuery.of(context).size.height
                       : MediaQuery.of(context).size.height * 0.5,
                   width: MediaQuery.of(context).size.width * 0.85,
-                  //color: const Color(0xff222222),
                   decoration: BoxDecoration(
                     color: const Color(0xff222222),
                     borderRadius: BorderRadius.circular(15),
                   ),
                   child: Column(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      //crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        //const Space(height: 15),
                         const Text(
                           "LOGIN",
                           style: TextStyle(color: Colors.white, fontSize: 20),
@@ -162,7 +141,6 @@ class _UserOuput extends State<UserOuput> {
                         const Text("Nice to see you again",
                             style: TextStyle(
                                 color: Color(0xff8c52ff), fontSize: 15)),
-                        //const Space(height: 50),
                         SizedBox(
                           height: 50,
                           width: 300,

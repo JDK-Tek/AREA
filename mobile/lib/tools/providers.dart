@@ -5,6 +5,11 @@ class UserState extends ChangeNotifier {
 
   String? get token => _token;
 
+  void unsetToken(Null n) {
+    _token = n;
+    notifyListeners();
+  }
+
   void setToken(String token) {
     _token = token;
     notifyListeners();

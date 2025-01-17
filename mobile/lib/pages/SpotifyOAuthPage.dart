@@ -48,11 +48,8 @@ class _SpotifyAuthPageState extends State<SpotifyAuthPage> {
   Future<void> _initialize() async {
     await _makeDemand("api/oauth/spotify");
     setState(() {
-      print(url);
       _initializeWebView();
 
-      // print("finishghghghghghghghghghghghh");
-      // print(u);
       _isWebViewInitialized = true;
     });
   }
@@ -60,7 +57,6 @@ class _SpotifyAuthPageState extends State<SpotifyAuthPage> {
   Future<void> _makeDemand(String u) async {
     final Uri uri =
         Uri.https(Provider.of<IPState>(context, listen: false).ip, u);
-    //final Uri uri = Uri.http("172.20.10.3:1234", u);
     late final http.Response rep;
     late String content;
 

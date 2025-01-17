@@ -13,10 +13,11 @@ class LoginButton extends StatefulWidget {
 class LoginButtonState extends State<LoginButton> {
   @override
   Widget build(BuildContext context) {
-    final token = Provider.of<UserState>(context, listen: false).token;
+    final token = Provider.of<UserState>(context).token;
     if (token != null) {
       return ElevatedButton(
         onPressed: () {
+          Provider.of<UserState>(context, listen: false).unsetToken(null);
           context.go("/");
         },
         style: ElevatedButton.styleFrom(
