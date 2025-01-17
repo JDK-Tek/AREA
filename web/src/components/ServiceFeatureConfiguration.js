@@ -20,7 +20,7 @@ function checkRequest(config, request) {
     const spices = config.spices;
     const missingParameters = [];
 
-    spices.map((spice) => {
+    spices.forEach((spice) => {
         if (!request[spice.name]) {
             if (missingParameters.length === 0) {
                 missingParameters.push("Missing parameters: ");
@@ -58,7 +58,7 @@ export default function ServiceFeatureConfiguration({ action, feature, service, 
                     <NumberInputBox
                         key={spice.name}
                         value={value}
-                        setValue={(val) => handleValueChange(spice.name, val)}
+                        setValue={(val) => handleValueChange(spice.name, parseInt(val, 10))}
                     />
                 );
             case "dropdown":
@@ -160,7 +160,9 @@ export default function ServiceFeatureConfiguration({ action, feature, service, 
                     }}
                     styleClolor="bg-chartpurple-200 hover:bg-chartpurple-100 text-white"
                 />
-                {/* JSON.stringify(request, null, 2) */}
+                {/* <pre className="mt-4 bg-gray-100 text-black p-4 rounded-md">
+                {JSON.stringify(request, null, 2)}
+               </pre>  */}
             </div>
         </div>
     );

@@ -5,6 +5,7 @@
 ** CreateArea
 */
 
+import axios from "axios";
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { Trash2 } from "lucide-react";
@@ -13,6 +14,7 @@ import HeaderBar from "../../components/Header/HeaderBar"
 import SidePannel from "../../components/SidePannel"
 import Button from "../../components/Button";
 import InputBox from "../../components/spices/InputBox";
+import Notification from "../../components/Notification";
 
 function Triger({title, color, spices, onClick}) {
     return (
@@ -36,16 +38,25 @@ export default function CreateArea() {
     const [open, setOpen] = useState(false);
     const [configAction, setConfigAction] = useState(true);
     const [name, setName] = useState("");
-    const [area, setArea] = useState({
+    const [error, setError] = useState(false);
+    const [success, setSuccess] = useState(false);
+
+    const defaultArea = {
         name: "",
         actions: [],
         reactions: []
-    });
+    };
 
-    console.log(area)
+    const [area, setArea] = useState(sessionStorage.getItem("area") === null ? defaultArea : JSON.parse(sessionStorage.getItem("area")));
+    sessionStorage.setItem("area", JSON.stringify(area));
+
+    console.log(sessionStorage.getItem("token"));
+
     return (
         <div className="relative">
             <HeaderBar activeBackground={true} />
+            {error && <Notification error={error} setError={setError} msg={error} />}
+            {success && <Notification success={success} setError={setSuccess} msg={success} />}
 
             <SidePannel action={configAction} setOpen={setOpen} open={open} setArea={setArea}/>
             <div className="relative">
@@ -125,7 +136,52 @@ export default function CreateArea() {
                         text="Create the new AREA"
                         styleClolor="bg-chartpurple-200 hover:bg-chartpurple-100 text-white"
                         onClick={() => {
+                            if (name === "") {
+                                setError("Missing the name of the AREA");
+                                return;
+                            }
 
+                            if (area.actions.length === 0) {
+                                setError("Missing at least one action");
+                                return;
+                            }
+
+                            if (area.reactions.length === 0) {
+                                setError("Missing at least one reaction");
+                                return;
+                            }
+
+                            const token = sessionStorage.getItem("token");
+                            const body = {
+                                action: {
+                                    service: area.actions[0].service,
+                                    name: area.actions[0].name,
+                                    spices: area.actions[0].spices,
+                                },
+                                reaction: {
+                                    service: area.reactions[0].service,
+                                    name: area.reactions[0].name,
+                                    spices: area.reactions[0].spices,
+                                }
+                            };
+                            const header = {
+                                    "Content-Type": "application/json",
+                                    "Authorization": `Bearer ${token}`,
+                            };
+
+                            console.log(header);
+                            console.log(body);
+                            axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/area`, body, {
+                                headers: header
+                            })
+                            .then((res) => {
+                                setSuccess("AREA created with success");
+                                setArea(defaultArea);
+                                sessionStorage.setItem("area", JSON.stringify(defaultArea));
+                            })
+                            .catch((err) => {
+                                setError("An error occured while creating the AREA: " + err.data);
+                            });
                         }}
                     />
                 </div>

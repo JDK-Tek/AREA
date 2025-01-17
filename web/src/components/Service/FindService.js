@@ -43,8 +43,8 @@ export default function FindService({ aboutjson, dark, setService, filtre = null
         let fstmp = [];
         aboutjson.server.services.forEach((service) => {
             if (matchPattern(search, service.name)) {
-                if (filtre == "action" && service.actions.length > 0) fstmp.push(service);
-                else if (filtre == "reaction" && service.reactions.length > 0) fstmp.push(service);
+                if (filtre === "action" && service.actions.length > 0) fstmp.push(service);
+                else if (filtre === "reaction" && service.reactions.length > 0) fstmp.push(service);
                 else if (!filtre) fstmp.push(service);   
             }
         });

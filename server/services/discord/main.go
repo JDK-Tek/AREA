@@ -276,7 +276,7 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 			Spices: []InfoSpice{
 				{
 					Name: "channel",
-					Type: "number",
+					Type: "input",
 					Title: "The discord channel id.",
 				},
 				{
