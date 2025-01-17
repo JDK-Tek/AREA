@@ -60,14 +60,16 @@ def roblox_print():
                 "from tokens "\
                 "where micro_roblox.robloxid = tokens.userid "\
                 "and tokens.owner = %s "\
+                "and tokens.service = %s "\
                 "and micro_roblox.gameid = %s ",
-                (command, str(areaid), gameid,)
+                (command, str(areaid), "roblox", gameid,)
             )
             print("foo", file=stderr)
             db.commit()
             print("bar", file=stderr)
-            return jsonify({ "status", "ok" }), 200
+        return jsonify({ "status": "ok" }), 200
     except (Exception, psycopg2.Error) as err:
+        print("hello", file=stderr)
         return jsonify({ "error":  str(err)}), 400
 
 @app.route("/webhook", methods=["POST"])
@@ -92,16 +94,21 @@ def webhook():
             # => "update micro_roblox set command = null where robloxid = %d and command is not null returning command", robloxid
             with db.cursor() as cur:
                 cur.execute(
-                     "update micro_roblox "\
-                     "set command = null "\
+                     "select command from micro_roblox "\
                      "where gameid = %s "\
-                     "and command is not null "\
-                     "returning command",
+                     "and command is not null",
                     (gameid,)
                 )
                 rows = cur.fetchone()
-                db.commit()
+                print(rows, file=stderr)
                 if rows:
+                    cur.execute(
+                        "update micro_roblox "\
+                        "set command = null "\
+                        "where gameid = %s",
+                        (gameid,)
+                    )
+                    db.commit()
                     return jsonify({ "message": str(rows[0])}), 200
             time.sleep(1)
     except (psycopg2.Error) as err:
