@@ -99,9 +99,9 @@ def react_kick():
 def react_insert():
     return general_reaction("insert", Request.json)
 
-@app.route("/updateStats", methods=["POST"])
+@app.route("/statupdate", methods=["POST"])
 def react_update_stats():
-    return general_reaction("updateStats", Request.json)
+    return general_reaction("statupdate", Request.json)
 
 
 def try_getting_informations(robloxid, gameid):
