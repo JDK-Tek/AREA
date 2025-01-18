@@ -931,6 +931,7 @@ func checkSongRunning(w http.ResponseWriter, req *http.Request, db *sql.DB) {
                             Name     string `json:"name"`
                             Artists []struct {
                                 Name string `json:"name"`
+                                ID   string `json:"id"`
                             } `json:"artists"`
                         } `json:"item"`
                     }
@@ -943,46 +944,89 @@ func checkSongRunning(w http.ResponseWriter, req *http.Request, db *sql.DB) {
                     if playbackResponse.Item.Name != "" {
                         trackName := playbackResponse.Item.Name
                         artistName := playbackResponse.Item.Artists[0].Name
-                        fmt.Printf("Currently playing: %s by %s\n", trackName, artistName)
+                        artistID := playbackResponse.Item.Artists[0].ID
 
-                        url := fmt.Sprintf("http://backend:%s/api/orchestrator", backendPort)
-                        var requestBody Message
-
-                        requestBody.Bridge = bridgeID
-                        requestBody.UserId = userID
-                        requestBody.Ingredients = make(map[string]string)
-                        requestBody.Ingredients["device"] = string(activeDevice.Name)
-                        requestBody.Ingredients["track"] = trackName
-                        requestBody.Ingredients["artist"] = artistName
-
-                        jsonData, err := json.Marshal(requestBody)
+                        artistURL := fmt.Sprintf("https://api.spotify.com/v1/artists/%s", artistID)
+                        reqArtist, err := http.NewRequest("GET", artistURL, nil)
                         if err != nil {
-                            fmt.Println("Error marshaling JSON:", err.Error())
+                            fmt.Println("Error creating artist request:", err.Error())
                             return
                         }
 
-                        reqPut, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonData))
+                        reqArtist.Header.Set("Authorization", "Bearer "+spotifyToken)
+
+                        respArtist, err := client.Do(reqArtist)
                         if err != nil {
-                            fmt.Println("Error creating PUT request:", err.Error())
+                            fmt.Println("Error fetching artist info:", err.Error())
                             return
                         }
+                        defer respArtist.Body.Close()
 
-                        reqPut.Header.Set("Content-Type", "application/json")
-
-                        respPut, err := client.Do(reqPut)
+                        bodyArtist, err := io.ReadAll(respArtist.Body)
                         if err != nil {
-                            fmt.Println("Error sending PUT request:", err.Error())
-                            return
-                        }
-                        defer respPut.Body.Close()
-
-                        if respPut.StatusCode != http.StatusOK {
-                            fmt.Println("Failed to send PUT request:", respPut.StatusCode)
+                            fmt.Println("Error reading artist response body:", err.Error())
                             return
                         }
 
-                        fmt.Println("Successfully sent the active track info to backend!")
-                        return
+                        if respArtist.StatusCode != http.StatusOK {
+                            fmt.Println("Failed to get artist genres:", respArtist.StatusCode)
+                        } else {
+                            var artistResponse struct {
+                                Genres []string `json:"genres"`
+                            }
+
+                            if err := json.Unmarshal(bodyArtist, &artistResponse); err != nil {
+                                fmt.Println("Error unmarshalling artist response:", err.Error())
+                                return
+                            }
+
+                            genre := ""
+                            if len(artistResponse.Genres) > 0 {
+                                genre = artistResponse.Genres[0]
+                            }
+
+                            fmt.Printf("Currently playing: %s by %s, Genre: %s\n", trackName, artistName, genre)
+
+                            url := fmt.Sprintf("http://backend:%s/api/orchestrator", backendPort)
+                            var requestBody Message
+
+                            requestBody.Bridge = bridgeID
+                            requestBody.UserId = userID
+                            requestBody.Ingredients = make(map[string]string)
+                            requestBody.Ingredients["device"] = string(activeDevice.Name)
+                            requestBody.Ingredients["track"] = trackName
+                            requestBody.Ingredients["artist"] = artistName
+                            requestBody.Ingredients["genre"] = genre
+
+                            jsonData, err := json.Marshal(requestBody)
+                            if err != nil {
+                                fmt.Println("Error marshaling JSON:", err.Error())
+                                return
+                            }
+
+                            reqPut, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonData))
+                            if err != nil {
+                                fmt.Println("Error creating PUT request:", err.Error())
+                                return
+                            }
+
+                            reqPut.Header.Set("Content-Type", "application/json")
+
+                            respPut, err := client.Do(reqPut)
+                            if err != nil {
+                                fmt.Println("Error sending PUT request:", err.Error())
+                                return
+                            }
+                            defer respPut.Body.Close()
+
+                            if respPut.StatusCode != http.StatusOK {
+                                fmt.Println("Failed to send PUT request:", respPut.StatusCode)
+                                return
+                            }
+
+                            fmt.Println("Successfully sent the active track info to backend!")
+                            return
+                        }
                     }
                 }
             }
@@ -994,6 +1038,7 @@ func checkSongRunning(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     w.WriteHeader(http.StatusOK)
     fmt.Fprintf(w, "{ \"status\": \"ok !\" }\n")
 }
+
 
 
 
