@@ -240,7 +240,7 @@ def get_userid_bridge_from_action(gameid: str, action_name: str):
             where gameid = %s and action = %s
         """, (str(gameid), str(action_name)))
         rows = cur.fetchone()
-        if len(rows) != 2:
+        if not rows or len(rows) != 2:
             return None, None
         return rows[0], rows[1]
     return None, None
