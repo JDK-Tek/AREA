@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -210,6 +211,95 @@ func miniproxy(f func(http.ResponseWriter, *http.Request, *sql.DB), c *sql.DB) f
 	}
 }
 
+func playMusic(w http.ResponseWriter, req *http.Request, db *sql.DB) {
+    fmt.Println("Headers received:", req.Header)
+
+    bodyBytes, err := io.ReadAll(req.Body)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error reading request body:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+        return
+    }
+    fmt.Println("Request Body:", string(bodyBytes))
+
+    req.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+
+    var requestBody struct {
+        UserID int `json:"userid"`
+    }
+
+    decoder := json.NewDecoder(req.Body)
+    err = decoder.Decode(&requestBody)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error decoding JSON:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+        return
+    }
+
+    userID := requestBody.UserID
+    userID = 1
+    fmt.Println("Extracted userID:", userID)
+
+    var spotifyToken string
+    err = db.QueryRow("SELECT token FROM tokens WHERE owner = $1 AND service = 'spotify'", userID).Scan(&spotifyToken)
+    if err != nil {
+        if err == sql.ErrNoRows {
+            w.WriteHeader(http.StatusNotFound)
+            fmt.Println("No Spotify token found for user:", userID)
+            fmt.Fprintf(w, "{ \"error\": \"No Spotify token found for user\" }\n")
+        } else {
+            w.WriteHeader(http.StatusInternalServerError)
+            fmt.Println("Database error:", err.Error())
+            fmt.Fprintf(w, "{ \"error\": \"Database error: %s\" }\n", err.Error())
+        }
+        return
+    }
+
+    if spotifyToken == "" {
+        w.WriteHeader(http.StatusUnauthorized)
+        fmt.Println("No Spotify token available for user:", userID)
+        fmt.Fprintf(w, "{ \"error\": \"No Spotify token available\" }\n")
+        return
+    }
+
+    trackURI := "spotify:track:7pK4T8TOxH2rSxVk7VtTtT"
+    spotifyURL := "https://api.spotify.com/v1/me/player/play"
+    body := fmt.Sprintf(`{"uris":["%s"]}`, trackURI)
+
+    reqSpotify, err := http.NewRequest("PUT", spotifyURL, bytes.NewBufferString(body))
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error creating Spotify request:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+        return
+    }
+
+    reqSpotify.Header.Set("Authorization", "Bearer "+spotifyToken)
+    reqSpotify.Header.Set("Content-Type", "application/json")
+
+    client := &http.Client{}
+    respSpotify, err := client.Do(reqSpotify)
+    if err != nil {
+        w.WriteHeader(http.StatusBadGateway)
+        fmt.Println("Error playing music on Spotify:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+        return
+    }
+    defer respSpotify.Body.Close()
+
+    if respSpotify.StatusCode == http.StatusNoContent {
+        fmt.Println("Music 'We Are the Champions' is now playing!")
+        w.WriteHeader(http.StatusOK)
+        fmt.Fprintf(w, "{ \"status\": \"Music is now playing!\" }\n")
+    } else {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Failed to play music on Spotify. Status:", respSpotify.StatusCode)
+        fmt.Fprintf(w, "{ \"error\": \"Failed to play music\" }\n")
+    }
+}
+
 func connectToDatabase() (*sql.DB, error) {
 	dbPassword := os.Getenv("DB_PASSWORD")
 	if dbPassword == "" {
@@ -242,6 +332,57 @@ func connectToDatabase() (*sql.DB, error) {
 	return sql.Open("postgres", connectStr)
 }
 
+type InfoSpice struct {
+	Name string `json:"name"`
+	Type string `json:"type"`
+	Title string `json:"title"`
+	Extra []string `json:"extra"`
+}
+
+type InfoRoute struct {
+	Type string `json:"type"`
+	Name string `json:"name"`
+	Desc string `json:"description"`
+	Spices []InfoSpice `json:"spices"`
+}
+
+type Infos struct {
+	Color string `json:"color"`
+	Image string `json:"image"`
+	Routes []InfoRoute `json:"areas"`
+}
+
+func getRoutes(w http.ResponseWriter, req *http.Request) {
+	var list = []InfoRoute{
+		InfoRoute{
+			Name: "playMusic",
+			Type: "reaction",
+			Desc: "Sends an email.",
+			Spices: []InfoSpice{
+				{
+					Name: "musique",
+					Type: "text",
+					Title: "The message you want to send.",
+				},
+			},
+		},
+	}
+	var infos = Infos{
+		Color: "#5865F2",
+		Image: "https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/636e0a6cc3c481a15a141738_icon_clyde_white_RGB.png",
+		Routes: list,
+	}
+	var data []byte
+	var err error
+
+	data, err = json.Marshal(infos)
+	if err != nil {
+		http.Error(w, `{ "error":  "marshal" }`, http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+    fmt.Fprintln(w, string(data))
+}
 
 func main() {
 	db, err := connectToDatabase()
@@ -254,7 +395,8 @@ func main() {
 
 	router.HandleFunc("/oauth", getOAUTHLink).Methods("GET")
 	router.HandleFunc("/oauth", miniproxy(setOAUTHToken, db)).Methods("POST")
+	router.HandleFunc("/playMusic", miniproxy(playMusic, db)).Methods("POST")
 	router.HandleFunc("/user", getUserInfo).Methods("GET")
-
+	router.HandleFunc("/", getRoutes).Methods("GET")
 	log.Fatal(http.ListenAndServe(":80", router))
 }
