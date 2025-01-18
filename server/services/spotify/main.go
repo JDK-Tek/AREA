@@ -736,55 +736,68 @@ func checkDeviceConnection(w http.ResponseWriter, req *http.Request, db *sql.DB)
             return
         }
 
+        var activeDevice *struct {
+            ID       string `json:"id"`
+            IsActive bool   `json:"is_active"`
+            Name     string `json:"name"`
+        }
+
         for _, device := range deviceResponse.Devices {
             if device.IsActive {
-                url := fmt.Sprintf("http://backend:%d/api/orchestrator", bridgeID)
-                requestBody := map[string]interface{}{
-                    "bridge":    bridgeID,
-                    "userid":    userID,
-                    "ingredients": map[string]interface{}{},
-                }
-                jsonData, err := json.Marshal(requestBody)
-                if err != nil {
-                    w.WriteHeader(http.StatusInternalServerError)
-                    fmt.Fprintf(w, "{ \"error\": \"Error marshaling JSON\" }\n")
-                    return
-                }
-
-                reqPut, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonData))
-                if err != nil {
-                    w.WriteHeader(http.StatusInternalServerError)
-                    fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
-                    return
-                }
-
-                reqPut.Header.Set("Content-Type", "application/json")
-
-                respPut, err := client.Do(reqPut)
-                if err != nil {
-                    w.WriteHeader(http.StatusBadGateway)
-                    fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
-                    return
-                }
-                defer respPut.Body.Close()
-
-                if respPut.StatusCode != http.StatusOK {
-                    w.WriteHeader(http.StatusInternalServerError)
-                    fmt.Fprintf(w, "{ \"error\": \"Failed to send PUT request\" }\n")
-                    return
-                }
-
-                w.WriteHeader(http.StatusOK)
-                fmt.Fprintf(w, "{ \"status\": \"Device is connected and active: %s\", \"bridge\": %d, \"userid\": %d }\n", device.Name, bridgeID, userID)
-                return
+                activeDevice = &device
+                break
             }
         }
+
+        if activeDevice != nil {
+            url := fmt.Sprintf("http://backend:%d/api/orchestrator", bridgeID)
+            requestBody := map[string]interface{}{
+                "bridge":    bridgeID,
+                "userid":    userID,
+                "ingredients": map[string]interface{}{},
+            }
+            jsonData, err := json.Marshal(requestBody)
+            if err != nil {
+                w.WriteHeader(http.StatusInternalServerError)
+                fmt.Fprintf(w, "{ \"error\": \"Error marshaling JSON\" }\n")
+                return
+            }
+
+            reqPut, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonData))
+            if err != nil {
+                w.WriteHeader(http.StatusInternalServerError)
+                fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+                return
+            }
+
+            reqPut.Header.Set("Content-Type", "application/json")
+
+            respPut, err := client.Do(reqPut)
+            if err != nil {
+                w.WriteHeader(http.StatusBadGateway)
+                fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+                return
+            }
+            defer respPut.Body.Close()
+
+            if respPut.StatusCode != http.StatusOK {
+                w.WriteHeader(http.StatusInternalServerError)
+                fmt.Fprintf(w, "{ \"error\": \"Failed to send PUT request\" }\n")
+                return
+            }
+
+            w.WriteHeader(http.StatusOK)
+            fmt.Fprintf(w, "{ \"status\": \"Device is connected and active: %s\", \"bridge\": %d, \"userid\": %d }\n", activeDevice.Name, bridgeID, userID)
+            return
+        }
+
         time.Sleep(1 * time.Second)
     }
 
     w.WriteHeader(http.StatusNotFound)
     fmt.Fprintf(w, "{ \"error\": \"No active device found\" }\n")
 }
+
 
 
 func connectToDatabase() (*sql.DB, error) {
