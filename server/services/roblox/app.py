@@ -71,7 +71,7 @@ def newpart():
                 "and tokens.owner = %s "\
                 "and tokens.service = %s "\
                 "and micro_roblox.gameid = %s ",
-                (command, str(areaid), "roblox", gameid,)
+                (command, str(areaid), "roblox", str(gameid),)
             )
             db.commit()
         return jsonify({ "status": "ok" }), 200
@@ -92,7 +92,7 @@ def webhook():
                  "values (%s, %s) "\
                  "on conflict (gameid) "\
                  "do nothing",
-                (robloxid, gameid,)
+                (str(robloxid), str(gameid),)
             )
             db.commit()
         print("its foo", file=stderr)
@@ -102,7 +102,7 @@ def webhook():
                      "select command from micro_roblox "\
                      "where gameid = %s "\
                      "and command is not null",
-                    (gameid,)
+                    (str(gameid),)
                 )
                 rows = cur.fetchone()
                 print(rows, file=stderr)
@@ -111,7 +111,7 @@ def webhook():
                         "update micro_roblox "\
                         "set command = null "\
                         "where gameid = %s",
-                        (gameid,)
+                        (str(gameid),)
                     )
                     db.commit()
                     return jsonify({ "message": str(rows[0])}), 200
