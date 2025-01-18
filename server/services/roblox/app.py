@@ -57,6 +57,9 @@ def newpart():
     areaid = data.get("userid")
     spices: dict = data.get("spices")
 
+    if not "gameid" in spices:
+         return jsonify({ "error": "expected (at least) gameid" }), 400
+
     gameid = spices.get("gameid")
     spices.pop("gameid")
     command = Command("newarea", spices)
@@ -70,60 +73,63 @@ def newpart():
                 "where micro_roblox.robloxid = tokens.userid "\
                 "and tokens.owner = %s "\
                 "and tokens.service = %s "\
-                "and micro_roblox.gameid = %s ",
-                (command, str(areaid), "roblox", str(gameid),)
+                "and micro_roblox.gameid = %s",
+                (str(command), str(areaid), "roblox", str(gameid),)
             )
+            nrows = cur.rowcount
             db.commit()
+            if nrows <= 0:
+                return jsonify({ "error": "awaiting for your game to connect at least once." }), 425
+                 
         return jsonify({ "status": "ok" }), 200
     except (Exception, psycopg2.Error) as err:
         return jsonify({ "error":  str(err)}), 400
 
-@app.route("/webhook", methods=["POST"])
-def webhook():
-    data = Request.json
-    robloxid = data.get("robloxid")
-    gameid = data.get("gameid")
+def try_getting_informations(robloxid, gameid):
     try:
-        print("its bar", file=stderr)
         with db.cursor() as cur:
-            print(robloxid, gameid, file=stderr)
+            cur.execute("""
+                insert into micro_roblox (robloxid, gameid)
+                values (%s, %s)
+                on conflict (gameid)
+                do nothing
+            """, (str(robloxid), str(gameid)))
+            db.commit()
             cur.execute(
-                 "insert into micro_roblox (robloxid, gameid) "\
-                 "values (%s, %s) "\
-                 "on conflict (gameid) "\
-                 "do nothing",
-                (str(robloxid), str(gameid),)
+                "select command from micro_roblox "\
+                "where gameid = %s "\
+                "and command is not null",
+                (str(gameid),)
+            )
+            commands = cur.fetchall()
+            command_list = [c[0] for c in commands]
+            cur.execute(
+                "update micro_roblox set command = null where gameid = %s",
+                (str(gameid),)
             )
             db.commit()
-        print("its foo", file=stderr)
-        while True:
-            with db.cursor() as cur:
-                cur.execute(
-                     "select command from micro_roblox "\
-                     "where gameid = %s "\
-                     "and command is not null",
-                    (str(gameid),)
-                )
-                rows = cur.fetchone()
-                print(rows, file=stderr)
-                if rows:
-                    cur.execute(
-                        "update micro_roblox "\
-                        "set command = null "\
-                        "where gameid = %s",
-                        (str(gameid),)
-                    )
-                    db.commit()
-                    return jsonify({ "message": str(rows[0])}), 200
-            time.sleep(1)
-        print("its here", file=stderr)
+            return jsonify({ "list": command_list}), 200
     except (psycopg2.Error) as err:
-        print("its an error", file=stderr)
         return jsonify({ "error": "postgres says <(" + str(err) + ")"}), 400
     except Exception as err:
-        print("its another error", file=stderr)
         return jsonify({ "error": str(err)}), 400
-    print("its here", file=stderr)
+
+@app.route("/webhook", methods=["POST"])
+def webhook():
+    data = Request.get_json()
+    if not "gameid" in data:
+        return jsonify({"error": "gameid is required"}), 400
+    if not "robloxid" in data:
+        return jsonify({"error": "robloxid is required"}), 400
+    if not "method" in data:
+        return jsonify({"error": "expected a method"}), 400
+    robloxid = data.get("robloxid")
+    gameid = data.get("gameid")
+    method = data.get("method")
+    print(robloxid, gameid, method, file=stderr)
+    if method == "retrieve":
+        return try_getting_informations(robloxid, gameid)
+        
 
 @app.route("/", methods=["GET"])
 def routes():
