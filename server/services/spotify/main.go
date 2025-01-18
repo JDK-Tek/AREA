@@ -645,6 +645,7 @@ func resumeMusic(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 
 func checkDeviceConnection(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     bodyBytes, err := io.ReadAll(req.Body)
+	backendPort := os.Getenv("BACKEND_PORT")
     if err != nil {
         w.WriteHeader(http.StatusInternalServerError)
         fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
@@ -746,7 +747,7 @@ func checkDeviceConnection(w http.ResponseWriter, req *http.Request, db *sql.DB)
             }
 
             if activeDevice != nil {
-                url := fmt.Sprintf("http://backend:%d/api/orchestrator", bridgeID)
+                url := fmt.Sprintf("http://backend:%s/api/orchestrator", backendPort)
                 requestBody := map[string]interface{}{
                     "bridge":     bridgeID,
                     "userid":     userID,
@@ -787,7 +788,7 @@ func checkDeviceConnection(w http.ResponseWriter, req *http.Request, db *sql.DB)
     }()
 
     w.WriteHeader(http.StatusOK)
-    fmt.Fprintf(w, "{ \"status\": \"Checking devices...\" }\n")
+    fmt.Fprintf(w, "{ \"status\": \"ok !\" }\n")
 }
 
 
