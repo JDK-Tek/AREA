@@ -308,7 +308,7 @@ func playMusic(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 
     fmt.Println("Active device found for user. Proceeding to play music.")
 
-    trackURI := "spotify:track:3n3P1vEXs6IfzozT8kVYAf" // Vérifier l'URI du morceau
+    trackURI := "spotify:track:7nPjWVYzDEhhqOggotCIZH"
     spotifyURL := "https://api.spotify.com/v1/me/player/play"
     body := fmt.Sprintf(`{"uris":["%s"]}`, trackURI)
 
