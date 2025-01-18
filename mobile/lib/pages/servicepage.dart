@@ -68,7 +68,8 @@ class Service extends StatelessWidget {
     super.key,
     required this.serviceName,
     required this.icon,
-    required this.onPress, required this.color,
+    required this.onPress,
+    required this.color,
   });
 
   Color _colorFromHex(String hexColor) {
@@ -106,6 +107,26 @@ class Service extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Image.network(
+              loadingBuilder: (BuildContext context, Widget child,
+                  ImageChunkEvent? loadingProgress) {
+                if (loadingProgress == null) {
+                  return child;
+                } else {
+                  return Center(
+                    child: CircularProgressIndicator(
+                      value: loadingProgress.expectedTotalBytes != null
+                          ? loadingProgress.cumulativeBytesLoaded /
+                              (loadingProgress.expectedTotalBytes ?? 1)
+                          : null,
+                    ),
+                  );
+                }
+              },
+              errorBuilder:
+                  (BuildContext context, Object error, StackTrace? stackTrace) {
+                return const Icon(Icons.broken_image,
+                    size: 40);
+              },
               icon,
               width: MediaQuery.of(context).size.width <
                       MediaQuery.of(context).size.height
@@ -236,18 +257,22 @@ class _ServiceSectionState extends State<ServiceSection> {
           Wrap(
             spacing: 10.0,
             alignment: WrapAlignment.center,
-            children: services
-                .map(
-                  (service) => Service(
-                    serviceName: service['name'],
-                    icon: service['icon'],
-                    color : service['color'],
-                    onPress: () {
-                      print("Service ${service['name']} pressed");
-                    },
-                  ),
-                )
-                .toList(),
+            children: services.map(
+              (service) {
+                final serviceName = service['name'] ?? 'Unknown';
+                final icon = service['icon'] ?? '';
+                final color = service['color'] ?? '#FFFFFF';
+
+                return Service(
+                  serviceName: serviceName,
+                  icon: icon,
+                  color: color,
+                  onPress: () {
+                    print("Service $serviceName pressed");
+                  },
+                );
+              },
+            ).toList(),
           ),
         ],
       ),

@@ -75,6 +75,15 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
     }
   }
 
+  Color _colorFromHex(String hexColor) {
+    if (hexColor.isEmpty) return Colors.grey;
+    hexColor = hexColor.toUpperCase().replaceAll("#", "");
+    if (hexColor.length == 6) {
+      hexColor = "FF$hexColor";
+    }
+    return Color(int.tryParse(hexColor, radix: 16) ?? 0xFF000000);
+  }
+
   Map<String, dynamic> _buildDynamicConfig(
       List<dynamic> selectedItems, List<dynamic> spices, int index) {
     Map<String, dynamic> tempValues = {};
@@ -89,12 +98,12 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    spice['title'],
+                    spice['title'] ?? 'No title',
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   Dynamic(
-                    title: spice['type'],
+                    title: spice['type'] ?? 'Unknown Type',
                     extraParams: {
                       'items': (spice['extra'] is List<String>)
                           ? spice['extra']
@@ -124,22 +133,13 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
     return tempValues;
   }
 
-  Color _colorFromHex(String hexColor) {
-    if (hexColor.isEmpty) return Colors.grey;
-    hexColor = hexColor.toUpperCase().replaceAll("#", "");
-    if (hexColor.length == 6) {
-      hexColor = "FF$hexColor";
-    }
-    return Color(int.tryParse(hexColor, radix: 16) ?? 0xFF000000);
-  }
-
   void _addService(String type) {
     final items = services
         .where((service) => service[type] != null && service[type].isNotEmpty)
         .map((service) => {
-              "name": service['name'],
-              "icon": service['icon'],
-              "color": service['color'],
+              "name": service['name'] ?? 'Unnamed Service',
+              "icon": service['icon'] ?? '',
+              "color": service['color'] ?? '#000000',
               "actionsOrReactions": service[type]
             })
         .toList();
@@ -153,14 +153,34 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
             final item = items[index];
             return ListTile(
               leading: Image.network(
-                item['icon'],
+                loadingBuilder: (BuildContext context, Widget child,
+                    ImageChunkEvent? loadingProgress) {
+                  if (loadingProgress == null) {
+                    return child;
+                  } else {
+                    return Center(
+                      child: CircularProgressIndicator(
+                        value: loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded /
+                                (loadingProgress.expectedTotalBytes ?? 1)
+                            : null,
+                      ),
+                    );
+                  }
+                },
+                errorBuilder: (BuildContext context, Object error,
+                    StackTrace? stackTrace) {
+                  return const Icon(Icons.broken_image, size: 40);
+                },
+                item['icon'] ?? '',
                 width: 40,
                 height: 40,
               ),
-              title: Text(item['name']),
-              tileColor: _colorFromHex(item['color']),
+              title: Text(item['name'] ?? 'Unnamed Service'),
+              tileColor: _colorFromHex(item['color'] ?? '#000000'),
               onTap: () {
-                _selectService(type, item['actionsOrReactions'], item['name']);
+                _selectService(type, item['actionsOrReactions'],
+                    item['name'] ?? 'Unnamed Service');
               },
             );
           },
@@ -178,8 +198,8 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
           itemBuilder: (context, index) {
             final option = options[index];
             return ListTile(
-              title: Text(option['name']),
-              subtitle: Text(option['description']),
+              title: Text(option['name'] ?? 'Unnamed Option'),
+              subtitle: Text(option['description'] ?? 'No description'),
               onTap: () async {
                 final config = _buildDynamicConfig(
                     selectedTriggers, option['spices'], index);
@@ -187,21 +207,25 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
                   if (type == "actions") {
                     selectedTriggers.add({
                       "service": serviceName,
-                      "name": option['name'],
-                      "icon": services
-                          .firstWhere((s) => s['name'] == serviceName)['icon'],
-                      "color": services
-                          .firstWhere((s) => s['name'] == serviceName)['color']
+                      "name": option['name'] ?? 'Unnamed Option',
+                      "icon": services.firstWhere(
+                              (s) => s['name'] == serviceName)['icon'] ??
+                          '',
+                      "color": services.firstWhere(
+                              (s) => s['name'] == serviceName)['color'] ??
+                          '#000000'
                     });
                     triggerValues.add(config);
                   } else {
                     selectedReactions.add({
                       "service": serviceName,
-                      "name": option['name'],
-                      "icon": services
-                          .firstWhere((s) => s['name'] == serviceName)['icon'],
-                      "color": services
-                          .firstWhere((s) => s['name'] == serviceName)['color']
+                      "name": option['name'] ?? 'Unnamed Option',
+                      "icon": services.firstWhere(
+                              (s) => s['name'] == serviceName)['icon'] ??
+                          '',
+                      "color": services.firstWhere(
+                              (s) => s['name'] == serviceName)['color'] ??
+                          '#000000'
                     });
                     reactionValues.add(config);
                   }
@@ -328,85 +352,139 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
           ],
         ),
         backgroundColor: Colors.white,
-        body: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const MiniHeaderSection(),
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        body: services.isEmpty
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'If this ...',
-                      style:
-                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    const MiniHeaderSection(),
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'If this ...',
+                            style: TextStyle(
+                                fontSize: 20, fontWeight: FontWeight.bold),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.add),
+                            onPressed: () => _addService("actions"),
+                          ),
+                        ],
+                      ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.add),
-                      onPressed: () => _addService("actions"),
+                    ...selectedTriggers.map((trigger) => ListTile(
+                          title: Text(trigger['name'] ?? 'Unnamed Trigger'),
+                          leading: Image.network(
+                            trigger['icon'] ?? '',
+                            loadingBuilder: (BuildContext context, Widget child,
+                                ImageChunkEvent? loadingProgress) {
+                              if (loadingProgress == null) {
+                                return child;
+                              } else {
+                                return Center(
+                                  child: CircularProgressIndicator(
+                                    value: loadingProgress.expectedTotalBytes !=
+                                            null
+                                        ? loadingProgress
+                                                .cumulativeBytesLoaded /
+                                            (loadingProgress
+                                                    .expectedTotalBytes ??
+                                                1)
+                                        : null,
+                                  ),
+                                );
+                              }
+                            },
+                            errorBuilder: (BuildContext context, Object error,
+                                StackTrace? stackTrace) {
+                              return const Icon(Icons.broken_image, size: 40);
+                            },
+                          ),
+                          tileColor:
+                              _colorFromHex(trigger['color'] ?? '#000000'),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete),
+                            onPressed: () {
+                              setState(() {
+                                triggerValues.removeAt(
+                                    selectedTriggers.indexOf(trigger));
+                                selectedTriggers.remove(trigger);
+                              });
+                            },
+                          ),
+                        )),
+                    const Divider(),
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'then that...',
+                            style: TextStyle(
+                                fontSize: 20, fontWeight: FontWeight.bold),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.add),
+                            onPressed: () => _addService("reactions"),
+                          ),
+                        ],
+                      ),
+                    ),
+                    ...selectedReactions.map((reaction) => ListTile(
+                          title: Text(reaction['name'] ?? 'Unnamed Reaction'),
+                          leading: Image.network(
+                            reaction['icon'] ?? '',
+                            loadingBuilder: (BuildContext context, Widget child,
+                                ImageChunkEvent? loadingProgress) {
+                              if (loadingProgress == null) {
+                                return child;
+                              } else {
+                                return Center(
+                                  child: CircularProgressIndicator(
+                                    value: loadingProgress.expectedTotalBytes !=
+                                            null
+                                        ? loadingProgress
+                                                .cumulativeBytesLoaded /
+                                            (loadingProgress
+                                                    .expectedTotalBytes ??
+                                                1)
+                                        : null,
+                                  ),
+                                );
+                              }
+                            },
+                            errorBuilder: (BuildContext context, Object error,
+                                StackTrace? stackTrace) {
+                              return const Icon(Icons.broken_image, size: 40);
+                            },
+                          ),
+                          tileColor:
+                              _colorFromHex(reaction['color'] ?? '#000000'),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete),
+                            onPressed: () {
+                              setState(() {
+                                reactionValues.removeAt(
+                                    selectedReactions.indexOf(reaction));
+                                selectedReactions.remove(reaction);
+                              });
+                            },
+                          ),
+                        )),
+                    Center(
+                      child: ElevatedButton(
+                        onPressed: _submitAutomation,
+                        child: const Text("Submit"),
+                      ),
                     ),
                   ],
                 ),
               ),
-              ...selectedTriggers.map((trigger) => ListTile(
-                    title: Text(trigger['name']),
-                    leading: Image.network(trigger['icon']),
-                    tileColor: _colorFromHex(trigger['color']),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete),
-                      onPressed: () {
-                        setState(() {
-                          triggerValues
-                              .removeAt(selectedTriggers.indexOf(trigger));
-                          selectedTriggers.remove(trigger);
-                        });
-                      },
-                    ),
-                  )),
-              const Divider(),
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'then that...',
-                      style:
-                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.add),
-                      onPressed: () => _addService("reactions"),
-                    ),
-                  ],
-                ),
-              ),
-              ...selectedReactions.map((reaction) => ListTile(
-                    title: Text(reaction['name']),
-                    leading: Image.network(reaction['icon']),
-                    tileColor: _colorFromHex(reaction['color']),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete),
-                      onPressed: () {
-                        setState(() {
-                          reactionValues
-                              .removeAt(selectedReactions.indexOf(reaction));
-                          selectedReactions.remove(reaction);
-                        });
-                      },
-                    ),
-                  )),
-              Center(
-                child: ElevatedButton(
-                  onPressed: _submitAutomation,
-                  child: const Text("Submit"),
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

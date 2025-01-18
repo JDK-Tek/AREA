@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'package:area/tools/providers.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:go_router/go_router.dart';
 
@@ -49,16 +51,13 @@ class _GithubAuthPageState extends State<GithubAuthPage> {
     setState(() {
       print(url);
       _initializeWebView();
-
-      // print("finishghghghghghghghghghghghh");
-      // print(u);
       _isWebViewInitialized = true;
     });
   }
 
   Future<void> _makeDemand(String u) async {
-    final Uri uri = Uri.https("api.area.jepgo.root.sx", u);
-    //final Uri uri = Uri.http("172.20.10.3:1234", u);
+    final Uri uri =
+        Uri.https(Provider.of<IPState>(context, listen: false).ip, u);
     late final http.Response rep;
     late String content;
 
@@ -89,7 +88,7 @@ class _GithubAuthPageState extends State<GithubAuthPage> {
         NavigationDelegate(
           onNavigationRequest: (NavigationRequest request) {
             if (request.url
-                .startsWith("https://area-jeepg.vercel.app/connected")) {
+                .startsWith("https://dev.area.jepgo.root.sx/connected")) {
               final uri = Uri.parse(request.url);
               final code = uri.queryParameters['code'];
               if (code != null) {
@@ -144,8 +143,8 @@ class _GithubAuthPageState extends State<GithubAuthPage> {
 
   Future<void> _makeRequest(String a, String u) async {
     final String body = "{ \"code\": \"$a\" }";
-    final Uri uri = Uri.https("api.area.jepgo.root.sx", u);
-    //final Uri uri = Uri.http("172.20.10.3:1234", u);
+    final Uri uri =
+        Uri.https(Provider.of<IPState>(context, listen: false).ip, u);
     late final http.Response rep;
     late Map<String, dynamic> content;
     late String? str;
