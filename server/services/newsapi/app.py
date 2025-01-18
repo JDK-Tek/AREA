@@ -145,15 +145,15 @@ COUNTRIES = [
 	"za"
 ]
 
-# "business",
-# "entertainment",
-# "general",
-# "health",
-# "science",
-# "sports",
 # "technology"
+# "entertainment",
+# "buisness",
+# "general",
+# "science",
+# "health",
+# "sports",
 
-# Any new notification
+# When a new article is published in the 'technology' category
 ACTION_NEW_ART_TECH = "new-art-tech"
 oreo.create_area(
 	ACTION_NEW_ART_TECH,
@@ -162,7 +162,7 @@ oreo.create_area(
 	[]
 )
 @app.route(f'/{ACTION_NEW_ART_TECH}', methods=["POST"])
-def new_notification():
+def new_article_tech():
 	app.logger.info(f"{ACTION_NEW_ART_TECH} endpoint hit")
 
 	# get data
@@ -190,6 +190,49 @@ def new_notification():
 		db.commit()
 
 	return jsonify({"status": "ok"}), 200
+
+ACTION_NEW_ART_BUISNESS = "new-art-buisness"
+oreo.create_area(
+	ACTION_NEW_ART_BUISNESS,
+	NewOreo.TYPE_ACTIONS,
+	"Any new article in the 'buisness' category",
+	[]
+)
+@app.route(f'/{ACTION_NEW_ART_BUISNESS}', methods=["POST"])
+def new_article_buisness():
+	app.logger.info(f"{ACTION_NEW_ART_BUISNESS} endpoint hit")
+
+	# get data
+	data = request.json
+	if not data:
+		return jsonify({"error": "Invalid JSON"}), 400
+
+	userid = data.get("userid")
+	bridge = data.get("bridge")
+	spices = data.get("spices", {})
+	if not userid or not bridge:
+		return jsonify({"error": f"Missing required fields: 'userid': {userid}, 'spices': {spices}, 'bridge': {bridge}"}), 400
+
+	with db.cursor() as cur:
+		cur.execute("INSERT INTO micro_newsapi" \
+			  "(userid, bridgeid, triggers, spices) " \
+			  "VALUES (%s, %s, %s, %s)", (
+				  userid,
+				  bridge,
+				  ACTION_NEW_ART_BUISNESS,
+				  json.dumps(spices)
+			  )
+		)
+
+		db.commit()
+
+	return jsonify({"status": "ok"}), 200
+
+
+CATEGORIES = {
+	ACTION_NEW_ART_TECH: "technology",
+	ACTION_NEW_ART_BUISNESS: "buisness"
+}
 
 ##
 ## WEBHOOKS
@@ -231,7 +274,6 @@ def get_news_from_category(category):
 	print(f"Returning {len(res_articles)} new articles", file=sys.stderr)
 	return res_articles
 
-		
 
 def webhook():
 	print("Starting newsapi webhook", file=sys.stderr)
@@ -251,49 +293,47 @@ def webhook():
 			
 			print(f"Found {len(users_sub)} users subscribed to the newsapi actions", file=sys.stderr)
 
-			##
-			# Technology news ping
-			##
-		
-			cur.execute("SELECT userid, bridgeid FROM micro_newsapi "
-			   "WHERE triggers = %s", (ACTION_NEW_ART_TECH,))
-			users_sub = cur.fetchall()
-
-			# check if there are users subscribed to the technology news
-			if users_sub and len(users_sub) > 0:
-				print(f"Found {len(users_sub)} users subscribed to the technology news", file=sys.stderr)
-				articles = get_news_from_category("technology")
-
-				if articles and len(articles) > 0:
-					print(f"Found {len(articles)} new articles in the technology category", file=sys.stderr)
-
-					# trigger the action for each user
-					for article in articles:
-						for user in users_sub:
-							userid = user[0]
-							bridge = user[1]
-
-
-							requests.put(
-								f"http://backend:{BACKEND_PORT}/api/orchestrator",
-								json={
-									"bridge": bridge,
-									"userid": userid,
-									"ingredients": {
-										"source": article.get("source").get("name"),
-										"author": article.get("author"),
-										"publishedAt": article.get("publishedAt"),
-										"title": article.get("title"),
-										"description": article.get("description"),
-										"url": article.get("url"),
-										"content": article.get("content")
-									}
-								}
-							)
 	
-				else:
-					print("No new articles in the technology category", file=sys.stderr)
-				# time.sleep(300)
+			for (action, category) in CATEGORIES.items():
+
+				cur.execute("SELECT userid, bridgeid FROM micro_newsapi "
+				"WHERE triggers = %s", (action,))
+				users_sub = cur.fetchall()
+
+				# check if there are users subscribed to the technology news
+				if users_sub and len(users_sub) > 0:
+					print(f"Found {len(users_sub)} users subscribed to the {category} news", file=sys.stderr)
+					articles = get_news_from_category(f"{category}")
+
+					if articles and len(articles) > 0:
+						print(f"Found {len(articles)} new articles in the {category} category", file=sys.stderr)
+
+						# trigger the action for each user
+						for article in articles:
+							for user in users_sub:
+								userid = user[0]
+								bridge = user[1]
+
+
+								requests.put(
+									f"http://backend:{BACKEND_PORT}/api/orchestrator",
+									json={
+										"bridge": bridge,
+										"userid": userid,
+										"ingredients": {
+											"source": article.get("source").get("name"),
+											"author": article.get("author"),
+											"publishedAt": article.get("publishedAt"),
+											"title": article.get("title"),
+											"description": article.get("description"),
+											"url": article.get("url"),
+											"content": article.get("content")
+										}
+									}
+								)
+		
+					else:
+						print(f"No new articles in the {category} category", file=sys.stderr)
 
 
 ##
