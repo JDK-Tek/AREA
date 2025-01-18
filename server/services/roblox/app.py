@@ -138,9 +138,7 @@ def get_robloxid_from_areaid(areaid) -> str|None:
         return rows[0]
     return None
 
-@app.route("/onprompt", methods=["POST"])
-def general_action():
-    action_name = "onprompt"
+def general_action(action_name):
     json = Request.get_json()
     bridge = json.get("bridge")
     areaid = json.get("userid")
@@ -172,6 +170,18 @@ def general_action():
         return jsonify({ "status": "ok"}), 400
     except (Exception, psycopg2.Error) as err:
         return jsonify({ "error": str(err)}), 400
+
+@app.route("/onprompt", methods=["POST"])
+def general_onprompt(action_name):
+    return general_action("onprompt")
+
+@app.route("/onclick", methods=["POST"])
+def general_onclick(action_name):
+    return general_action("onclick")
+
+@app.route("/ontouch", methods=["POST"])
+def general_ontouch(action_name):
+    return general_action("ontouch")
 
 def try_getting_informations(robloxid, gameid):
     if robloxid is None:
@@ -236,6 +246,7 @@ def on_action(data):
             "ingredients": ingredients if ingredients is not None else {}
         }
     )
+    return jsonify({"status": "ok"}), 200
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
