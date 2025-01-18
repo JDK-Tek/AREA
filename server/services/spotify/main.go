@@ -37,21 +37,15 @@ func init() {
 }
 
 func getOAUTHLink(w http.ResponseWriter, req *http.Request) {
-	clientID := os.Getenv("SPOTIFY_CLIENT_ID")
-	redirectURI := os.Getenv("REDIRECT")
-
-	if clientID == "" || redirectURI == "" {
-		http.Error(w, "Client ID ou URI de redirection manquant", http.StatusInternalServerError)
-		return
-	}
-
-	authURL := fmt.Sprintf(
-		"https://accounts.spotify.com/authorize?client_id=%s&response_type=code&redirect_uri=%s&scope=user-library-read",
-		clientID,
-		url.QueryEscape(redirectURI),
-	)
+	str := "https://accounts.spotify.com/authorize?"
+	x := url.QueryEscape(os.Getenv("REDIRECT"))
+	str += "client_id=" + os.Getenv("SPOTIFY_CLIENT_ID")
+	str += "&response_type=code"
+	str += "&redirect_uri=" + x
+	str += "&scope=user-library-read"
+	str += "&state=some-state-value"
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, authURL)
+	fmt.Fprintln(w, str)
 }
 
 type Result struct {
