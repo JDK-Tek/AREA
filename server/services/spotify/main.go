@@ -280,34 +280,6 @@ func playMusic(w http.ResponseWriter, req *http.Request, db *sql.DB) {
         return
     }
 
-    reqPlayer, err := http.NewRequest("GET", "https://api.spotify.com/v1/me/player", nil)
-    if err != nil {
-        w.WriteHeader(http.StatusInternalServerError)
-        fmt.Println("Error creating player check request:", err.Error())
-        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
-        return
-    }
-
-    reqPlayer.Header.Set("Authorization", "Bearer "+spotifyToken)
-    client := &http.Client{}
-    respPlayer, err := client.Do(reqPlayer)
-    if err != nil {
-        w.WriteHeader(http.StatusBadGateway)
-        fmt.Println("Error checking active device on Spotify:", err.Error())
-        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
-        return
-    }
-    defer respPlayer.Body.Close()
-
-    if respPlayer.StatusCode != http.StatusOK {
-        w.WriteHeader(http.StatusNotFound)
-        fmt.Println("No active device found for user.")
-        fmt.Fprintf(w, "{ \"error\": \"No active device found for user\" }\n")
-        return
-    }
-
-    fmt.Println("Active device found for user. Proceeding to play music.")
-
     trackURI := "spotify:track:7nPjWVYzDEhhqOggotCIZH"
     spotifyURL := "https://api.spotify.com/v1/me/player/play"
     body := fmt.Sprintf(`{"uris":["%s"]}`, trackURI)
@@ -323,6 +295,7 @@ func playMusic(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     reqSpotify.Header.Set("Authorization", "Bearer "+spotifyToken)
     reqSpotify.Header.Set("Content-Type", "application/json")
 
+    client := &http.Client{}
     respSpotify, err := client.Do(reqSpotify)
     if err != nil {
         w.WriteHeader(http.StatusBadGateway)
@@ -333,14 +306,31 @@ func playMusic(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     defer respSpotify.Body.Close()
 
     if respSpotify.StatusCode == http.StatusNoContent {
-        fmt.Println("Music is now playing!")
+        fmt.Println("Music 'Blinding Lights' is now playing!")
         w.WriteHeader(http.StatusOK)
         fmt.Fprintf(w, "{ \"status\": \"Music is now playing!\" }\n")
+    } else if respSpotify.StatusCode == http.StatusBadRequest {
+        fmt.Println("Spotify returned Bad Request. Trying to stop and restart playback...")
+        stopPlaybackURL := "https://api.spotify.com/v1/me/player/pause"
+        stopReq, _ := http.NewRequest("PUT", stopPlaybackURL, nil)
+        stopReq.Header.Set("Authorization", "Bearer "+spotifyToken)
+
+        stopResp, _ := client.Do(stopReq)
+        defer stopResp.Body.Close()
+
+        if stopResp.StatusCode == http.StatusNoContent {
+            fmt.Println("Playback stopped successfully. Attempting to play music again.")
+            respSpotify, err = client.Do(reqSpotify)
+            if err != nil {
+                w.WriteHeader(http.StatusBadGateway)
+                fmt.Println("Error retrying music play:", err.Error())
+                fmt.Fprintf(w, "{ \"error\": \"Error retrying music play\" }\n")
+                return
+            }
+        }
     } else {
         w.WriteHeader(http.StatusInternalServerError)
         fmt.Println("Failed to play music on Spotify. Status:", respSpotify.StatusCode)
-        bodyResp, _ := io.ReadAll(respSpotify.Body)
-        fmt.Println("Response body:", string(bodyResp))
         fmt.Fprintf(w, "{ \"error\": \"Failed to play music\" }\n")
     }
 }
