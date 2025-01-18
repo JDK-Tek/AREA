@@ -585,8 +585,8 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 		},
 	}
 	var infos = Infos{
-		Color: "#5865F2",
-		Image: "https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/636e0a6cc3c481a15a141738_icon_clyde_white_RGB.png",
+		Color: "#0078d4",
+		Image: "https://logo-marque.com/wp-content/uploads/2021/02/Outlook-Logo.png",
 		Routes: list,
 	}
 	var data []byte
