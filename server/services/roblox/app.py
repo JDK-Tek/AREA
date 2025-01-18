@@ -103,6 +103,21 @@ def react_insert():
 def react_update_stats():
     return general_reaction("statupdate", Request.json)
 
+@app.route("/givebadge", methods=["POST"])
+def react_givebadge():
+    return general_reaction("givebadge", Request.json)
+
+@app.route("/giveitem", methods=["POST"])
+def react_giveitem():
+    return general_reaction("giveitem", Request.json)
+
+@app.route("/changeprop", methods=["POST"])
+def react_changeprop():
+    return general_reaction("changeprop", Request.json)
+
+@app.route("/copy", methods=["POST"])
+def react_copy():
+    return general_reaction("copy", Request.json)
 
 def try_getting_informations(robloxid, gameid):
     try:
@@ -181,6 +196,28 @@ def routes():
                         "title": "Is the part anchored.",
                         "extra": ["true", "false"]
                     }
+                ]
+            },
+            {
+                "name": "kill",
+                "description": "Kill a player",
+                "spices": [
+                    {
+                        "name": "userid",
+                        "type": "text",
+                        "title": "The player userid you want to kill."
+                    },
+                ]
+            },
+            {
+                "name": "kick",
+                "description": "Kick a player",
+                "spices": [
+                    {
+                        "name": "userid",
+                        "type": "text",
+                        "title": "The player userid you want to kill."
+                    },
                 ]
             }
         ]
