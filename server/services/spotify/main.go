@@ -209,12 +209,47 @@ func miniproxy(f func(http.ResponseWriter, *http.Request, *sql.DB), c *sql.DB) f
 	}
 }
 
-func main() {
-	if err := godotenv.Load(".env"); err != nil {
-		log.Fatal("Error loading .env file")
+func connectToDatabase() (*sql.DB, error) {
+	dbPassword := os.Getenv("DB_PASSWORD")
+	if dbPassword == "" {
+		log.Fatal("DB_PASSWORD not found")
 	}
+	dbUser := os.Getenv("DB_USER")
+	if dbUser == "" {
+		log.Fatal("DB_USER not found")
+	}
+	dbHost := os.Getenv("DB_HOST")
+	if dbHost == "" {
+		log.Fatal("DB_HOST not found")
+	}
+	dbName := os.Getenv("DB_NAME")
+	if dbName == "" {
+		log.Fatal("DB_NAME not found")
+	}
+	dbPort := os.Getenv("DB_PORT")
+	if dbPort == "" {
+		log.Fatal("DB_PORT not found")
+	}
+	connectStr := fmt.Sprintf(
+		"postgresql://%s:%s@%s:%s/%s?sslmode=disable",
+		dbUser,
+		dbPassword,
+		dbHost,
+		dbPort,
+		dbName,
+	)
+	return sql.Open("postgres", connectStr)
+}
 
+
+func main() {
+	db, err := connectToDatabase()
+	if err != nil {
+		os.Exit(84)
+	}
+	fmt.Println("outlook microservice container is running !")
 	router := mux.NewRouter()
+	godotenv.Load(".env")
 
 	router.HandleFunc("/oauth", getOAUTHLink).Methods("GET")
 	router.HandleFunc("/oauth", miniproxy(setOAUTHToken, db)).Methods("POST")
