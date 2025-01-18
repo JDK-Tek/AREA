@@ -125,12 +125,14 @@ def react_sendmessage():
     return general_reaction("sendmessage", Request.json)
 
 def get_robloxid_from_areaid(areaid) -> str|None:
+    print("c", file=stderr)
     with db.cursor() as cur:
         cur.execute(
             "select userid from tokens where owner = %s",
             (int(areaid),)
         )
         rows = cur.fetchone()
+        print("d", file=stderr)
         if not rows:
             return None
         return rows[0]
@@ -143,10 +145,12 @@ def general_action():
     bridge = json.get("bridge")
     areaid = json.get("userid")
     spices = json.get("spices")
+    print("a", file=stderr)
     if not bridge or not areaid or not spices:
         return jsonify({ "error": "missing bridge, userid or spices" }), 500
     if not "gameid" in spices:
         return jsonify({ "error": "expected a gameid" }), 500
+    print("b", file=stderr)
     try:
         robloxid = get_robloxid_from_areaid(areaid)
         with db.cursor() as cur:
@@ -162,7 +166,10 @@ def general_action():
                 str(robloxid),
                 str(action_name)
             ))
+            print("e", file=stderr)
             db.commit()
+            print("f", file=stderr)
+        return jsonify({ "status": "ok"}), 400
     except (Exception, psycopg2.Error) as err:
         return jsonify({ "error": str(err)}), 400
 
