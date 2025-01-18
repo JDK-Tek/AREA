@@ -4,8 +4,10 @@
 # binaries
 src/backend
 
-# trash files
+# nopush files
 *.out
+*.o
+*.pem
 
 # trash folders
 .vscode/

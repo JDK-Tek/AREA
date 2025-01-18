@@ -365,14 +365,15 @@ func openWebhooks(a area.AreaRequest) {
 			a.Writter.Header().Add(key, value)
 		}
 	}
-
+	
 	// then i just like create thee response
 	rep, err := io.ReadAll(resp.Body)
 	if err != nil {
 		a.Error(err, http.StatusBadGateway)
 		return
 	}
-	a.Reply(rep, resp.StatusCode)
+	a.Writter.WriteHeader(resp.StatusCode)
+	a.Writter.Write(rep)
 }
 
 func main() {

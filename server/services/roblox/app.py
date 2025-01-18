@@ -84,6 +84,7 @@ def webhook():
     robloxid = data.get("robloxid")
     gameid = data.get("gameid")
     try:
+        print("its bar", file=stderr)
         with db.cursor() as cur:
             print(robloxid, gameid, file=stderr)
             cur.execute(
@@ -94,6 +95,7 @@ def webhook():
                 (robloxid, gameid,)
             )
             db.commit()
+        print("its foo", file=stderr)
         while True:
             with db.cursor() as cur:
                 cur.execute(
@@ -114,10 +116,14 @@ def webhook():
                     db.commit()
                     return jsonify({ "message": str(rows[0])}), 200
             time.sleep(1)
+        print("its here", file=stderr)
     except (psycopg2.Error) as err:
+        print("its an error", file=stderr)
         return jsonify({ "error": "postgres says <(" + str(err) + ")"}), 400
     except Exception as err:
+        print("its another error", file=stderr)
         return jsonify({ "error": str(err)}), 400
+    print("its here", file=stderr)
 
 @app.route("/", methods=["GET"])
 def routes():
