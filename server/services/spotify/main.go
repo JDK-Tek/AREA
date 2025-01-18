@@ -39,6 +39,7 @@ func init() {
 func getOAUTHLink(w http.ResponseWriter, req *http.Request) {
 	str := "https://accounts.spotify.com/authorize?"
 	x := url.QueryEscape(os.Getenv("REDIRECT"))
+	fmt.Println("redirect = ", x)
 	str += "client_id=" + os.Getenv("SPOTIFY_CLIENT_ID")
 	str += "&response_type=code"
 	str += "&redirect_uri=" + x
@@ -247,7 +248,7 @@ func main() {
 	if err != nil {
 		os.Exit(84)
 	}
-	fmt.Println("outlook microservice container is running !")
+	fmt.Println("Spotify microservice container is running !")
 	router := mux.NewRouter()
 	godotenv.Load(".env")
 
@@ -255,5 +256,5 @@ func main() {
 	router.HandleFunc("/oauth", miniproxy(setOAUTHToken, db)).Methods("POST")
 	router.HandleFunc("/user", getUserInfo).Methods("GET")
 
-	log.Fatal(http.ListenAndServe(":8080", router))
+	log.Fatal(http.ListenAndServe(":80", router))
 }
