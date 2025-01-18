@@ -256,6 +256,7 @@ func playMusic(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     }
 
     userID := requestBody.UserID
+	userID = 1
     trackName := requestBody.Musique
     fmt.Println("Extracted userID:", userID)
     fmt.Println("Requested trackName:", trackName)
