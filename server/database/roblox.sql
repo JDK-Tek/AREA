@@ -14,5 +14,6 @@ create table if not exists micro_robloxactions (
     userid int not null,
     gameid text not null,
     robloxid text not null,
-    action text not null
+    action text not null,
+    constraint unique_bridge unique (bridge)
 );
