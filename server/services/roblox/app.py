@@ -225,7 +225,7 @@ def on_action(data):
     gameid = data["gameid"]
     action = data["action"]
     userid, bridge = get_userid_bridge_from_action(gameid, action)
-    if areaid is None:
+    if userid is None:
         return jsonify({"message": "data doesnt exists in database"}), 100
     ingredients = data.get("ingredients")
     requests.put(
