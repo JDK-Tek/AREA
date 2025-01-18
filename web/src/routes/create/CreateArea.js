@@ -85,7 +85,13 @@ export default function CreateArea() {
             {error && <Notification error={error} setError={setError} msg={error} />}
             {success && <Notification success={success} setError={setSuccess} msg={success} />}
 
-            <SidePannel action={configAction} setOpen={setOpen} open={open} setArea={setArea}/>
+            <SidePannel 
+                action={configAction} 
+                setOpen={setOpen} 
+                open={open} 
+                setArea={setArea}
+                loggedServices={loggedServices}
+            />
             <div className="relative">
                 <label 
                     className="block text-4xl font-bold font-spartan text-chartgray-300 text-center p-5 mt-10"

@@ -28,9 +28,9 @@ type Spices struct {
 }
 
 type Content struct {
-	Spices Spices `json:"spices"`
-	BridgeId int `json:"bridge"`
-	UserId int `json:"userid"`
+	Spices   Spices `json:"spices"`
+	BridgeId int    `json:"bridge"`
+	UserId   int    `json:"userid"`
 }
 
 type Response struct {
@@ -130,9 +130,9 @@ type AtSpices struct {
 }
 
 type AtContent struct {
-	Spices AtSpices `json:"spices"`
-	BridgeId int `json:"bridge"`
-	UserId int `json:"userid"`
+	Spices   AtSpices `json:"spices"`
+	BridgeId int      `json:"bridge"`
+	UserId   int      `json:"userid"`
 }
 
 func timeAt(w http.ResponseWriter, req *http.Request, db *sql.DB) {
@@ -212,14 +212,14 @@ func miniProxy(f func(http.ResponseWriter, *http.Request, *sql.DB), c *sql.DB) f
 }
 
 type Message struct {
-	Bridge int `json:"bridge"`
-	UserId int `json:"userid"`
+	Bridge      int               `json:"bridge"`
+	UserId      int               `json:"userid"`
 	Ingredients map[string]string `json:"ingredients"`
 }
 
 type MiniData struct {
 	Bridge int
-	User int
+	User   int
 }
 
 func masterThread(db *sql.DB) {
@@ -316,6 +316,7 @@ type InfoRoute struct {
 type Infos struct {
 	Color  string      `json:"color"`
 	Image  string      `json:"image"`
+	Oauth  bool        `json:"oauth"`
 	Routes []InfoRoute `json:"areas"`
 }
 
@@ -351,16 +352,17 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 			Desc: "Triggers at a specific moment.",
 			Spices: []InfoSpice{
 				{
-					Name: "timestamp",
-					Type: "number",
+					Name:  "timestamp",
+					Type:  "number",
 					Title: "When to trigger.",
 				},
 			},
 		},
 	}
 	var infos = Infos{
-		Color: "#222222",
-		Image: "/assets/time.webp",
+		Color:  "#222222",
+		Image:  "/assets/time.webp",
+		Oauth:  false,
 		Routes: list,
 	}
 	var data []byte

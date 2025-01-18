@@ -44,7 +44,7 @@ export default function Explore() {
             <HeaderBar activeBackground={true}/>
             <h1 className="text-4xl font-spartan font-bold text-center mt-10 text-chartgray-300">Explore</h1>
             <div className="mt-5 p-10">
-                <Notification error={true} setError={setError} msg={error} />
+                {error && <Notification error={true} setError={setError} msg={error} />}
                 <FindService
                     dark={false}
                     setService={setService}

@@ -18,16 +18,16 @@ const expiration = 60 * 30
 // the about structure (for about.json)
 
 type AboutSpice struct {
-	Name string `json:"name"`
-	Type string `json:"type"`
-	Title string `json:"title"`
+	Name  string   `json:"name"`
+	Type  string   `json:"type"`
+	Title string   `json:"title"`
 	Extra []string `json:"extra"`
 }
 
 type AboutSomething struct {
-	Name string `json:"name"`
-	Description string `json:"description"`
-	Spices []AboutSpice `json:"spices"`
+	Name        string       `json:"name"`
+	Description string       `json:"description"`
+	Spices      []AboutSpice `json:"spices"`
 }
 
 type AboutClient struct {
@@ -35,16 +35,17 @@ type AboutClient struct {
 }
 
 type AboutSevice struct {
-	Name string `json:"name"`
-	Icon string `json:"image"`
-	Color string `json:"color"`
-	Actions []AboutSomething `json:"actions"`
+	Name      string           `json:"name"`
+	Icon      string           `json:"image"`
+	Color     string           `json:"color"`
+	Oauth     bool             `json:"oauth"`
+	Actions   []AboutSomething `json:"actions"`
 	Reactions []AboutSomething `json:"reactions"`
 }
 
 type AboutServer struct {
-	CurrentTime int64 `json:"current_time"`
-	Services []AboutSevice `json:"services"`
+	CurrentTime int64         `json:"current_time"`
+	Services    []AboutSevice `json:"services"`
 }
 
 type About struct {
@@ -56,35 +57,36 @@ type About struct {
 
 type Area struct {
 	Database *sql.DB
-	Key string
+	Key      string
 	Services []string
-	About About
+	About    About
 }
 
 // for the informations i get from the services
 
 type InfoRoute struct {
-	Type string `json:"type"`
-	Name string `json:"name"`
-	Desc string `json:"description"`
+	Type   string       `json:"type"`
+	Name   string       `json:"name"`
+	Desc   string       `json:"description"`
 	Spices []AboutSpice `json:"spices"`
 }
 
 type Infos struct {
-	Color string `json:"color"`
-	Image string `json:"image"`
+	Color  string      `json:"color"`
+	Image  string      `json:"image"`
+	Oauth  bool        `json:"oauth"`
 	Routes []InfoRoute `json:"areas"`
 }
 
 func (it *Area) ObserveServices(where string) error {
 	entries, err := os.ReadDir(where)
 	it.Services = make([]string, len(entries))
-    if err != nil {
-        return err
-    }
-    for n, e := range entries {
-        it.Services[n] = e.Name()
-    }
+	if err != nil {
+		return err
+	}
+	for n, e := range entries {
+		it.Services[n] = e.Name()
+	}
 	return nil
 }
 
@@ -100,7 +102,7 @@ func (it *Area) SetupTheAbout() error {
 		},
 		Server: AboutServer{
 			CurrentTime: time.Now().Unix(),
-			Services: []AboutSevice{},
+			Services:    []AboutSevice{},
 		},
 	}
 	if len(it.Services) == 0 {
@@ -142,22 +144,23 @@ func (it *Area) SetupTheAbout() error {
 		tmpService.Name = service
 		tmpService.Icon = infos.Image
 		tmpService.Color = infos.Color
+		tmpService.Oauth = infos.Oauth
 		it.About.Server.Services = append(it.About.Server.Services, tmpService)
 	}
 	return nil
 }
 
 func (it *Area) NewToken(id int) (string, error) {
-    var secretBytes = []byte(it.Key)
-    var claims jwt.Claims
-    var token *jwt.Token
+	var secretBytes = []byte(it.Key)
+	var claims jwt.Claims
+	var token *jwt.Token
 
-    claims = jwt.MapClaims{
-        "id": id,
-        "exp": time.Now().Add(time.Second * expiration).Unix(),
-    }
-    token = jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-    return token.SignedString(secretBytes)
+	claims = jwt.MapClaims{
+		"id":  id,
+		"exp": time.Now().Add(time.Second * expiration).Unix(),
+	}
+	token = jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString(secretBytes)
 }
 
 func (it *Area) Token2Email(str string) (int, error) {
@@ -181,7 +184,7 @@ func (it *Area) Token2Email(str string) (int, error) {
 }
 
 type AreaRequest struct {
-	Area *Area
+	Area    *Area
 	Writter http.ResponseWriter
 	Request *http.Request
 }
@@ -214,7 +217,7 @@ func (it *AreaRequest) Reply(object any, code int) {
 		it.Error(err, http.StatusInternalServerError)
 		return
 	}
-    fmt.Fprintln(it.Writter, string(data))
+	fmt.Fprintln(it.Writter, string(data))
 }
 
 func (it *AreaRequest) AssertToken() (int, error) {

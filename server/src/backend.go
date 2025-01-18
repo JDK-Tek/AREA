@@ -11,9 +11,9 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"strconv"
 	"time"
-	"regexp"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -43,21 +43,21 @@ func newProxy(a *area.Area, f func(area.AreaRequest)) func(http.ResponseWriter, 
 }
 
 type UpdateRequest struct {
-	BridgeID int `json:"bridge"`
-	Id int `json:"userid"`
+	BridgeID    int               `json:"bridge"`
+	Id          int               `json:"userid"`
 	Ingredients map[string]string `json:"ingredients"`
 }
 
 type UserMessage struct {
 	Spices json.RawMessage `json:"spices"`
-	Id int `json:"userid"`
+	Id     int             `json:"userid"`
 }
 
 func applyIngredients(str string, ingredients map[string]string) string {
 	var re = regexp.MustCompile(`\{([\w\.]+)\}`)
 
 	result := re.ReplaceAllStringFunc(str, func(match string) string {
-		key := match[1 : len(match) - 1]
+		key := match[1 : len(match)-1]
 		if value, found := ingredients[key]; found {
 			return value
 		}
@@ -194,11 +194,11 @@ func oauthSetter(a area.AreaRequest) {
 	defer rep.Body.Close()
 
 	a.Writter.Header().Set("Content-Type", rep.Header.Get("Content-Type"))
-    a.Writter.WriteHeader(rep.StatusCode)
-    _, err = io.Copy(a.Writter, rep.Body)
-    if err != nil {
-        http.Error(a.Writter, err.Error(), http.StatusInternalServerError)
-    }
+	a.Writter.WriteHeader(rep.StatusCode)
+	_, err = io.Copy(a.Writter, rep.Body)
+	if err != nil {
+		http.Error(a.Writter, err.Error(), http.StatusInternalServerError)
+	}
 
 	// body, err := io.ReadAll(rep.Body)
 	// if err != nil {
@@ -212,7 +212,7 @@ func oauthSetter(a area.AreaRequest) {
 	// 	return
 	// }
 	// a.Reply(jsonResponse, http.StatusOK)
-	
+
 }
 
 func codeCallback(a area.AreaRequest) {
@@ -229,18 +229,20 @@ func codeCallback(a area.AreaRequest) {
 
 type MiniAbout struct {
 	Color string `json:"color"`
-	Name string `json:"name"`
+	Name  string `json:"name"`
 	Image string `json:"image"`
+	Oauth bool   `json:"oauth"`
 }
 
 func getAllServices(a area.AreaRequest) {
 	var tmp MiniAbout
 	services := []MiniAbout{}
-	
+
 	for _, v := range a.Area.About.Server.Services {
 		tmp.Color = v.Color
 		tmp.Image = v.Icon
 		tmp.Name = v.Name
+		tmp.Oauth = v.Oauth
 		services = append(services, tmp)
 	}
 	a.Reply(services, http.StatusOK)
@@ -284,10 +286,10 @@ type Message struct {
 }
 
 type MessageWithIDAndOauths struct {
-	Message string `json:"message"`
-	Authentificated bool `json:"authentificated"`
-	ID int `json:"id"`
-	Oauths []string `json:"oauths"`
+	Message         string   `json:"message"`
+	Authentificated bool     `json:"authentificated"`
+	ID              int      `json:"id"`
+	Oauths          []string `json:"oauths"`
 }
 
 func doctor(a area.AreaRequest) {
@@ -305,7 +307,7 @@ func doctor(a area.AreaRequest) {
 		return
 	}
 	defer rows.Close()
-	
+
 	// check for no oauths
 	var stuff string
 	x := MessageWithIDAndOauths{Message: "i'm ok thanks", Authentificated: true, ID: id, Oauths: []string{}}
@@ -373,7 +375,7 @@ func openWebhooks(a area.AreaRequest) {
 			a.Writter.Header().Add(key, value)
 		}
 	}
-	
+
 	// then i just like create thee response
 	rep, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -445,11 +447,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-    corsMiddleware := handlers.CORS(
-        handlers.AllowedOrigins([]string{"*"}),
-        handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE"}),
-        handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
-    )
+	corsMiddleware := handlers.CORS(
+		handlers.AllowedOrigins([]string{"*"}),
+		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE"}),
+		handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
+	)
 	router.HandleFunc("/api/login", newProxy(&a, auth.DoSomeLogin)).Methods("POST")
 	router.HandleFunc("/api/register", newProxy(&a, auth.DoSomeRegister)).Methods("POST")
 	router.HandleFunc("/api/area", newProxy(&a, arearoute.NewArea)).Methods("POST")
@@ -467,12 +469,12 @@ func main() {
 	router.HandleFunc("/about.json", newProxy(&a, createTheAbout)).Methods("GET")
 	router.PathPrefix("/assets").Handler(http.StripPrefix("/assets", http.FileServer(http.Dir("./assets"))))
 
-    fmt.Println("=> server listens on port ", portString)
+	fmt.Println("=> server listens on port ", portString)
 	time.Sleep(time.Second * 2)
 	err = a.SetupTheAbout()
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-    log.Fatal(http.ListenAndServe(":"+portString, corsMiddleware(router)))
+	log.Fatal(http.ListenAndServe(":"+portString, corsMiddleware(router)))
 
 }
