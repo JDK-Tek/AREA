@@ -32,7 +32,7 @@ export default function FindFeature({ dark, setFeature, service, action = null }
     useEffect(() => {
 
         let fstmp = [];
-        if (!action || action == "action") {
+        if (!action || action === "action") {
             service.actions.forEach((a) => {
                 if (search === "") {
                     fstmp.push(a);
@@ -41,7 +41,7 @@ export default function FindFeature({ dark, setFeature, service, action = null }
                 }
             });
         } 
-        if (!action || action == "reaction") {
+        if (!action || action === "reaction") {
             service.reactions.forEach((r) => {
                 if (search === "") {
                     fstmp.push(r);
