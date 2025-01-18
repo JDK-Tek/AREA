@@ -450,7 +450,6 @@ func pauseMusic(w http.ResponseWriter, req *http.Request, db *sql.DB) {
         return
     }
 
-    // Vérifier s'il y a un appareil actif pour mettre en pause la musique
     devicesURL := "https://api.spotify.com/v1/me/player/devices"
     reqDevices, err := http.NewRequest("GET", devicesURL, nil)
     if err != nil {
@@ -509,7 +508,7 @@ func pauseMusic(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     }
 
     spotifyURL := "https://api.spotify.com/v1/me/player/pause"
-    reqSpotify, err := http.NewRequest("POST", spotifyURL, nil)
+    reqSpotify, err := http.NewRequest("PUT", spotifyURL, nil)
     if err != nil {
         w.WriteHeader(http.StatusInternalServerError)
         fmt.Println("Error creating Spotify request:", err.Error())
@@ -548,6 +547,7 @@ func pauseMusic(w http.ResponseWriter, req *http.Request, db *sql.DB) {
         fmt.Fprintf(w, "{ \"error\": \"Failed to pause music\" }\n")
     }
 }
+
 
 
 func connectToDatabase() (*sql.DB, error) {
