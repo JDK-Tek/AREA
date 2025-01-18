@@ -296,6 +296,43 @@ def new_article_science():
 
 	return jsonify({"status": "ok"}), 200
 
+ACTION_NEW_ART_HEALTH = "new-art-health"
+oreo.create_area(
+	ACTION_NEW_ART_HEALTH,
+	NewOreo.TYPE_ACTIONS,
+	"When a new article is published in Health category",
+	[]
+)
+@app.route(f'/{ACTION_NEW_ART_HEALTH}', methods=["POST"])
+def new_article_health():
+	app.logger.info(f"{ACTION_NEW_ART_HEALTH} endpoint hit")
+
+	# get data
+	data = request.json
+	if not data:
+		return jsonify({"error": "Invalid JSON"}), 400
+
+	userid = data.get("userid")
+	bridge = data.get("bridge")
+	spices = data.get("spices", {})
+	if not userid or not bridge:
+		return jsonify({"error": f"Missing required fields: 'userid': {userid}, 'spices': {spices}, 'bridge': {bridge}"}), 400
+
+	with db.cursor() as cur:
+		cur.execute("INSERT INTO micro_newsapi" \
+			  "(userid, bridgeid, triggers, spices) " \
+			  "VALUES (%s, %s, %s, %s)", (
+				  userid,
+				  bridge,
+				  ACTION_NEW_ART_HEALTH,
+				  json.dumps(spices)
+			  )
+		)
+
+		db.commit()
+
+	return jsonify({"status": "ok"}), 200
+
 
 CATEGORIES = {
 	ACTION_NEW_ART_TECH: "technology",
