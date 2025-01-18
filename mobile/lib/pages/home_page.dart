@@ -1,7 +1,7 @@
+import 'package:area/tools/login_button.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:area/pages/servicepage.dart';
 import 'package:area/pages/appletspage.dart';
 
 List<Color> predefinedColors = [
@@ -9,6 +9,8 @@ List<Color> predefinedColors = [
   const Color(0xff410cab),
   const Color(0xff5e17eb),
 ];
+
+
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -26,7 +28,7 @@ class HomePageState extends State<HomePage> {
       "/applets",
       "/create",
       "/services",
-      "/developers"
+      "/plus"
     ];
 
     return SafeArea(
@@ -61,7 +63,7 @@ class HomePageState extends State<HomePage> {
           children: [
             const HeaderSection(),
             AppletSection(),
-            const ServiceSection()
+            // const ServiceSection()
           ],
         ),
       ),
@@ -113,31 +115,7 @@ class HeaderSection extends StatelessWidget {
                   fit: BoxFit.contain,
                 ),
               ),
-              ElevatedButton(
-                onPressed: () {
-                  context.go("/login");
-                },
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.all(8),
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.black,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-                child: Text(
-                  "Login",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: MediaQuery.of(context).size.width <
-                              MediaQuery.of(context).size.height
-                          ? MediaQuery.of(context).size.width * 0.049
-                          : MediaQuery.of(context).size.width * 0.025,
-                      color: Colors.black,
-                      fontFamily: 'Nunito-Bold'),
-                ),
-              ),
+              const LoginButton(),
             ],
           ),
           SizedBox(
@@ -265,31 +243,7 @@ class MiniHeaderSection extends StatelessWidget {
                   fit: BoxFit.contain,
                 ),
               ),
-              ElevatedButton(
-                onPressed: () {
-                  context.go("/login");
-                },
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.all(8),
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.black,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-                child: Text(
-                  "Login",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: MediaQuery.of(context).size.width <
-                              MediaQuery.of(context).size.height
-                          ? MediaQuery.of(context).size.width * 0.049
-                          : MediaQuery.of(context).size.width * 0.025,
-                      color: Colors.black,
-                      fontFamily: 'Nunito-Bold'),
-                ),
-              ),
+              const LoginButton(),
             ],
           ),
         ],

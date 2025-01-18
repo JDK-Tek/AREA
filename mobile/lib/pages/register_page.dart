@@ -40,7 +40,7 @@ class _RegisterPage extends State<RegisterPage> {
                   ),
                   SizedBox(
                     height: screenScale(context, 0.9).height,
-                    child: Column(
+                    child: const Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         UserRegister(

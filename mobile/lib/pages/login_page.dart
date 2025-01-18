@@ -1,7 +1,10 @@
+import 'package:area/pages/OutlookOAuthPage.dart';
+import 'package:area/pages/SpotifyOAuthPage.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:area/tools/user_ouput.dart';
 import 'package:area/pages/DiscordAuthPage.dart';
+import 'package:area/pages/OAuthRoblox.dart';
 import 'dart:async';
 
 class UserBox extends StatefulWidget {
@@ -28,7 +31,7 @@ class _UserBox extends State<UserBox> {
       controller: widget.nameController,
       autofocus: true,
       textInputAction: TextInputAction.next,
-      keyboardType: TextInputType.name,
+      keyboardType: TextInputType.emailAddress,
       obscureText: widget.obscureText,
       //focusNode: widget.focusNode,
       style: const TextStyle(color: Colors.white),
@@ -194,6 +197,9 @@ class _LoginPage extends State<LoginPage> {
                   obscureText: true,
                   u: "api/tmp"),
               const DiscordLoginButton(),
+              const RobloxLoginButton(),
+              const OutlookLoginButton(),
+              const SpotifyLoginButton(),
             ])
           ],
         ),

@@ -1,7 +1,11 @@
+import 'package:area/tools/providers.dart';
 import 'package:flutter/material.dart';
 import 'package:area/pages/home_page.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:http/http.dart' as https;
+import 'dart:convert';
+import 'package:provider/provider.dart';
 
 class ServicesPage extends StatefulWidget {
   const ServicesPage({super.key});
@@ -14,12 +18,7 @@ class ServicesPageState extends State<ServicesPage> {
   int currentPageIndex = 2;
   @override
   Widget build(BuildContext context) {
-    final List<String> dest = [
-      "/applets",
-      "/create",
-      "/services",
-      "/developers"
-    ];
+    final List<String> dest = ["/applets", "/create", "/services", "/plus"];
     return SafeArea(
         child: Scaffold(
       bottomNavigationBar: NavigationBar(
@@ -61,9 +60,9 @@ class ServicesPageState extends State<ServicesPage> {
 
 class Service extends StatelessWidget {
   final String serviceName;
-  final IconData icon;
+  final String icon;
   final VoidCallback onPress;
-  final Color color;
+  final String color;
 
   const Service({
     super.key,
@@ -72,6 +71,15 @@ class Service extends StatelessWidget {
     required this.onPress,
     required this.color,
   });
+
+  Color _colorFromHex(String hexColor) {
+    if (hexColor.isEmpty) return Colors.grey;
+    hexColor = hexColor.toUpperCase().replaceAll("#", "");
+    if (hexColor.length == 6) {
+      hexColor = "FF$hexColor";
+    }
+    return Color(int.tryParse(hexColor, radix: 16) ?? 0xFF000000);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,8 +96,9 @@ class Service extends StatelessWidget {
       child: ElevatedButton(
         onPressed: onPress,
         style: ElevatedButton.styleFrom(
-          backgroundColor: color,
           padding: const EdgeInsets.all(10),
+          backgroundColor: _colorFromHex(color),
+          shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
           ),
@@ -97,13 +106,32 @@ class Service extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            Image.network(
+              loadingBuilder: (BuildContext context, Widget child,
+                  ImageChunkEvent? loadingProgress) {
+                if (loadingProgress == null) {
+                  return child;
+                } else {
+                  return Center(
+                    child: CircularProgressIndicator(
+                      value: loadingProgress.expectedTotalBytes != null
+                          ? loadingProgress.cumulativeBytesLoaded /
+                              (loadingProgress.expectedTotalBytes ?? 1)
+                          : null,
+                    ),
+                  );
+                }
+              },
+              errorBuilder:
+                  (BuildContext context, Object error, StackTrace? stackTrace) {
+                return const Icon(Icons.broken_image,
+                    size: 40);
+              },
               icon,
-              color: Colors.white,
-              size: MediaQuery.of(context).size.width <
+              width: MediaQuery.of(context).size.width <
                       MediaQuery.of(context).size.height
-                  ? MediaQuery.of(context).size.width * 0.08
-                  : MediaQuery.of(context).size.width * 0.05,
+                  ? MediaQuery.of(context).size.width * 0.2
+                  : MediaQuery.of(context).size.width * 0.08,
             ),
             SizedBox(
                 height: MediaQuery.of(context).size.width <
@@ -116,10 +144,10 @@ class Service extends StatelessWidget {
               style: TextStyle(
                   fontSize: MediaQuery.of(context).size.width <
                           MediaQuery.of(context).size.height
-                      ? MediaQuery.of(context).size.width * 0.04
+                      ? MediaQuery.of(context).size.width * 0.038
                       : MediaQuery.of(context).size.width * 0.025,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  color: Colors.black,
                   fontFamily: 'Nunito-Bold'),
             ),
           ],
@@ -129,29 +157,89 @@ class Service extends StatelessWidget {
   }
 }
 
-class ServiceSection extends StatelessWidget {
+class ServiceSection extends StatefulWidget {
   const ServiceSection({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final List<Map<String, dynamic>> services = [
-      {
-        'name': 'Discord',
-        'icon': Icons.discord,
-        'color': Colors.blueAccent,
-      },
-      {
-        'name': 'Weather',
-        'icon': Icons.cloud,
-        'color': Colors.lightBlue,
-      },
-      {
-        'name': 'Time',
-        'icon': Icons.timer,
-        'color': Colors.green,
-      },
-    ];
+  State<ServiceSection> createState() => _ServiceSectionState();
+}
 
+class _ServiceSectionState extends State<ServiceSection> {
+  List<Map<String, dynamic>> services = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _makeDemand("/about.json");
+  }
+
+  Future<void> _makeDemand(String u) async {
+    final Uri uri =
+        Uri.https(Provider.of<IPState>(context, listen: false).ip, u);
+    late final https.Response rep;
+
+    try {
+      rep = await https.get(uri);
+    } catch (e) {
+      if (mounted) {
+        _showDialog("Error", "Could not make request: $e");
+      }
+      return;
+    }
+
+    if (rep.statusCode >= 500) {
+      if (mounted) {
+        _showDialog("Error",
+            "Failed with status: ${rep.statusCode}. ${rep.reasonPhrase ?? 'Unknown error'}");
+      }
+      return;
+    }
+
+    Map<String, dynamic> responseBody;
+    try {
+      responseBody = jsonDecode(rep.body);
+    } catch (e) {
+      if (mounted) {
+        _showDialog("Error", "Invalid JSON format: $e");
+      }
+      return;
+    }
+
+    if (responseBody.containsKey('server') &&
+        responseBody['server'].containsKey('services')) {
+      final List<dynamic> servicesList = responseBody['server']['services'];
+      if (mounted) {
+        setState(() {
+          services = List<Map<String, dynamic>>.from(servicesList);
+        });
+      }
+    } else {
+      if (mounted) {
+        _showDialog("Error", "Key 'server.services' not found in response.");
+      }
+    }
+  }
+
+  void _showDialog(String title, String message) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text("OK"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       alignment: Alignment.center,
       padding: const EdgeInsets.symmetric(vertical: 20),
@@ -169,18 +257,22 @@ class ServiceSection extends StatelessWidget {
           Wrap(
             spacing: 10.0,
             alignment: WrapAlignment.center,
-            children: services
-                .map(
-                  (service) => Service(
-                    serviceName: service['name'],
-                    icon: service['icon'],
-                    color: service['color'],
-                    onPress: () {
-                      print("Service ${service['name']} pressed");
-                    },
-                  ),
-                )
-                .toList(),
+            children: services.map(
+              (service) {
+                final serviceName = service['name'] ?? 'Unknown';
+                final icon = service['icon'] ?? '';
+                final color = service['color'] ?? '#FFFFFF';
+
+                return Service(
+                  serviceName: serviceName,
+                  icon: icon,
+                  color: color,
+                  onPress: () {
+                    print("Service $serviceName pressed");
+                  },
+                );
+              },
+            ).toList(),
           ),
         ],
       ),

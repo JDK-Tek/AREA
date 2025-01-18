@@ -6,33 +6,33 @@ import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:go_router/go_router.dart';
 
-class DiscordLoginButton extends StatelessWidget {
-  const DiscordLoginButton({super.key});
+class RobloxLoginButton extends StatelessWidget {
+  const RobloxLoginButton({super.key});
+
   Future<void> _launchURL(BuildContext context) async {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const DiscordAuthPage()),
+      MaterialPageRoute(builder: (context) => const RobloxAuthPage()),
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
       onPressed: () => _launchURL(context),
-      child: const Text('Se connecter avec Discord'),
+      child: const Text('Se connecter avec Roblox'),
     );
   }
 }
 
-class DiscordAuthPage extends StatefulWidget {
-  const DiscordAuthPage({super.key});
+class RobloxAuthPage extends StatefulWidget {
+  const RobloxAuthPage({super.key});
 
   @override
-  State<DiscordAuthPage> createState() => _DiscordAuthPageState();
+  State<RobloxAuthPage> createState() => _RobloxAuthPageState();
 }
 
-class _DiscordAuthPageState extends State<DiscordAuthPage> {
+class _RobloxAuthPageState extends State<RobloxAuthPage> {
   bool _isWebViewInitialized = false;
   String url = "";
   late WebViewController _webViewController;
@@ -46,7 +46,7 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
   }
 
   Future<void> _initialize() async {
-    await _makeDemand("api/oauth/discord");
+    await _makeDemand("api/oauth/roblox");
     setState(() {
       _initializeWebView();
 
@@ -94,7 +94,7 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
                 setState(() {
                   _authCode = code;
                   if (_authCode != "") {
-                    _makeRequest(_authCode, "api/oauth/discord");
+                    _makeRequest(_authCode, "api/oauth/roblox");
                     if (!context.mounted) return;
                     context.go("/");
                   }
@@ -158,9 +158,11 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
       case 2:
         str = content['token']?.toString();
         if (str != null) {
-          if (!mounted) return;
-          Provider.of<UserState>(context, listen: false).setToken(_token!);
           _token = str;
+          if (mounted) {
+            Provider.of<UserState>(context, listen: false).setToken(_token!);
+            context.go("/login");
+          }
         } else {
           _errorMessage("Enter a valid email and password !");
         }
@@ -181,7 +183,7 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Discord Authentication")),
+      appBar: AppBar(title: const Text("Roblox Authentication")),
       body: _isWebViewInitialized
           ? WebViewWidget(controller: _webViewController)
           : const Center(child: CircularProgressIndicator()),

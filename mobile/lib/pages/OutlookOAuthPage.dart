@@ -6,33 +6,32 @@ import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:go_router/go_router.dart';
 
-class DiscordLoginButton extends StatelessWidget {
-  const DiscordLoginButton({super.key});
+class OutlookLoginButton extends StatelessWidget {
+  const OutlookLoginButton({super.key});
   Future<void> _launchURL(BuildContext context) async {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const DiscordAuthPage()),
+      MaterialPageRoute(builder: (context) => const OutlookAuthPage()),
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
       onPressed: () => _launchURL(context),
-      child: const Text('Se connecter avec Discord'),
+      child: const Text('Se connecter avec outlook'),
     );
   }
 }
 
-class DiscordAuthPage extends StatefulWidget {
-  const DiscordAuthPage({super.key});
+class OutlookAuthPage extends StatefulWidget {
+  const OutlookAuthPage({super.key});
 
   @override
-  State<DiscordAuthPage> createState() => _DiscordAuthPageState();
+  State<OutlookAuthPage> createState() => _OutlookAuthPageState();
 }
 
-class _DiscordAuthPageState extends State<DiscordAuthPage> {
+class _OutlookAuthPageState extends State<OutlookAuthPage> {
   bool _isWebViewInitialized = false;
   String url = "";
   late WebViewController _webViewController;
@@ -46,7 +45,7 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
   }
 
   Future<void> _initialize() async {
-    await _makeDemand("api/oauth/discord");
+    await _makeDemand("api/oauth/outlook");
     setState(() {
       _initializeWebView();
 
@@ -67,7 +66,7 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
     }
     if (rep.statusCode >= 500) {
       setState(() {
-        u = "pipi";
+        u = "error";
       });
       _errorMessage(rep.body);
       return;
@@ -94,7 +93,7 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
                 setState(() {
                   _authCode = code;
                   if (_authCode != "") {
-                    _makeRequest(_authCode, "api/oauth/discord");
+                    _makeRequest(_authCode, "api/oauth/outlook");
                     if (!context.mounted) return;
                     context.go("/");
                   }
@@ -153,14 +152,17 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
     } catch (e) {
       return _errorMessage("$e");
     }
-    content = jsonDecode(rep.body) as Map<String, dynamic>;
-    switch ((rep.statusCode / 100) as int) {
+    content = jsonDecode(rep.body);
+
+    switch ((rep.statusCode / 100)) {
       case 2:
         str = content['token']?.toString();
         if (str != null) {
-          if (!mounted) return;
-          Provider.of<UserState>(context, listen: false).setToken(_token!);
           _token = str;
+          if (mounted) {
+            Provider.of<UserState>(context, listen: false).setToken(_token!);
+            context.go("/");
+          }
         } else {
           _errorMessage("Enter a valid email and password !");
         }
@@ -181,7 +183,7 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Discord Authentication")),
+      appBar: AppBar(title: const Text("outlook Authentication")),
       body: _isWebViewInitialized
           ? WebViewWidget(controller: _webViewController)
           : const Center(child: CircularProgressIndicator()),

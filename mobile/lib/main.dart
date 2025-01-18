@@ -1,5 +1,4 @@
 import 'package:area/pages/appletspage.dart';
-import 'package:area/pages/discordarea.dart';
 import 'package:area/pages/servicepage.dart';
 import 'package:flutter/material.dart';
 import 'package:area/pages/home_page.dart';
@@ -8,15 +7,18 @@ import 'package:area/pages/register_page.dart';
 import 'package:go_router/go_router.dart';
 import 'package:area/pages/developers.dart';
 import 'package:area/pages/area.dart';
-import 'package:area/tools/userstate.dart';
-// ignore: depend_on_referenced_packages
+import 'package:area/tools/providers.dart';
 import 'package:provider/provider.dart';
+import 'package:area/pages/plus.dart';
+import 'package:area/pages/termsservices.dart';
+import 'package:area/pages/policy.dart';
 
 void main() {
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => UserState()),
+        ChangeNotifierProvider(create: (_) => IPState()),
       ],
       child: MyApp(),
     ),
@@ -52,6 +54,12 @@ class MyApp extends StatelessWidget {
         },
       ),
       GoRoute(
+        path: '/plus',
+        builder: (context, state) {
+          return const PlusPage();
+        },
+      ),
+      GoRoute(
         path: '/services',
         builder: (context, state) {
           return const ServicesPage();
@@ -64,12 +72,15 @@ class MyApp extends StatelessWidget {
         },
       ),
       GoRoute(
-        path: '/discordarea',
+        path: '/termsofservices',
         builder: (context, state) {
-          return DiscordAreaPage(onActionChanged: (channelId, messageTemplate) {
-              debugPrint("Channel ID : $channelId");
-              debugPrint("Template : $messageTemplate");
-            },);
+          return const TermsOfServicesPage();
+        },
+      ),
+      GoRoute(
+        path: '/privacypolicy',
+        builder: (context, state) {
+          return const PrivacyPolicyPage();
         },
       ),
     ],
@@ -78,6 +89,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
+      debugShowCheckedModeBanner: false,
       routerConfig: _router,
       theme: ThemeData(
         pageTransitionsTheme: PageTransitionsTheme(builders: {

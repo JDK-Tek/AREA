@@ -6,12 +6,13 @@ import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:go_router/go_router.dart';
 
-class DiscordLoginButton extends StatelessWidget {
-  const DiscordLoginButton({super.key});
+class GithubLoginButton extends StatelessWidget {
+  const GithubLoginButton({super.key});
+
   Future<void> _launchURL(BuildContext context) async {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const DiscordAuthPage()),
+      MaterialPageRoute(builder: (context) => const GithubAuthPage()),
     );
   }
 
@@ -20,19 +21,19 @@ class DiscordLoginButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ElevatedButton(
       onPressed: () => _launchURL(context),
-      child: const Text('Se connecter avec Discord'),
+      child: const Text('Se connecter avec Github'),
     );
   }
 }
 
-class DiscordAuthPage extends StatefulWidget {
-  const DiscordAuthPage({super.key});
+class GithubAuthPage extends StatefulWidget {
+  const GithubAuthPage({super.key});
 
   @override
-  State<DiscordAuthPage> createState() => _DiscordAuthPageState();
+  State<GithubAuthPage> createState() => _GithubAuthPageState();
 }
 
-class _DiscordAuthPageState extends State<DiscordAuthPage> {
+class _GithubAuthPageState extends State<GithubAuthPage> {
   bool _isWebViewInitialized = false;
   String url = "";
   late WebViewController _webViewController;
@@ -46,10 +47,10 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
   }
 
   Future<void> _initialize() async {
-    await _makeDemand("api/oauth/discord");
+    await _makeDemand("api/oauth/github");
     setState(() {
+      print(url);
       _initializeWebView();
-
       _isWebViewInitialized = true;
     });
   }
@@ -67,7 +68,7 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
     }
     if (rep.statusCode >= 500) {
       setState(() {
-        u = "pipi";
+        u = "error";
       });
       _errorMessage(rep.body);
       return;
@@ -94,7 +95,7 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
                 setState(() {
                   _authCode = code;
                   if (_authCode != "") {
-                    _makeRequest(_authCode, "api/oauth/discord");
+                    _makeRequest(_authCode, "api/oauth/github");
                     if (!context.mounted) return;
                     context.go("/");
                   }
@@ -158,9 +159,10 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
       case 2:
         str = content['token']?.toString();
         if (str != null) {
-          if (!mounted) return;
-          Provider.of<UserState>(context, listen: false).setToken(_token!);
           _token = str;
+          if (mounted) {
+            context.go("/");
+          }
         } else {
           _errorMessage("Enter a valid email and password !");
         }
@@ -181,7 +183,7 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Discord Authentication")),
+      appBar: AppBar(title: const Text("Github Authentication")),
       body: _isWebViewInitialized
           ? WebViewWidget(controller: _webViewController)
           : const Center(child: CircularProgressIndicator()),

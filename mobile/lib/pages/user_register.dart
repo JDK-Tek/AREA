@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:area/tools/space.dart';
 import 'package:area/pages/login_page.dart';
 import 'package:go_router/go_router.dart';
-import 'package:http/http.dart' as http;
+import 'package:http/http.dart' as https;
 import 'dart:convert';
-import 'package:area/tools/userstate.dart';
+import 'package:area/tools/providers.dart';
 import 'package:provider/provider.dart';
 
 class UserRegister extends StatefulWidget {
-  UserRegister(
+  const UserRegister(
       {super.key,
       required this.title,
       required this.icon,
@@ -19,8 +19,6 @@ class UserRegister extends StatefulWidget {
   final bool obscureText;
   final IconData icon;
   final String u;
-  final email = TextEditingController();
-  final password = TextEditingController();
 
   @override
   State<UserRegister> createState() => _UserRegister();
@@ -30,14 +28,17 @@ class _UserRegister extends State<UserRegister> {
   final FocusNode emailFocusNode = FocusNode();
   final FocusNode passwordFocusNode = FocusNode();
 
+  final email = TextEditingController();
+  final password = TextEditingController();
+
   String? _token;
 
   @override
   void dispose() {
     emailFocusNode.dispose();
     passwordFocusNode.dispose();
-    widget.email.dispose();
-    widget.password.dispose();
+    email.dispose();
+    password.dispose();
     super.dispose();
   }
 
@@ -70,42 +71,45 @@ class _UserRegister extends State<UserRegister> {
   }
 
   Future<void> _makeRequest(String a, String b, String u) async {
-    final String body = "{ \"email\": \"$a\", \"password\": \"$b\" }";
-    // print("uuuuuuu = ${u}");
-    final Uri uri = Uri.http("localhost:1234", u);
-    late final http.Response rep;
+    final Map<String, String> body = {
+      "email": a,
+      "password": b,
+    };
+    final Uri uri =
+        Uri.https(Provider.of<IPState>(context, listen: false).ip, u);
+    late final https.Response rep;
     late Map<String, dynamic> content;
-    late String? str;
 
     try {
-      rep = await http.post(uri, body: body);
-    } catch (e) {
-      return _errorMessage("$e");
-    }
-    content = jsonDecode(rep.body) as Map<String, dynamic>;
-    switch ((rep.statusCode / 100) as int) {
-      case 2:
-        str = content['token']?.toString();
-        if (str != null) {
-          _token = str;
-          if (mounted) {
+      rep = await https.post(
+        uri,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode(body),
+      );
+      switch (rep.statusCode) {
+        case 200:
+          content = jsonDecode(rep.body);
+          _token = content['token']?.toString();
+          if (_token != null && mounted) {
             Provider.of<UserState>(context, listen: false).setToken(_token!);
             context.go("/");
+          } else {
+            await _errorMessage("Token not received from server.");
           }
-        } else {
-          _errorMessage("Enter a valid email and password !");
-        }
-        break;
-      case 4:
-        str = content['message']?.toString();
-        if (str != null) {
-          _errorMessage(str);
-        }
-        break;
-      case 5:
-        _errorMessage("Enter a valid email and password !");
-      default:
-        break;
+          break;
+        case 400:
+          await _errorMessage("400 Bad Request: ${rep.body}");
+          break;
+        case 500:
+          await _errorMessage("Server error: ${rep.body}");
+          break;
+        default:
+          await _errorMessage("Unexpected server response.");
+      }
+    } catch (e) {
+      await _errorMessage("Failed to make request: $e");
     }
   }
 
@@ -126,16 +130,13 @@ class _UserRegister extends State<UserRegister> {
                       ? MediaQuery.of(context).size.height
                       : MediaQuery.of(context).size.height * 0.5,
                   width: MediaQuery.of(context).size.width * 0.75,
-                  //color: const Color(0xff222222),
                   decoration: BoxDecoration(
                     color: const Color(0xff222222),
                     borderRadius: BorderRadius.circular(15),
                   ),
                   child: Column(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      //crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        //const Space(height: 15),
                         const Text(
                           "REGISTER",
                           style: TextStyle(color: Colors.white, fontSize: 20),
@@ -144,12 +145,11 @@ class _UserRegister extends State<UserRegister> {
                             "Welcome, we are delighted to have you among us",
                             style: TextStyle(
                                 color: Color(0xff8c52ff), fontSize: 12)),
-                        //const Space(height: 50),
                         SizedBox(
                           height: 50,
                           width: 300,
                           child: UserBox(
-                            nameController: widget.email,
+                            nameController: email,
                             icon: Icons.email,
                             obscureText: false,
                             title: "email:",
@@ -160,7 +160,7 @@ class _UserRegister extends State<UserRegister> {
                           height: 50,
                           width: 300,
                           child: UserBox(
-                            nameController: widget.password,
+                            nameController: password,
                             icon: Icons.password,
                             obscureText: true,
                             title: "password:",
@@ -200,8 +200,8 @@ class _UserRegister extends State<UserRegister> {
                               borderRadius: BorderRadius.circular(15),
                             ),
                             onPressed: () {
-                              _makeRequest(widget.email.text,
-                                  widget.password.text, "api/register");
+                              _makeRequest(
+                                  email.text, password.text, "api/register");
                             }),
                       ]),
                 ),
