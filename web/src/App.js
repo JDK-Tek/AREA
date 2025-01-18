@@ -19,7 +19,6 @@ import Explore from "./routes/explore/Explore";
 import NotFound from "./routes/notfound/NotFound";
 import MobileClientDownload from './routes/mobileclientdownload/MobileClientDownload';
 import Connected from './routes/connected/Connected';
-// import AreaDiscord1 from './area/discord/AreaDiscord1';
 
 
 function App() {

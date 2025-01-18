@@ -22,7 +22,8 @@ export default function Content({ setError }) {
         const getServices = async () => {
             axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/services`, {headers: {"Content-Type": "application/json"}})
             .then((response) => {
-                setServices(response.data)
+                const res = response.data.slice(0, 5);
+                setServices(res)
             })
             .catch((error) => {
                 setError("Error when trying to get all services: " + error)

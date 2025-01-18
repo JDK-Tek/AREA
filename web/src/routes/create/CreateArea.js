@@ -6,7 +6,7 @@
 */
 
 import axios from "axios";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import { Trash2 } from "lucide-react";
 
@@ -30,6 +30,11 @@ function Triger({title, color, spices, onClick}) {
                 icon={<Trash2 />}
                 onClick={onClick}
             />
+            <Button
+                styleClolor={`bg-chartpurple-200 hover:bg-chartpurple-100 text-white`}
+                icon={<Trash2 />}
+                onClick={onClick}
+            />
         </div>
     )
 }
@@ -41,6 +46,8 @@ export default function CreateArea() {
     const [error, setError] = useState(false);
     const [success, setSuccess] = useState(false);
 
+    const [loggedServices, setLoggedServices] = useState([]);
+
     const defaultArea = {
         name: "",
         actions: [],
@@ -50,8 +57,28 @@ export default function CreateArea() {
     const [area, setArea] = useState(sessionStorage.getItem("area") === null ? defaultArea : JSON.parse(sessionStorage.getItem("area")));
     sessionStorage.setItem("area", JSON.stringify(area));
 
-    console.log(sessionStorage.getItem("token"));
+    useEffect(() => {
+        axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/doctor`, {
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${sessionStorage.getItem("token")}`,
+            }
+        })
+        .then((res) => {
+            if (res.data.authentificated) {
+                setLoggedServices(res.data.oauths);
+            } else {
+                window.location.href = "/login";
+                sessionStorage.removeItem("token");
+            }
+        })
+        .catch((err) => {
+            setError("Impossible to check the authentification: " + err.data);
+        });
+    }, [setLoggedServices]);
 
+
+    console.log(loggedServices);
     return (
         <div className="relative">
             <HeaderBar activeBackground={true} />
