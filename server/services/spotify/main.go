@@ -45,12 +45,26 @@ func getOAUTHLink(w http.ResponseWriter, req *http.Request) {
     str += "client_id=" + os.Getenv("SPOTIFY_CLIENT_ID")
     str += "&response_type=code"
     str += "&redirect_uri=" + x
-    str += "&scope=user-library-read playlist-read-private playlist-read-collaborative user-read-playback-state user-read-currently-playing"
+    str += "&scope=" +
+        "user-library-read " +
+        "playlist-read-private " +
+        "playlist-read-collaborative " +
+        "user-read-playback-state " +
+        "user-read-currently-playing " +
+        "user-modify-playback-state " +
+        "app-remote-control " +
+        "user-top-read " +
+        "playlist-modify-public " +
+        "playlist-modify-private " +
+        "streaming " +
+        "user-follow-read " +
+        "user-follow-modify"
     str += "&state=some-state-value"
 
     w.WriteHeader(http.StatusOK)
     fmt.Fprintln(w, str)
 }
+
 
 type Result struct {
 	Code string `json:"code"`
