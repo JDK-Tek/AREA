@@ -211,7 +211,7 @@ def get_userid_bridge_from_action(gameid: str, action_name: str):
     with db.cursor() as cur:
         cur.execute("""
             select userid, bridge from micro_robloxactions
-            where gameid = %s and action = %s,
+            where gameid = %s and action = %s
         """, (str(gameid), str(action_name)))
         rows = cur.fetchone()
         if len(rows) != 2:
