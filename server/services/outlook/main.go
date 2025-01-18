@@ -49,17 +49,15 @@ type EmailContent struct {
 }
 
 func getOAUTHLink(w http.ResponseWriter, req *http.Request) {
-	params := url.Values{}
-	params.Set("client_id", os.Getenv("OUTLOOK_CLIENT_ID"))
-	params.Set("response_type", "code")
-	params.Set("redirect_uri", os.Getenv("REDIRECT"))
-	params.Set("scope", "openid profile email offline_access user.read")
-	params.Set("state", "some-state-value")
-
-	oauthURL := "https://login.microsoftonline.com/common/oauth2/v2.0/authorize?" + params.Encode()
-
+	str := "https://login.microsoftonline.com/common/oauth2/v2.0/authorize?"
+	x := url.QueryEscape(os.Getenv("REDIRECT"))
+	str += "client_id=" + os.Getenv("OUTLOOK_CLIENT_ID")
+	str += "&response_type=code"
+	str += "&redirect_uri=" + x
+	str += "&scope=User.Read"
+	str += "&state=some-state-value"
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, oauthURL)
+	fmt.Fprintln(w, str)
 }
 
 type Result struct {
