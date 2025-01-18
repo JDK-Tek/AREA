@@ -49,7 +49,6 @@ class _SpotifyAuthPageState extends State<SpotifyAuthPage> {
     await _makeDemand("api/oauth/spotify");
     setState(() {
       _initializeWebView();
-
       _isWebViewInitialized = true;
     });
   }
@@ -76,7 +75,7 @@ class _SpotifyAuthPageState extends State<SpotifyAuthPage> {
     setState(() {
       _token = content;
       u = content;
-      url = content;
+      url = content.trim();
     });
   }
 
@@ -154,7 +153,7 @@ class _SpotifyAuthPageState extends State<SpotifyAuthPage> {
       return _errorMessage("$e");
     }
     content = jsonDecode(rep.body) as Map<String, dynamic>;
-    switch ((rep.statusCode / 100) as int) {
+    switch ((rep.statusCode / 100)) {
       case 2:
         str = content['token']?.toString();
         if (str != null) {

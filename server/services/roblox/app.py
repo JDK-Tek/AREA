@@ -51,15 +51,16 @@ class Command:
     def __str__(self):
         return self.str
 
-@app.route("/newpart", methods=["POST"])
-def newpart():
-    data = Request.json
+def general_reaction(name, data):
     areaid = data.get("userid")
     spices: dict = data.get("spices")
 
+    if not "gameid" in spices:
+         return jsonify({ "error": "expected (at least) gameid" }), 400
+
     gameid = spices.get("gameid")
     spices.pop("gameid")
-    command = Command("newarea", spices)
+    command = Command(name, spices)
 
     try:
         with db.cursor() as cur:
@@ -70,60 +71,103 @@ def newpart():
                 "where micro_roblox.robloxid = tokens.userid "\
                 "and tokens.owner = %s "\
                 "and tokens.service = %s "\
-                "and micro_roblox.gameid = %s ",
-                (command, str(areaid), "roblox", str(gameid),)
+                "and micro_roblox.gameid = %s",
+                (str(command), str(areaid), "roblox", str(gameid),)
             )
+            nrows = cur.rowcount
             db.commit()
+            if nrows <= 0:
+                return jsonify({ "error": "awaiting for your game to connect at least once." }), 425
+                 
         return jsonify({ "status": "ok" }), 200
     except (Exception, psycopg2.Error) as err:
         return jsonify({ "error":  str(err)}), 400
 
-@app.route("/webhook", methods=["POST"])
-def webhook():
-    data = Request.json
-    robloxid = data.get("robloxid")
-    gameid = data.get("gameid")
+@app.route("/newpart", methods=["POST"])
+def react_newpart():
+    return general_reaction("newpart", Request.json)
+
+@app.route("/kill", methods=["POST"])
+def react_kill():
+    return general_reaction("kill", Request.json)
+
+@app.route("/kick", methods=["POST"])
+def react_kick():
+    return general_reaction("kick", Request.json)
+
+@app.route("/insert", methods=["POST"])
+def react_insert():
+    return general_reaction("insert", Request.json)
+
+@app.route("/statupdate", methods=["POST"])
+def react_update_stats():
+    return general_reaction("statupdate", Request.json)
+
+@app.route("/givebadge", methods=["POST"])
+def react_givebadge():
+    return general_reaction("givebadge", Request.json)
+
+@app.route("/giveitem", methods=["POST"])
+def react_giveitem():
+    return general_reaction("giveitem", Request.json)
+
+@app.route("/changeprop", methods=["POST"])
+def react_changeprop():
+    return general_reaction("changeprop", Request.json)
+
+@app.route("/copy", methods=["POST"])
+def react_copy():
+    return general_reaction("copy", Request.json)
+
+@app.route("/sendmessage", methods=["POST"])
+def react_sendmessage():
+    return general_reaction("sendmessage", Request.json)
+
+def try_getting_informations(robloxid, gameid):
     try:
-        print("its bar", file=stderr)
         with db.cursor() as cur:
-            print(robloxid, gameid, file=stderr)
+            cur.execute("""
+                insert into micro_roblox (robloxid, gameid)
+                values (%s, %s)
+                on conflict (gameid)
+                do nothing
+            """, (str(robloxid), str(gameid)))
+            db.commit()
             cur.execute(
-                 "insert into micro_roblox (robloxid, gameid) "\
-                 "values (%s, %s) "\
-                 "on conflict (gameid) "\
-                 "do nothing",
-                (str(robloxid), str(gameid),)
+                "select command from micro_roblox "\
+                "where gameid = %s "\
+                "and command is not null",
+                (str(gameid),)
+            )
+            commands = cur.fetchall()
+            command_list = [c[0] for c in commands]
+            cur.execute(
+                "update micro_roblox set command = null where gameid = %s",
+                (str(gameid),)
             )
             db.commit()
-        print("its foo", file=stderr)
-        while True:
-            with db.cursor() as cur:
-                cur.execute(
-                     "select command from micro_roblox "\
-                     "where gameid = %s "\
-                     "and command is not null",
-                    (str(gameid),)
-                )
-                rows = cur.fetchone()
-                print(rows, file=stderr)
-                if rows:
-                    cur.execute(
-                        "update micro_roblox "\
-                        "set command = null "\
-                        "where gameid = %s",
-                        (str(gameid),)
-                    )
-                    db.commit()
-                    return jsonify({ "message": str(rows[0])}), 200
-            time.sleep(1)
-        print("its here", file=stderr)
+            return jsonify({ "list": command_list}), 200
     except (psycopg2.Error) as err:
-        print("its an error", file=stderr)
         return jsonify({ "error": "postgres says <(" + str(err) + ")"}), 400
     except Exception as err:
-        print("its another error", file=stderr)
         return jsonify({ "error": str(err)}), 400
-    print("its here", file=stderr)
+
+@app.route("/webhook", methods=["POST"])
+def webhook():
+    data = Request.get_json()
+    if not "gameid" in data:
+        return jsonify({"error": "gameid is required"}), 400
+    if not "robloxid" in data:
+        return jsonify({"error": "robloxid is required"}), 400
+    if not "method" in data:
+        return jsonify({"error": "expected a method"}), 400
+    robloxid = data.get("robloxid")
+    gameid = data.get("gameid")
+    method = data.get("method")
+    print(robloxid, gameid, method, file=stderr)
+    if method == "retrieve":
+        return try_getting_informations(robloxid, gameid)
+        
 
 @app.route("/", methods=["GET"])
 def routes():
@@ -156,6 +200,28 @@ def routes():
                         "title": "Is the part anchored.",
                         "extra": ["true", "false"]
                     }
+                ]
+            },
+            {
+                "name": "kill",
+                "description": "Kill a player",
+                "spices": [
+                    {
+                        "name": "userid",
+                        "type": "text",
+                        "title": "The player userid you want to kill."
+                    },
+                ]
+            },
+            {
+                "name": "kick",
+                "description": "Kick a player",
+                "spices": [
+                    {
+                        "name": "userid",
+                        "type": "text",
+                        "title": "The player userid you want to kill."
+                    },
                 ]
             }
         ]

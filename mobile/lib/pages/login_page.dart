@@ -1,3 +1,4 @@
+import 'package:area/pages/GithubOAuthPage.dart';
 import 'package:area/pages/OutlookOAuthPage.dart';
 import 'package:area/pages/SpotifyOAuthPage.dart';
 import 'package:flutter/material.dart';
@@ -200,6 +201,7 @@ class _LoginPage extends State<LoginPage> {
               const RobloxLoginButton(),
               const OutlookLoginButton(),
               const SpotifyLoginButton(),
+              const GithubLoginButton(),
             ])
           ],
         ),
