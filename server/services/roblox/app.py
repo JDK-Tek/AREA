@@ -162,7 +162,7 @@ def general_action():
             """, (
                 int(bridge),
                 int(areaid),
-                str(gameid),
+                str(spices["gameid"]),
                 str(robloxid),
                 str(action_name)
             ))
