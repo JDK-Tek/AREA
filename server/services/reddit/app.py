@@ -131,7 +131,7 @@ app = Flask(__name__)
 oreo = NewOreo(
 	service="reddit",
 	color="#ff4500",
-	image="/assets/services/reddit.webp"
+	image="/assets/reddit.webp"
 )
 
 PERMISSIONS_REQUIRED = [

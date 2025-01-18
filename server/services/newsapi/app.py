@@ -80,7 +80,7 @@ app = Flask(__name__)
 oreo = NewOreo(
 	service="newsapi",
 	color="#d4bd13",
-	image="/assets/services/newsapi.png"
+	image="/assets/newsapi.png"
 )
 
 
@@ -456,7 +456,7 @@ def new_article_general():
 
 CATEGORIES = {
 	ACTION_NEW_ART_TECH: "technology",
-	ACTION_NEW_ART_BUSINESS: "buisness",
+	ACTION_NEW_ART_BUSINESS: "business",
 	ACTION_NEW_ART_ENTERTAINEMENT: "entertainment",
 	ACTION_NEW_ART_SCIENCE: "science",
 	ACTION_NEW_ART_HEALTH: "health",
