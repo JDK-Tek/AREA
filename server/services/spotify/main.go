@@ -308,7 +308,7 @@ func playMusic(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 
     fmt.Println("Active device found for user. Proceeding to play music.")
 
-    trackURI := "spotify:track:3n3P1vEXs6IfzozT8kVYAf"
+    trackURI := "spotify:track:3n3P1vEXs6IfzozT8kVYAf" // Vérifier l'URI du morceau
     spotifyURL := "https://api.spotify.com/v1/me/player/play"
     body := fmt.Sprintf(`{"uris":["%s"]}`, trackURI)
 
@@ -339,6 +339,8 @@ func playMusic(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     } else {
         w.WriteHeader(http.StatusInternalServerError)
         fmt.Println("Failed to play music on Spotify. Status:", respSpotify.StatusCode)
+        bodyResp, _ := io.ReadAll(respSpotify.Body)
+        fmt.Println("Response body:", string(bodyResp))
         fmt.Fprintf(w, "{ \"error\": \"Failed to play music\" }\n")
     }
 }
