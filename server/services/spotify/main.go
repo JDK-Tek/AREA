@@ -243,7 +243,9 @@ func playMusic(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 
     var requestBody struct {
         UserID  int    `json:"userid"`
-        Musique string `json:"musique"`
+        Spices  struct {
+            Musique string `json:"musique"`
+        } `json:"spices"`
     }
 
     decoder := json.NewDecoder(req.Body)
@@ -256,10 +258,16 @@ func playMusic(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     }
 
     userID := requestBody.UserID
-	userID = 1
-    trackName := requestBody.Musique
+    trackName := requestBody.Spices.Musique
     fmt.Println("Extracted userID:", userID)
     fmt.Println("Requested trackName:", trackName)
+
+    if trackName == "" {
+        w.WriteHeader(http.StatusBadRequest)
+        fmt.Println("Error: Track name is empty.")
+        fmt.Fprintf(w, "{ \"error\": \"Track name is empty\" }\n")
+        return
+    }
 
     var spotifyToken string
     err = db.QueryRow("SELECT token FROM tokens WHERE owner = $1 AND service = 'spotify'", userID).Scan(&spotifyToken)
@@ -373,11 +381,11 @@ func playMusic(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     bodyResp, err = io.ReadAll(respSpotify.Body)
     if err != nil {
         w.WriteHeader(http.StatusInternalServerError)
-        fmt.Println("Error reading response body:", err.Error())
-        fmt.Fprintf(w, "{ \"error\": \"Error reading response body\" }\n")
+        fmt.Println("Error reading Spotify response body:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"Error reading Spotify response body\" }\n")
         return
     }
-    fmt.Println("Response Body:", string(bodyResp))
+    fmt.Println("Spotify Response Body:", string(bodyResp))
 
     if respSpotify.StatusCode == http.StatusNoContent {
         fmt.Println("Music is now playing!")
@@ -389,7 +397,6 @@ func playMusic(w http.ResponseWriter, req *http.Request, db *sql.DB) {
         fmt.Fprintf(w, "{ \"error\": \"Failed to play music\" }\n")
     }
 }
-
 
 func connectToDatabase() (*sql.DB, error) {
 	dbPassword := os.Getenv("DB_PASSWORD")
