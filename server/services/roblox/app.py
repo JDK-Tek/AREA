@@ -16,6 +16,7 @@ load_dotenv("/usr/mount.d/.env")
 CLIENT_ID = os.environ.get("ROBLOX_ID")
 CLIENT_SECRET = os.environ.get("ROBLOX_SECRET")
 BACKEND_KEY = os.environ.get("BACKEND_KEY")
+BACKEND_PORT = os.environ.get("BACKEND_PORT")
 
 API_URL = "https://authorize.roblox.com/"
 TOKEN_URL = "https://apis.roblox.com/oauth/v1/token"
@@ -123,7 +124,51 @@ def react_copy():
 def react_sendmessage():
     return general_reaction("sendmessage", Request.json)
 
+def get_robloxid_from_areaid(areaid) -> str|None:
+    with db.cursor() as cur:
+        cur.execute(
+            "select userid from tokens where owner = %s",
+            (int(areaid),)
+        )
+        rows = cur.fetchone()
+        if not rows:
+            return None
+        return rows[0]
+    return None
+
+@app.route("/onprompt", methods=["POST"])
+def general_action():
+    action_name = "onprompt"
+    json = Request.get_json()
+    bridge = json.get("bridge")
+    areaid = json.get("userid")
+    spices = json.get("spices")
+    if not bridge or not areaid or not spices:
+        return jsonify({ "error": "missing bridge, userid or spices" }), 500
+    if not "gameid" in spices:
+        return jsonify({ "error": "expected a gameid" }), 500
+    try:
+        robloxid = get_robloxid_from_areaid(areaid)
+        with db.cursor() as cur:
+            cur.execute("""
+                insert into micro_robloxactions
+                (bridge, userid, gameid, robloxid, action)
+                values (%s, %s, %s, %s, %s)
+                on conflict (bridge) do nothing
+            """, (
+                int(bridge),
+                int(areaid),
+                str(gameid),
+                str(robloxid),
+                str(action_name)
+            ))
+            db.commit()
+    except (Exception, psycopg2.Error) as err:
+        return jsonify({ "error": str(err)}), 400
+
 def try_getting_informations(robloxid, gameid):
+    if robloxid is None:
+        return jsonify({"error": "robloxid is required"}), 400
     try:
         with db.cursor() as cur:
             cur.execute("""
@@ -152,22 +197,52 @@ def try_getting_informations(robloxid, gameid):
     except Exception as err:
         return jsonify({ "error": str(err)}), 400
 
+def get_userid_bridge_from_action(gameid: str, action_name: str):
+    with db.cursor() as cur:
+        cur.execute("""
+            select userid, bridge from micro_robloxactions
+            where gameid = %s and action = %s,
+        """, (str(gameid), str(action_name)))
+        rows = cur.fetchone()
+        if len(rows) != 2:
+            return None, None
+        return rows[0], rows[1]
+    return None, None
+
+def on_action(data):
+    if not "action" in data:
+        return jsonify({"error": "expected an action"}), 400
+    gameid = data["gameid"]
+    action = data["action"]
+    userid, bridge = get_userid_bridge_from_action(gameid, action)
+    if areaid is None:
+        return jsonify({"message": "data doesnt exists in database"}), 100
+    ingredients = data.get("ingredients")
+    requests.put(
+        f"http://backend:{BACKEND_PORT}/api/orchestrator",
+        json={
+            "bridge": bridge,
+            "userid": userid,
+            "ingredients": ingredients if ingredients is not None else {}
+        }
+    )
+
 @app.route("/webhook", methods=["POST"])
 def webhook():
     data = Request.get_json()
     if not "gameid" in data:
         return jsonify({"error": "gameid is required"}), 400
-    if not "robloxid" in data:
-        return jsonify({"error": "robloxid is required"}), 400
     if not "method" in data:
         return jsonify({"error": "expected a method"}), 400
     robloxid = data.get("robloxid")
-    gameid = data.get("gameid")
-    method = data.get("method")
-    print(robloxid, gameid, method, file=stderr)
+    gameid = data["gameid"]
+    method = data["method"]
+    print(gameid, method, file=stderr)
     if method == "retrieve":
-        return try_getting_informations(robloxid, gameid)
-        
+        return try_getting_informations(data.get("robloxid"), gameid)
+    elif method == "trigger":
+        return on_action(data)
+    return jsonify({ "error": "invalid method" }), 400
 
 @app.route("/", methods=["GET"])
 def routes():

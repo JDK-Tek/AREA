@@ -7,3 +7,12 @@ create table if not exists micro_roblox (
     command text default null,
     constraint unique_gameid unique (gameid)
 );
+
+create table if not exists micro_robloxactions (
+    id serial primary key,
+    bridge int not null,
+    userid int not null,
+    gameid text not null,
+    robloxid text not null,
+    action text not null
+);
