@@ -38,16 +38,18 @@ func init() {
 }
 
 func getOAUTHLink(w http.ResponseWriter, req *http.Request) {
-	str := "https://accounts.spotify.com/authorize?"
-	x := url.QueryEscape(os.Getenv("REDIRECT"))
-	fmt.Println("redirect = ", x)
-	str += "client_id=" + os.Getenv("SPOTIFY_CLIENT_ID")
-	str += "&response_type=code"
-	str += "&redirect_uri=" + x
-	str += "&scope=user-library-read"
-	str += "&state=some-state-value"
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, str)
+    str := "https://accounts.spotify.com/authorize?"
+    x := url.QueryEscape(os.Getenv("REDIRECT"))
+    fmt.Println("redirect = ", x)
+    
+    str += "client_id=" + os.Getenv("SPOTIFY_CLIENT_ID")
+    str += "&response_type=code"
+    str += "&redirect_uri=" + x
+    str += "&scope=user-library-read playlist-read-private playlist-read-collaborative user-read-playback-state user-read-currently-playing"
+    str += "&state=some-state-value"
+
+    w.WriteHeader(http.StatusOK)
+    fmt.Fprintln(w, str)
 }
 
 type Result struct {
