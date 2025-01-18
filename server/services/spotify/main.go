@@ -58,12 +58,15 @@ func getOAUTHLink(w http.ResponseWriter, req *http.Request) {
         "playlist-modify-private " +
         "streaming " +
         "user-follow-read " +
-        "user-follow-modify"
+        "user-follow-modify " +
+        "user-library-modify"
+
     str += "&state=some-state-value"
 
     w.WriteHeader(http.StatusOK)
     fmt.Fprintln(w, str)
 }
+
 
 
 type Result struct {
