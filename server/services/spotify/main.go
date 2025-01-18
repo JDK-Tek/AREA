@@ -752,9 +752,10 @@ func checkDeviceConnection(w http.ResponseWriter, req *http.Request, db *sql.DB)
                 url := fmt.Sprintf("http://backend:%s/api/orchestrator", backendPort)
                 var requestBody Message
 
-requestBody.Bridge = bridgeID
-requestBody.UserId = userID
-requestBody.Ingredients = map[string]string{}
+			requestBody.Bridge = bridgeID
+			requestBody.UserId = userID
+			requestBody.Ingredients = make(map[string]string)
+			requestBody.Ingredients["device"] = string(activeDevice.Name)
                 jsonData, err := json.Marshal(requestBody)
                 if err != nil {
                     fmt.Println("Error marshaling JSON:", err.Error())
