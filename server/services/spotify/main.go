@@ -750,11 +750,11 @@ func checkDeviceConnection(w http.ResponseWriter, req *http.Request, db *sql.DB)
 
             if activeDevice != nil {
                 url := fmt.Sprintf("http://backend:%s/api/orchestrator", backendPort)
-                requestBody := map[string]interface{}{
-                    "bridge":     bridgeID,
-                    "userid":     userID,
-                    "ingredients": map[string]interface{}{},
-                }
+                var requestBody Message
+
+requestBody.Bridge = bridgeID
+requestBody.UserId = userID
+requestBody.Ingredients = map[string]string{}
                 jsonData, err := json.Marshal(requestBody)
                 if err != nil {
                     fmt.Println("Error marshaling JSON:", err.Error())
@@ -844,6 +844,12 @@ type Infos struct {
 	Color string `json:"color"`
 	Image string `json:"image"`
 	Routes []InfoRoute `json:"areas"`
+}
+
+type Message struct {
+    Bridge int `json:"bridge"`
+    UserId int `json:"userid"`
+    Ingredients map[string]string `json:"ingredients"`
 }
 
 func getRoutes(w http.ResponseWriter, req *http.Request) {
