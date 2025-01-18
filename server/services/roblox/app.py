@@ -62,7 +62,7 @@ def newpart():
 
     gameid = spices.get("gameid")
     spices.pop("gameid")
-    command = Command("newarea", spices)
+    command = Command("newpart", spices)
 
     try:
         with db.cursor() as cur:
