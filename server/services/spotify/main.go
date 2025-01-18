@@ -548,6 +548,155 @@ func pauseMusic(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     }
 }
 
+func likeCurrentMusic(w http.ResponseWriter, req *http.Request, db *sql.DB) {
+    fmt.Println("Headers received:", req.Header)
+
+    bodyBytes, err := io.ReadAll(req.Body)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error reading request body:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+        return
+    }
+    fmt.Println("Request Body:", string(bodyBytes))
+
+    req.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+
+    var requestBody struct {
+        UserID int `json:"userid"`
+    }
+
+    decoder := json.NewDecoder(req.Body)
+    err = decoder.Decode(&requestBody)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error decoding JSON:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+        return
+    }
+
+    userID := requestBody.UserID
+    fmt.Println("Extracted userID:", userID)
+
+    var spotifyToken string
+    err = db.QueryRow("SELECT token FROM tokens WHERE owner = $1 AND service = 'spotify'", userID).Scan(&spotifyToken)
+    if err != nil {
+        if err == sql.ErrNoRows {
+            w.WriteHeader(http.StatusNotFound)
+            fmt.Println("No Spotify token found for user:", userID)
+            fmt.Fprintf(w, "{ \"error\": \"No Spotify token found for user\" }\n")
+        } else {
+            w.WriteHeader(http.StatusInternalServerError)
+            fmt.Println("Database error:", err.Error())
+            fmt.Fprintf(w, "{ \"error\": \"Database error: %s\" }\n", err.Error())
+        }
+        return
+    }
+
+    if spotifyToken == "" {
+        w.WriteHeader(http.StatusUnauthorized)
+        fmt.Println("No Spotify token available for user:", userID)
+        fmt.Fprintf(w, "{ \"error\": \"No Spotify token available\" }\n")
+        return
+    }
+
+    spotifyURL := "https://api.spotify.com/v1/me/player/currently-playing"
+    reqSpotify, err := http.NewRequest("GET", spotifyURL, nil)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error creating Spotify request:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+        return
+    }
+
+    reqSpotify.Header.Set("Authorization", "Bearer "+spotifyToken)
+    client := &http.Client{}
+    respSpotify, err := client.Do(reqSpotify)
+    if err != nil {
+        w.WriteHeader(http.StatusBadGateway)
+        fmt.Println("Error fetching currently playing music:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+        return
+    }
+    defer respSpotify.Body.Close()
+
+    bodyResp, err := io.ReadAll(respSpotify.Body)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error reading Spotify response body:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"Error reading Spotify response body\" }\n")
+        return
+    }
+    fmt.Println("Spotify Response Body:", string(bodyResp))
+
+    if respSpotify.StatusCode == http.StatusOK {
+        var playbackResponse struct {
+            Item struct {
+                Name     string `json:"name"`
+                ID       string `json:"id"`
+                Artists []struct {
+                    Name string `json:"name"`
+                } `json:"artists"`
+            } `json:"item"`
+        }
+
+        if err := json.Unmarshal(bodyResp, &playbackResponse); err != nil {
+            w.WriteHeader(http.StatusInternalServerError)
+            fmt.Println("Error unmarshalling playback response:", err.Error())
+            fmt.Fprintf(w, "{ \"error\": \"Error unmarshalling playback response\" }\n")
+            return
+        }
+
+        if playbackResponse.Item.Name != "" {
+            trackName := playbackResponse.Item.Name
+            trackID := playbackResponse.Item.ID // L'ID du morceau
+            artistName := playbackResponse.Item.Artists[0].Name
+
+            fmt.Printf("Currently playing: %s by %s\n", trackName, artistName)
+
+            // Add the track to the user's library (like it)
+            likeTrackURL := "https://api.spotify.com/v1/me/tracks?ids=" + trackID
+            reqLike, err := http.NewRequest("PUT", likeTrackURL, nil)
+            if err != nil {
+                w.WriteHeader(http.StatusInternalServerError)
+                fmt.Println("Error creating like request:", err.Error())
+                fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+                return
+            }
+
+            reqLike.Header.Set("Authorization", "Bearer "+spotifyToken)
+
+            respLike, err := client.Do(reqLike)
+            if err != nil {
+                w.WriteHeader(http.StatusBadGateway)
+                fmt.Println("Error liking track:", err.Error())
+                fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+                return
+            }
+            defer respLike.Body.Close()
+
+            if respLike.StatusCode == http.StatusOK {
+                fmt.Println("Track has been liked!")
+                w.WriteHeader(http.StatusOK)
+                fmt.Fprintf(w, "{ \"status\": \"Track has been liked!\" }\n")
+            } else {
+                w.WriteHeader(http.StatusInternalServerError)
+                fmt.Println("Failed to like track. Status:", respLike.StatusCode)
+                fmt.Fprintf(w, "{ \"error\": \"Failed to like track\" }\n")
+            }
+        } else {
+            w.WriteHeader(http.StatusNotFound)
+            fmt.Println("No track is currently playing.")
+            fmt.Fprintf(w, "{ \"error\": \"No track is currently playing\" }\n")
+        }
+    } else {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Failed to fetch currently playing track. Status:", respSpotify.StatusCode)
+        fmt.Fprintf(w, "{ \"error\": \"Failed to fetch currently playing track\" }\n")
+    }
+}
+
+
 func resumeMusic(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     fmt.Println("Headers received:", req.Header)
 
@@ -1039,8 +1188,269 @@ func checkSongRunning(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     fmt.Fprintf(w, "{ \"status\": \"ok !\" }\n")
 }
 
+func checkPodcastRunning(w http.ResponseWriter, req *http.Request, db *sql.DB) {
+    bodyBytes, err := io.ReadAll(req.Body)
+	backendPort := os.Getenv("BACKEND_PORT")
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+        return
+    }
 
+    req.Body = io.NopCloser(bytes.NewReader(bodyBytes))
 
+    var requestBody struct {
+        UserID int `json:"userid"`
+        Bridge int `json:"bridge"`
+        Spices struct{} `json:"spices"`
+    }
+
+    decoder := json.NewDecoder(req.Body)
+    err = decoder.Decode(&requestBody)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+        return
+    }
+
+    userID := requestBody.UserID
+    bridgeID := requestBody.Bridge
+
+    var spotifyToken string
+    err = db.QueryRow("SELECT token FROM tokens WHERE owner = $1 AND service = 'spotify'", userID).Scan(&spotifyToken)
+    if err != nil {
+        if err == sql.ErrNoRows {
+            w.WriteHeader(http.StatusNotFound)
+            fmt.Fprintf(w, "{ \"error\": \"No Spotify token found for user\" }\n")
+        } else {
+            w.WriteHeader(http.StatusInternalServerError)
+            fmt.Fprintf(w, "{ \"error\": \"Database error: %s\" }\n", err.Error())
+        }
+        return
+    }
+
+    if spotifyToken == "" {
+        w.WriteHeader(http.StatusUnauthorized)
+        fmt.Fprintf(w, "{ \"error\": \"No Spotify token available\" }\n")
+        return
+    }
+
+    go func() {
+        deviceURL := "https://api.spotify.com/v1/me/player/devices"
+        reqDevices, err := http.NewRequest("GET", deviceURL, nil)
+        if err != nil {
+            fmt.Println("Error creating request:", err.Error())
+            return
+        }
+
+        reqDevices.Header.Set("Authorization", "Bearer "+spotifyToken)
+
+        client := &http.Client{}
+        for {
+            respDevices, err := client.Do(reqDevices)
+            if err != nil {
+                fmt.Println("Error fetching devices:", err.Error())
+                return
+            }
+            defer respDevices.Body.Close()
+
+            bodyResp, err := io.ReadAll(respDevices.Body)
+            if err != nil {
+                fmt.Println("Error reading response body:", err.Error())
+                return
+            }
+
+            if respDevices.StatusCode != http.StatusOK {
+                fmt.Println("Failed to get devices:", respDevices.StatusCode)
+                return
+            }
+
+            var deviceResponse struct {
+                Devices []struct {
+                    ID       string `json:"id"`
+                    IsActive bool   `json:"is_active"`
+                    Name     string `json:"name"`
+                } `json:"devices"`
+            }
+
+            if err := json.Unmarshal(bodyResp, &deviceResponse); err != nil {
+                fmt.Println("Error unmarshalling response:", err.Error())
+                return
+            }
+
+            var activeDevice *struct {
+                ID       string `json:"id"`
+                IsActive bool   `json:"is_active"`
+                Name     string `json:"name"`
+            }
+
+            for _, device := range deviceResponse.Devices {
+                if device.IsActive {
+                    activeDevice = &device
+                    break
+                }
+            }
+
+            if activeDevice != nil {
+                playbackURL := "https://api.spotify.com/v1/me/player/currently-playing"
+                reqPlayback, err := http.NewRequest("GET", playbackURL, nil)
+                if err != nil {
+                    fmt.Println("Error creating playback request:", err.Error())
+                    return
+                }
+
+                reqPlayback.Header.Set("Authorization", "Bearer "+spotifyToken)
+
+                respPlayback, err := client.Do(reqPlayback)
+                if err != nil {
+                    fmt.Println("Error fetching playback info:", err.Error())
+                    return
+                }
+                defer respPlayback.Body.Close()
+
+                bodyPlayback, err := io.ReadAll(respPlayback.Body)
+                if err != nil {
+                    fmt.Println("Error reading playback response body:", err.Error())
+                    return
+                }
+
+                if respPlayback.StatusCode != http.StatusOK {
+                    fmt.Println("No track or podcast currently playing or error retrieving track.")
+                } else {
+                    var playbackResponse struct {
+                        Item struct {
+                            Name     string `json:"name"`
+                            Show     struct {
+                                Name     string `json:"name"`
+                                ID       string `json:"id"`
+                            } `json:"show"`
+                            Type     string `json:"type"`
+                        } `json:"item"`
+                    }
+
+                    if err := json.Unmarshal(bodyPlayback, &playbackResponse); err != nil {
+                        fmt.Println("Error unmarshalling playback response:", err.Error())
+                        return
+                    }
+
+                    if playbackResponse.Item.Type == "episode" {
+                        podcastName := playbackResponse.Item.Show.Name
+                        episodeName := playbackResponse.Item.Name
+                        podcastID := playbackResponse.Item.Show.ID
+
+                        fmt.Printf("Currently playing podcast: %s - Episode: %s\n", podcastName, episodeName)
+
+                        episodesURL := fmt.Sprintf("https://api.spotify.com/v1/shows/%s/episodes", podcastID)
+                        reqEpisodes, err := http.NewRequest("GET", episodesURL, nil)
+                        if err != nil {
+                            fmt.Println("Error creating episodes request:", err.Error())
+                            return
+                        }
+
+                        reqEpisodes.Header.Set("Authorization", "Bearer "+spotifyToken)
+
+                        respEpisodes, err := client.Do(reqEpisodes)
+                        if err != nil {
+                            fmt.Println("Error fetching episodes:", err.Error())
+                            return
+                        }
+                        defer respEpisodes.Body.Close()
+
+                        bodyEpisodes, err := io.ReadAll(respEpisodes.Body)
+                        if err != nil {
+                            fmt.Println("Error reading episodes response body:", err.Error())
+                            return
+                        }
+
+                        if respEpisodes.StatusCode != http.StatusOK {
+                            fmt.Println("Failed to get episodes:", respEpisodes.StatusCode)
+                        } else {
+                            var episodesResponse struct {
+                                Items []struct {
+                                    Name string `json:"name"`
+                                    ID   string `json:"id"`
+                                } `json:"items"`
+                            }
+
+                            if err := json.Unmarshal(bodyEpisodes, &episodesResponse); err != nil {
+                                fmt.Println("Error unmarshalling episodes response:", err.Error())
+                                return
+                            }
+
+                            fmt.Println("Episodes of the podcast:")
+                            for _, episode := range episodesResponse.Items {
+                                fmt.Println("- " + episode.Name)
+                            }
+
+                            followURL := fmt.Sprintf("https://api.spotify.com/v1/me/following?type=show&ids=%s", podcastID)
+                            reqFollow, err := http.NewRequest("PUT", followURL, nil)
+                            if err != nil {
+                                fmt.Println("Error creating follow request:", err.Error())
+                                return
+                            }
+
+                            reqFollow.Header.Set("Authorization", "Bearer "+spotifyToken)
+
+                            respFollow, err := client.Do(reqFollow)
+                            if err != nil {
+                                fmt.Println("Error following podcast:", err.Error())
+                                return
+                            }
+                            defer respFollow.Body.Close()
+
+                            if respFollow.StatusCode != http.StatusOK {
+                                fmt.Println("Failed to follow podcast:", respFollow.StatusCode)
+                            } else {
+                                url := fmt.Sprintf("http://backend:%s/api/orchestrator", backendPort)
+                                var requestBody Message
+
+                                requestBody.Bridge = bridgeID
+                                requestBody.UserId = userID
+                                requestBody.Ingredients = make(map[string]string)
+                                requestBody.Ingredients["device"] = string(activeDevice.Name)
+                                requestBody.Ingredients["podcast"] = podcastName
+                                requestBody.Ingredients["episode"] = episodeName
+
+                                jsonData, err := json.Marshal(requestBody)
+                                if err != nil {
+                                    fmt.Println("Error marshaling JSON:", err.Error())
+                                    return
+                                }
+
+                                reqPut, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonData))
+                                if err != nil {
+                                    fmt.Println("Error creating PUT request:", err.Error())
+                                    return
+                                }
+
+                                reqPut.Header.Set("Content-Type", "application/json")
+
+                                respPut, err := client.Do(reqPut)
+                                if err != nil {
+                                    fmt.Println("Error sending PUT request:", err.Error())
+                                    return
+                                }
+                                defer respPut.Body.Close()
+
+                                if respPut.StatusCode != http.StatusOK {
+                                    fmt.Println("Failed to send PUT request:", respPut.StatusCode)
+                                    return
+                                }
+
+                                fmt.Println("Successfully followed the podcast and sent the information to backend!")
+                            }
+                        }
+                    }
+                }
+            }
+
+            time.Sleep(1 * time.Second)
+        }
+    }()
+
+    w.WriteHeader(http.StatusOK)
+    fmt.Fprintf(w, "{ \"status\": \"ok !\" }\n")
+}
 
 func connectToDatabase() (*sql.DB, error) {
 	dbPassword := os.Getenv("DB_PASSWORD")
@@ -1138,6 +1548,18 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 			Desc: "check if you have a song whose running and got id, type and current song !",
 			Spices: []InfoSpice{},
 		},
+		{
+			Name: "checkPodcastRunning",
+			Type: "action",
+			Desc: "check if you have a podcast whose running and got the podcast name and episode + follow him !",
+			Spices: []InfoSpice{},
+		},
+		{
+			Name: "likeCurrentMusic",
+			Type: "reaction",
+			Desc: "like the current music you listening",
+			Spices: []InfoSpice{},
+		},
 	}
 	var infos = Infos{
 		Color: "#1DB954",
@@ -1172,6 +1594,8 @@ func main() {
 	router.HandleFunc("/resumeMusic", miniproxy(resumeMusic, db)).Methods("POST")
 	router.HandleFunc("/checkDeviceConnection", miniproxy(checkDeviceConnection, db)).Methods("POST")
 	router.HandleFunc("/checkSongRunning", miniproxy(checkSongRunning, db)).Methods("POST")
+	router.HandleFunc("/checkPodcastRunning", miniproxy(checkPodcastRunning, db)).Methods("POST")
+	router.HandleFunc("/likeCurrentMusic", miniproxy(likeCurrentMusic, db)).Methods("POST")
 	router.HandleFunc("/user", getUserInfo).Methods("GET")
 	router.HandleFunc("/", getRoutes).Methods("GET")
 	log.Fatal(http.ListenAndServe(":80", router))
