@@ -119,6 +119,10 @@ def react_changeprop():
 def react_copy():
     return general_reaction("copy", Request.json)
 
+@app.route("/sendmessage", methods=["POST"])
+def react_sendmessage():
+    return general_reaction("sendmessage", Request.json)
+
 def try_getting_informations(robloxid, gameid):
     try:
         with db.cursor() as cur:
