@@ -42,7 +42,6 @@ services:
       - ./server/database/setup.sql:/docker-entrypoint-initdb.d/setup.sql
       - ./server/database/time.sql:/docker-entrypoint-initdb.d/time.sql
       - ./server/database/github.sql:/docker-entrypoint-initdb.d/github.sql
-      - ./server/database/roblox.sql:/docker-entrypoint-initdb.d/roblox.sql
     networks:
       - web
     
