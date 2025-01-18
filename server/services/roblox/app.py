@@ -175,6 +175,7 @@ def general_action():
 
 def try_getting_informations(robloxid, gameid):
     if robloxid is None:
+        print(1, "no roblox id ?", file=stderr)
         return jsonify({"error": "robloxid is required"}), 400
     try:
         with db.cursor() as cur:
@@ -200,9 +201,11 @@ def try_getting_informations(robloxid, gameid):
             db.commit()
             return jsonify({ "list": command_list}), 200
     except (psycopg2.Error) as err:
-        return jsonify({ "error": "postgres says <(" + str(err) + ")"}), 400
+        print(2, str(err), file=stderr)
+        return jsonify({ "error": "postgres says <(" + str(err) + ")"}), 401
     except Exception as err:
-        return jsonify({ "error": str(err)}), 400
+        print(3, str(err), file=stderr)
+        return jsonify({ "error": str(err)}), 402
 
 def get_userid_bridge_from_action(gameid: str, action_name: str):
     with db.cursor() as cur:
