@@ -312,6 +312,7 @@ func playMusic(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     } else {
         w.WriteHeader(http.StatusInternalServerError)
         fmt.Println("Failed to play music on Spotify. Status:", respSpotify.StatusCode)
+		fmt.Println("rep = ", reqSpotify.Body)
         fmt.Fprintf(w, "{ \"error\": \"Failed to play music\" }\n")
     }
 }
