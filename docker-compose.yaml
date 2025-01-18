@@ -10,19 +10,19 @@ services:
     networks:
       - web
     depends_on:
-      - client_mobile
+      #- client_mobile
       - backend
     volumes:
       - apk_volume:/app/src/apk
 
-  client_mobile:
-    build:
-      context: ./mobile
-    volumes:
-      - apk_volume:/apk_volume
-    container_name: area-client-mobile
-    networks:
-      - web
+  #client_mobile:
+  # build:
+  #   context: ./mobile
+  # volumes:
+  #   - apk_volume:/apk_volume
+  # container_name: area-client-mobile
+  # networks:
+  #   - web
 
 networks:
   web:
