@@ -42,6 +42,8 @@ services:
       - ./server/database/setup.sql:/docker-entrypoint-initdb.d/setup.sql
       - ./server/database/time.sql:/docker-entrypoint-initdb.d/time.sql
       - ./server/database/github.sql:/docker-entrypoint-initdb.d/github.sql
+      - ./server/database/roblox.sql:/docker-entrypoint-initdb.d/roblox.sql
+      - ./server/database/newsapi.sql:/docker-entrypoint-initdb.d/newsapi.sql
     networks:
       - web
     
@@ -205,6 +207,31 @@ services:
       - web
     volumes:
     - ./server/services/reddit/.env:/usr/mount.d/.env
+
+  service-newsapi:
+    env_file:
+      - .env
+    container_name: area-service-newsapi
+    build:
+      context: ./server/services/newsapi
+    depends_on:
+      - database
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.newsapi.rule=PathPrefix(`/service/newsapi/`)"
+      - "traefik.http.services.newsapi.loadbalancer.server.port=80"
+      - "traefik.http.routers.newsapi.middlewares=stripprefix-service-newsapi"
+      - "traefik.http.middlewares.stripprefix-service-newsapi.stripprefix.prefixes=/service/newsapi"
+    environment:
+      - DB_HOST=database
+      - DB_PORT=${DATABASE_PORT}
+      - DB_USER=${DATABASE_USER}
+      - DB_PASSWORD=${DATABASE_PASSWORD}
+      - DB_NAME=${DATABASE_NAME}
+    networks:
+      - web
+    volumes:
+    - ./server/services/newsapi/.env:/usr/mount.d/.env
 
   reverse-proxy:
     env_file:

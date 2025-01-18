@@ -108,9 +108,10 @@ export default function RegisterBox ( {setToken, setError} ) {
             </div>
             <LRButton text="Register" handleClick={handleSubmit}/>
             <div className="flex flex-row space-x-4 justify-center pt-4">
-                <LRButton text="Connect with Discord" handleClick={() => handleOauth("discord")} /> 
-                <LRButton text="Connect with Reddit" handleClick={() => handleOauth("reddit")} /> 
-                <LRButton text="Connect with Github" handleClick={() => handleOauth("github")} /> 
+                <LRButton text="Connect with Discord" handleClick={() => handleOauth("discord")} />
+                <LRButton text="Connect with Reddit" handleClick={() => handleOauth("reddit")} />
+                <LRButton text="Connect with Github" handleClick={() => handleOauth("github")} />
+                <LRButton text="Connect with Spotify" handleClick={() => handleOauth("spotify")} />
             </div>
         </LRBox>
     )

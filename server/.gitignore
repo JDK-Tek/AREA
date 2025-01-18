@@ -8,6 +8,7 @@ src/backend
 *.out
 *.o
 *.pem
+*-tmp-news.json
 
 # trash folders
 .vscode/
