@@ -92,11 +92,11 @@ def react_kill():
     return general_reaction("kill", Request.json)
 
 @app.route("/kick", methods=["POST"])
-def react_kill():
+def react_kick():
     return general_reaction("kick", Request.json)
 
 @app.route("/insert", methods=["POST"])
-def react_kill():
+def react_insert():
     return general_reaction("insert", Request.json)
 
 def try_getting_informations(robloxid, gameid):
