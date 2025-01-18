@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+    from flask import Flask, jsonify
 from flask import request as Request
 from dotenv import load_dotenv
 import random
@@ -51,9 +51,7 @@ class Command:
     def __str__(self):
         return self.str
 
-@app.route("/newpart", methods=["POST"])
-def newpart():
-    data = Request.json
+def general_reaction(name, data):
     areaid = data.get("userid")
     spices: dict = data.get("spices")
 
@@ -62,7 +60,7 @@ def newpart():
 
     gameid = spices.get("gameid")
     spices.pop("gameid")
-    command = Command("newpart", spices)
+    command = Command(name, spices)
 
     try:
         with db.cursor() as cur:
@@ -84,6 +82,14 @@ def newpart():
         return jsonify({ "status": "ok" }), 200
     except (Exception, psycopg2.Error) as err:
         return jsonify({ "error":  str(err)}), 400
+
+@app.route("/newpart", methods=["POST"])
+def react_newpart():
+    return ("newpart", Request.json)
+
+@app.route("/kill", methods=["POST"])
+def react_kill():
+    return ("kill", Request.json)
 
 def try_getting_informations(robloxid, gameid):
     try:
