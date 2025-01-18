@@ -85,11 +85,11 @@ def general_reaction(name, data):
 
 @app.route("/newpart", methods=["POST"])
 def react_newpart():
-    return ("newpart", Request.json)
+    return general_reaction("newpart", Request.json)
 
 @app.route("/kill", methods=["POST"])
 def react_kill():
-    return ("kill", Request.json)
+    return general_reaction("kill", Request.json)
 
 def try_getting_informations(robloxid, gameid):
     try:
