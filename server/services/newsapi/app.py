@@ -145,13 +145,8 @@ COUNTRIES = [
 	"za"
 ]
 
-# "technology"
-# "entertainment",
-# "buisness",
-# "general",
-# "science",
-# "health",
-# "sports",
+# country
+# key word
 
 ACTION_NEW_ART_TECH = "new-art-technology"
 oreo.create_area(
@@ -190,16 +185,16 @@ def new_article_tech():
 
 	return jsonify({"status": "ok"}), 200
 
-ACTION_NEW_ART_BUISNESS = "new-art-buisness"
+ACTION_NEW_ART_BUSINESS = "new-art-business"
 oreo.create_area(
-	ACTION_NEW_ART_BUISNESS,
+	ACTION_NEW_ART_BUSINESS,
 	NewOreo.TYPE_ACTIONS,
-	"When a new article is published in Buisness category",
+	"When a new article is published in Business category",
 	[]
 )
-@app.route(f'/{ACTION_NEW_ART_BUISNESS}', methods=["POST"])
-def new_article_buisness():
-	app.logger.info(f"{ACTION_NEW_ART_BUISNESS} endpoint hit")
+@app.route(f'/{ACTION_NEW_ART_BUSINESS}', methods=["POST"])
+def new_article_business():
+	app.logger.info(f"{ACTION_NEW_ART_BUSINESS} endpoint hit")
 
 	# get data
 	data = request.json
@@ -218,7 +213,7 @@ def new_article_buisness():
 			  "VALUES (%s, %s, %s, %s)", (
 				  userid,
 				  bridge,
-				  ACTION_NEW_ART_BUISNESS,
+				  ACTION_NEW_ART_BUSINESS,
 				  json.dumps(spices)
 			  )
 		)
@@ -264,11 +259,52 @@ def new_article_entertainment():
 
 	return jsonify({"status": "ok"}), 200
 
+ACTION_NEW_ART_SCIENCE = "new-art-science"
+oreo.create_area(
+	ACTION_NEW_ART_SCIENCE,
+	NewOreo.TYPE_ACTIONS,
+	"When a new article is published in Science category",
+	[]
+)
+@app.route(f'/{ACTION_NEW_ART_SCIENCE}', methods=["POST"])
+def new_article_science():
+	app.logger.info(f"{ACTION_NEW_ART_SCIENCE} endpoint hit")
+
+	# get data
+	data = request.json
+	if not data:
+		return jsonify({"error": "Invalid JSON"}), 400
+
+	userid = data.get("userid")
+	bridge = data.get("bridge")
+	spices = data.get("spices", {})
+	if not userid or not bridge:
+		return jsonify({"error": f"Missing required fields: 'userid': {userid}, 'spices': {spices}, 'bridge': {bridge}"}), 400
+
+	with db.cursor() as cur:
+		cur.execute("INSERT INTO micro_newsapi" \
+			  "(userid, bridgeid, triggers, spices) " \
+			  "VALUES (%s, %s, %s, %s)", (
+				  userid,
+				  bridge,
+				  ACTION_NEW_ART_SCIENCE,
+				  json.dumps(spices)
+			  )
+		)
+
+		db.commit()
+
+	return jsonify({"status": "ok"}), 200
+
 
 CATEGORIES = {
 	ACTION_NEW_ART_TECH: "technology",
-	ACTION_NEW_ART_BUISNESS: "buisness",
+	ACTION_NEW_ART_BUSINESS: "buisness",
 	ACTION_NEW_ART_ENTERTAINEMENT: "entertainment",
+	ACTION_NEW_ART_SCIENCE: "science",
+	ACTION_NEW_ART_HEALTH: "health",
+	ACTION_NEW_ART_SPORTS: "sports",
+	ACTION_NEW_ART_GENERAL: "general"
 }
 
 ##
@@ -317,7 +353,7 @@ def webhook():
 
 	while True:
 
-		time.sleep(20)
+		time.sleep(60)
 
 		# get all subscribed users to the action
 		with db.cursor() as cur:
