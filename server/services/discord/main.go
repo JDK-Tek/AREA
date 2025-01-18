@@ -5,13 +5,13 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"strconv"
 	"time"
-	"io"
 
 	// "io/ioutil"
 
@@ -56,7 +56,7 @@ type Result struct {
 }
 
 type TokenResult struct {
-	Token string `json:"access_token"`
+	Token   string `json:"access_token"`
 	Refresh string `json:"refresh_token"`
 }
 
@@ -86,7 +86,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	data.Set("grant_type", "authorization_code")
 	data.Set("code", res.Code)
 	data.Set("redirect_uri", os.Getenv("REDIRECT"))
-	rep, err := http.PostForm(API_OAUTH, data);
+	rep, err := http.PostForm(API_OAUTH, data)
 	if err != nil {
 		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
 		return
@@ -257,22 +257,22 @@ func miniproxy(f func(http.ResponseWriter, *http.Request, *sql.DB), c *sql.DB) f
 }
 
 type InfoSpice struct {
-	Name string `json:"name"`
-	Type string `json:"type"`
-	Title string `json:"title"`
+	Name  string   `json:"name"`
+	Type  string   `json:"type"`
+	Title string   `json:"title"`
 	Extra []string `json:"extra"`
 }
 
 type InfoRoute struct {
-	Type string `json:"type"`
-	Name string `json:"name"`
-	Desc string `json:"description"`
+	Type   string      `json:"type"`
+	Name   string      `json:"name"`
+	Desc   string      `json:"description"`
 	Spices []InfoSpice `json:"spices"`
 }
 
 type Infos struct {
-	Color string `json:"color"`
-	Image string `json:"image"`
+	Color  string      `json:"color"`
+	Image  string      `json:"image"`
 	Routes []InfoRoute `json:"areas"`
 }
 
@@ -284,21 +284,21 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 			Desc: "Sends a message in a channel.",
 			Spices: []InfoSpice{
 				{
-					Name: "channel",
-					Type: "input",
+					Name:  "channel",
+					Type:  "input",
 					Title: "The discord channel id.",
 				},
 				{
-					Name: "message",
-					Type: "text",
+					Name:  "message",
+					Type:  "text",
 					Title: "The message you want to send.",
 				},
 			},
 		},
 	}
 	var infos = Infos{
-		Color: "#5865F2",
-		Image: "/assets/discord.webp",
+		Color:  "#5865F2",
+		Image:  "/assets/discord.webp",
 		Routes: list,
 	}
 	var data []byte
@@ -310,7 +310,7 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-    fmt.Fprintln(w, string(data))
+	fmt.Fprintln(w, string(data))
 }
 
 func main() {
