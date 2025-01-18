@@ -153,12 +153,11 @@ COUNTRIES = [
 # "health",
 # "sports",
 
-# When a new article is published in the 'technology' category
-ACTION_NEW_ART_TECH = "new-art-tech"
+ACTION_NEW_ART_TECH = "new-art-technology"
 oreo.create_area(
 	ACTION_NEW_ART_TECH,
 	NewOreo.TYPE_ACTIONS,
-	"Any new article in the 'technology' category",
+	"When a new article is published in Technology category",
 	[]
 )
 @app.route(f'/{ACTION_NEW_ART_TECH}', methods=["POST"])
@@ -195,7 +194,7 @@ ACTION_NEW_ART_BUISNESS = "new-art-buisness"
 oreo.create_area(
 	ACTION_NEW_ART_BUISNESS,
 	NewOreo.TYPE_ACTIONS,
-	"Any new article in the 'buisness' category",
+	"When a new article is published in Buisness category",
 	[]
 )
 @app.route(f'/{ACTION_NEW_ART_BUISNESS}', methods=["POST"])
@@ -228,10 +227,48 @@ def new_article_buisness():
 
 	return jsonify({"status": "ok"}), 200
 
+ACTION_NEW_ART_ENTERTAINEMENT = "new-art-entertainment"
+oreo.create_area(
+	ACTION_NEW_ART_ENTERTAINEMENT,
+	NewOreo.TYPE_ACTIONS,
+	"When a new article is published in Entertainment category",
+	[]
+)
+@app.route(f'/{ACTION_NEW_ART_ENTERTAINEMENT}', methods=["POST"])
+def new_article_entertainment():
+	app.logger.info(f"{ACTION_NEW_ART_ENTERTAINEMENT} endpoint hit")
+
+	# get data
+	data = request.json
+	if not data:
+		return jsonify({"error": "Invalid JSON"}), 400
+
+	userid = data.get("userid")
+	bridge = data.get("bridge")
+	spices = data.get("spices", {})
+	if not userid or not bridge:
+		return jsonify({"error": f"Missing required fields: 'userid': {userid}, 'spices': {spices}, 'bridge': {bridge}"}), 400
+
+	with db.cursor() as cur:
+		cur.execute("INSERT INTO micro_newsapi" \
+			  "(userid, bridgeid, triggers, spices) " \
+			  "VALUES (%s, %s, %s, %s)", (
+				  userid,
+				  bridge,
+				  ACTION_NEW_ART_ENTERTAINEMENT,
+				  json.dumps(spices)
+			  )
+		)
+
+		db.commit()
+
+	return jsonify({"status": "ok"}), 200
+
 
 CATEGORIES = {
 	ACTION_NEW_ART_TECH: "technology",
-	ACTION_NEW_ART_BUISNESS: "buisness"
+	ACTION_NEW_ART_BUISNESS: "buisness",
+	ACTION_NEW_ART_ENTERTAINEMENT: "entertainment",
 }
 
 ##
