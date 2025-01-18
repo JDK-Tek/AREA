@@ -643,6 +643,171 @@ func resumeMusic(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     }
 }
 
+func checkDeviceConnection(w http.ResponseWriter, req *http.Request, db *sql.DB) {
+    fmt.Println("Headers received:", req.Header)
+
+    bodyBytes, err := io.ReadAll(req.Body)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error reading request body:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+        return
+    }
+    fmt.Println("Request Body:", string(bodyBytes))
+
+    req.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+
+    var requestBody struct {
+        UserID int `json:"userid"`
+        Bridge int `json:"bridge"`
+        Spices struct{} `json:"spices"`
+    }
+
+    decoder := json.NewDecoder(req.Body)
+    err = decoder.Decode(&requestBody)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error decoding JSON:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+        return
+    }
+
+    userID := requestBody.UserID
+    bridgeID := requestBody.Bridge
+    fmt.Println("Extracted userID:", userID)
+    fmt.Println("Bridge ID:", bridgeID)
+
+    var spotifyToken string
+    err = db.QueryRow("SELECT token FROM tokens WHERE owner = $1 AND service = 'spotify'", userID).Scan(&spotifyToken)
+    if err != nil {
+        if err == sql.ErrNoRows {
+            w.WriteHeader(http.StatusNotFound)
+            fmt.Println("No Spotify token found for user:", userID)
+            fmt.Fprintf(w, "{ \"error\": \"No Spotify token found for user\" }\n")
+        } else {
+            w.WriteHeader(http.StatusInternalServerError)
+            fmt.Println("Database error:", err.Error())
+            fmt.Fprintf(w, "{ \"error\": \"Database error: %s\" }\n", err.Error())
+        }
+        return
+    }
+
+    if spotifyToken == "" {
+        w.WriteHeader(http.StatusUnauthorized)
+        fmt.Println("No Spotify token available for user:", userID)
+        fmt.Fprintf(w, "{ \"error\": \"No Spotify token available\" }\n")
+        return
+    }
+
+    // Check for active device
+    deviceURL := "https://api.spotify.com/v1/me/player/devices"
+    reqDevices, err := http.NewRequest("GET", deviceURL, nil)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error creating request to check devices:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+        return
+    }
+
+    reqDevices.Header.Set("Authorization", "Bearer "+spotifyToken)
+
+    client := &http.Client{}
+    respDevices, err := client.Do(reqDevices)
+    if err != nil {
+        w.WriteHeader(http.StatusBadGateway)
+        fmt.Println("Error fetching devices from Spotify:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+        return
+    }
+    defer respDevices.Body.Close()
+
+    bodyResp, err := io.ReadAll(respDevices.Body)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error reading response body:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"Error reading response body\" }\n")
+        return
+    }
+    fmt.Println("Devices Response Body:", string(bodyResp))
+
+    if respDevices.StatusCode != http.StatusOK {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Failed to get devices. Status:", respDevices.StatusCode)
+        fmt.Fprintf(w, "{ \"error\": \"Failed to get devices\" }\n")
+        return
+    }
+
+    var deviceResponse struct {
+        Devices []struct {
+            ID       string `json:"id"`
+            IsActive bool   `json:"is_active"`
+            Name     string `json:"name"`
+        } `json:"devices"`
+    }
+
+    if err := json.Unmarshal(bodyResp, &deviceResponse); err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error unmarshalling response:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"Error unmarshalling response\" }\n")
+        return
+    }
+
+    for _, device := range deviceResponse.Devices {
+        if device.IsActive {
+            fmt.Println("Device is connected and active: ", device.Name)
+
+            url := fmt.Sprintf("http://backend:%d/api/orchestrator", bridgeID)
+            requestBody := map[string]interface{}{
+                "bridge":   bridgeID,
+                "userid":   userID,
+                "ingredients": map[string]interface{}{},
+            }
+            jsonData, err := json.Marshal(requestBody)
+            if err != nil {
+                w.WriteHeader(http.StatusInternalServerError)
+                fmt.Println("Error marshaling JSON for PUT request:", err.Error())
+                fmt.Fprintf(w, "{ \"error\": \"Error marshaling JSON\" }\n")
+                return
+            }
+
+            reqPut, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonData))
+            if err != nil {
+                w.WriteHeader(http.StatusInternalServerError)
+                fmt.Println("Error creating PUT request:", err.Error())
+                fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+                return
+            }
+
+            reqPut.Header.Set("Content-Type", "application/json")
+
+            respPut, err := client.Do(reqPut)
+            if err != nil {
+                w.WriteHeader(http.StatusBadGateway)
+                fmt.Println("Error sending PUT request:", err.Error())
+                fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+                return
+            }
+            defer respPut.Body.Close()
+
+            if respPut.StatusCode != http.StatusOK {
+                w.WriteHeader(http.StatusInternalServerError)
+                fmt.Println("Failed to send PUT request. Status:", respPut.StatusCode)
+                fmt.Fprintf(w, "{ \"error\": \"Failed to send PUT request\" }\n")
+                return
+            }
+
+            w.WriteHeader(http.StatusOK)
+            fmt.Fprintf(w, "{ \"status\": \"Device is connected and active: %s\", \"bridge\": %d, \"userid\": %d }\n", device.Name, bridgeID, userID)
+            return
+        }
+    }
+
+    w.WriteHeader(http.StatusNotFound)
+    fmt.Println("No active device found.")
+    fmt.Fprintf(w, "{ \"error\": \"No active device found\" }\n")
+}
+
+
 func connectToDatabase() (*sql.DB, error) {
 	dbPassword := os.Getenv("DB_PASSWORD")
 	if dbPassword == "" {
@@ -721,6 +886,12 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 			Desc: "Resume the current music !",
 			Spices: []InfoSpice{},
 		},
+		{
+			Name: "checkDeviceConnection",
+			Type: "action",
+			Desc: "check if you have a current spotify running !",
+			Spices: []InfoSpice{},
+		},
 	}
 	var infos = Infos{
 		Color: "#1DB954",
@@ -753,6 +924,7 @@ func main() {
 	router.HandleFunc("/playMusic", miniproxy(playMusic, db)).Methods("POST")
 	router.HandleFunc("/pauseMusic", miniproxy(pauseMusic, db)).Methods("POST")
 	router.HandleFunc("/resumeMusic", miniproxy(resumeMusic, db)).Methods("POST")
+	router.HandleFunc("/checkDeviceConnection", miniproxy(checkDeviceConnection, db)).Methods("POST")
 	router.HandleFunc("/user", getUserInfo).Methods("GET")
 	router.HandleFunc("/", getRoutes).Methods("GET")
 	log.Fatal(http.ListenAndServe(":80", router))
