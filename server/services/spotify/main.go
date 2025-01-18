@@ -305,29 +305,20 @@ func playMusic(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     }
     defer respSpotify.Body.Close()
 
+    fmt.Println("Response Status Code:", respSpotify.StatusCode)
+    bodyResp, err := io.ReadAll(respSpotify.Body)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error reading response body:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"Error reading response body\" }\n")
+        return
+    }
+    fmt.Println("Response Body:", string(bodyResp))
+
     if respSpotify.StatusCode == http.StatusNoContent {
-        fmt.Println("Music 'Blinding Lights' is now playing!")
+        fmt.Println("Music is now playing!")
         w.WriteHeader(http.StatusOK)
         fmt.Fprintf(w, "{ \"status\": \"Music is now playing!\" }\n")
-    } else if respSpotify.StatusCode == http.StatusBadRequest {
-        fmt.Println("Spotify returned Bad Request. Trying to stop and restart playback...")
-        stopPlaybackURL := "https://api.spotify.com/v1/me/player/pause"
-        stopReq, _ := http.NewRequest("PUT", stopPlaybackURL, nil)
-        stopReq.Header.Set("Authorization", "Bearer "+spotifyToken)
-
-        stopResp, _ := client.Do(stopReq)
-        defer stopResp.Body.Close()
-
-        if stopResp.StatusCode == http.StatusNoContent {
-            fmt.Println("Playback stopped successfully. Attempting to play music again.")
-            respSpotify, err = client.Do(reqSpotify)
-            if err != nil {
-                w.WriteHeader(http.StatusBadGateway)
-                fmt.Println("Error retrying music play:", err.Error())
-                fmt.Fprintf(w, "{ \"error\": \"Error retrying music play\" }\n")
-                return
-            }
-        }
     } else {
         w.WriteHeader(http.StatusInternalServerError)
         fmt.Println("Failed to play music on Spotify. Status:", respSpotify.StatusCode)
