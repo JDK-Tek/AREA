@@ -26,7 +26,7 @@ function LoginTexts() {
     )
 }
 
-export default function LoginBox ( {setToken} ) {
+export default function LoginBox ( {setToken, setError} ) {
 
     const backendUrl = process.env.REACT_APP_BACKEND_URL
 
@@ -57,9 +57,46 @@ export default function LoginBox ( {setToken} ) {
             window.location.href = "/";
         })
         .catch((error) => {
-            console.error('Error:', error);
+            setError(error.response.data.error);
         });
     }
+
+    const handleOauth = (service) => {
+        axios.get(`${backendUrl}/api/oauth/${service}`)
+            .then((response) => {
+                const oauthWindow = window.open(response.data, "_blank");
+
+                const handleMessage = (event) => {
+                    if (event.origin !== window.location.origin) {
+                        return;
+                    }
+                    const code = event.data;
+                    if (code !== null) {
+                        oauthWindow.close();
+                        window.removeEventListener('message', handleMessage);
+                        axios.post(`${backendUrl}/api/oauth/${service}`, {
+                            code: code
+                        }, {
+                            headers: {
+                                "Content-Type": "application/json"
+                            }
+                        })
+                        .then((response) => {
+                            setToken(response.data.token);
+                            window.location.href = "/";
+                        })
+                        .catch((error) => {
+                            console.error('Error:', error);
+                        });
+                    }
+                };
+    
+                window.addEventListener('message', handleMessage);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+    };
 
     return (
         <LRBox>
@@ -70,7 +107,11 @@ export default function LoginBox ( {setToken} ) {
                 <a href="/register" className="font-bold text-white dark:text-white hover:underline"> Register here!</a>
             </div>
             <LRButton text="Login" handleClick={handleSubmit}/>
-            <LRButton text="Connect with Discord" />  
+            <div className="flex flex-row space-x-4 justify-center pt-4">
+                <LRButton text="Connect with Discord" handleClick={() => handleOauth("discord")} /> 
+                <LRButton text="Connect with Reddit" handleClick={() => handleOauth("reddit")} /> 
+                <LRButton text="Connect with Github" handleClick={() => handleOauth("github")} /> 
+            </div>
         </LRBox>
     )
 }

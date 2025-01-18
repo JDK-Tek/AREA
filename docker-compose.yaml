@@ -1,0 +1,32 @@
+services:
+  client_web:
+    env_file:
+      - ./.env
+    container_name: area-client-web
+    build:
+      context: ./web
+    ports:
+      - ${WEB_PORT}:3000
+    networks:
+      - web
+    depends_on:
+      - client_mobile
+      - backend
+    volumes:
+      - apk_volume:/app/src/apk
+
+  client_mobile:
+    build:
+      context: ./mobile
+    volumes:
+      - apk_volume:/apk_volume
+    container_name: area-client-mobile
+    networks:
+      - web
+
+networks:
+  web:
+    external: false
+
+volumes:
+  apk_volume:

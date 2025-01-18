@@ -7,7 +7,8 @@
 
 
 import { useEffect, useState } from "react";
-import fetchData from "../../utils/fetchData";
+
+import axios from "axios";
 import Button from "../../components/Button";
 import AppletKit from "./../../components/Applet/AppletKit";
 import ServiceKit from "./../../components/Service/ServiceKit";
@@ -15,35 +16,40 @@ import ServiceKit from "./../../components/Service/ServiceKit";
 export default function Content({ setError }) {
     const [services, setServices] = useState([]);
     const [applets, setApplets] = useState([]);
-
-
-    useEffect(() => {
-        const fetchServices = async () => {
-            const { success, data, error } = await fetchData("http://localhost:42000/api/services");
-            if (!success) {
-                setError("Error while fetching services data: " + error);
-            } else {
-                setServices(data.res);
-            }
-        };
-
-        const fetchApplets = async () => {
-            const { success, data, error } = await fetchData("http://localhost:42000/api/applets");
-            if (!success) {
-                setError("Error while fetching applets data: " + error);
-            } else {
-                setApplets(data.res);
-            }
-        };
-
-        if (services.length === 0) {
-            fetchServices();
-        }
-        if (applets.length === 0) {
-            fetchApplets();
-        }
+    const [service, setService] = useState(null);
     
-    }, [applets, services, setError]);
+    useEffect(() => {
+        const getServices = async () => {
+            axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/services`, {headers: {"Content-Type": "application/json"}})
+            .then((response) => {
+                setServices(response.data)
+            })
+            .catch((error) => {
+                setError("Error when trying to get all services: " + error)
+            });
+        };
+        getServices();
+    }, [setServices, setError]);
+    
+    useEffect(() => {
+        const getApplets = async () => {
+            axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/applets`, {headers: {"Content-Type": "application/json"}})
+            .then((response) => {
+                setApplets(response.data.res)
+            })
+            .catch((error) => {
+                setError("Error when trying to get all applets: " + error)
+            });
+        };
+        getApplets();
+    }, [setApplets, setError]);
+    
+    useEffect(() => {
+        if (service) {
+            window.location.href = `/services/${service.name}`;
+        }
+    }, [service]);
+    
     return (
         <div className="pb-14">
             <AppletKit
@@ -54,6 +60,9 @@ export default function Content({ setError }) {
                 title={"or choose from 900+ services"}
                 services={services}
                 color={"text-chartpurple-200"}
+                gap={"gap-3"}
+                rounded={"rounded-xl"}
+                setService={setService}
             />
             <div className="flex justify-center items-center mt-8">
                 <Button

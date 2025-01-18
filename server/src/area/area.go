@@ -4,7 +4,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -13,9 +15,136 @@ import (
 
 const expiration = 60 * 30
 
+// the about structure (for about.json)
+
+type AboutSpice struct {
+	Name string `json:"name"`
+	Type string `json:"type"`
+	Title string `json:"title"`
+	Extra []string `json:"extra"`
+}
+
+type AboutSomething struct {
+	Name string `json:"name"`
+	Description string `json:"description"`
+	Spices []AboutSpice `json:"spices"`
+}
+
+type AboutClient struct {
+	Host string `json:"host"`
+}
+
+type AboutSevice struct {
+	Name string `json:"name"`
+	Icon string `json:"image"`
+	Color string `json:"color"`
+	Actions []AboutSomething `json:"actions"`
+	Reactions []AboutSomething `json:"reactions"`
+}
+
+type AboutServer struct {
+	CurrentTime int64 `json:"current_time"`
+	Services []AboutSevice `json:"services"`
+}
+
+type About struct {
+	Client AboutClient `json:"client"`
+	Server AboutServer `json:"server"`
+}
+
+// the main area structuree
+
 type Area struct {
 	Database *sql.DB
 	Key string
+	Services []string
+	About About
+}
+
+// for the informations i get from the services
+
+type InfoRoute struct {
+	Type string `json:"type"`
+	Name string `json:"name"`
+	Desc string `json:"description"`
+	Spices []AboutSpice `json:"spices"`
+}
+
+type Infos struct {
+	Color string `json:"color"`
+	Image string `json:"image"`
+	Routes []InfoRoute `json:"areas"`
+}
+
+func (it *Area) ObserveServices(where string) error {
+	entries, err := os.ReadDir(where)
+	it.Services = make([]string, len(entries))
+    if err != nil {
+        return err
+    }
+    for n, e := range entries {
+        it.Services[n] = e.Name()
+    }
+	return nil
+}
+
+func (it *Area) SetupTheAbout() error {
+	var revproxy = os.Getenv("REVERSEPROXY_PORT")
+	var infos Infos
+	var tmpService AboutSevice
+	var something AboutSomething
+
+	it.About = About{
+		Client: AboutClient{
+			Host: os.Getenv("FRONTEND"),
+		},
+		Server: AboutServer{
+			CurrentTime: time.Now().Unix(),
+			Services: []AboutSevice{},
+		},
+	}
+	if len(it.Services) == 0 {
+		return nil
+	}
+	// fmt.Println(fmt.Sprintf("http://reverse-proxy:%s/service/%s/", revproxy, "coucou"))
+	for _, service := range it.Services {
+		url := fmt.Sprintf("http://reverse-proxy:%s/service/%s/", revproxy, service)
+		rep, err := http.Get(url)
+		if err != nil {
+			fmt.Printf("%s failed: %s\n", service, err.Error())
+			continue
+		}
+		defer rep.Body.Close()
+		body, err := io.ReadAll(rep.Body)
+		if err != nil {
+			fmt.Printf("reeadall of %s failed: %s\n", service, err.Error())
+			continue
+		}
+		// fmt.Printf("%s: (%s)\n", url, body)
+		err = json.Unmarshal(body, &infos)
+		if err != nil {
+			fmt.Printf("decoding %s failed: %s body is %s\n", service, err.Error(), rep.Body)
+			continue
+		}
+		tmpService.Actions = []AboutSomething{}
+		tmpService.Reactions = []AboutSomething{}
+		for _, v := range infos.Routes {
+			something.Description = v.Desc
+			something.Name = v.Name
+			something.Spices = make([]AboutSpice, len(v.Spices))
+			copy(something.Spices, v.Spices)
+			if v.Type == "action" {
+				tmpService.Actions = append(tmpService.Actions, something)
+			} else {
+				tmpService.Reactions = append(tmpService.Reactions, something)
+			}
+		}
+		tmpService.Name = service
+		tmpService.Icon = infos.Image
+		tmpService.Color = infos.Color
+		it.About.Server.Services = append(it.About.Server.Services, tmpService)
+	}
+	return nil
 }
 
 func (it *Area) NewToken(id int) (string, error) {

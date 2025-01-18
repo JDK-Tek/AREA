@@ -11,6 +11,7 @@ import (
 	"os"
 	"strconv"
 	"time"
+	"io"
 
 	// "io/ioutil"
 
@@ -39,19 +40,13 @@ type Content struct {
 
 func getOAUTHLink(w http.ResponseWriter, req *http.Request) {
 	str := "https://discord.com/oauth2/authorize?"
-	redirect := req.URL.Query().Get("redirect")
-	if redirect == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(w, "{ \"error\": \"missing\" }\n")
-		return
-	}
-	x := url.QueryEscape(redirect)
 	str += "client_id=" + os.Getenv("DISCORD_ID")
 	str += "&permissions=" + strconv.Itoa(PERMISSIONS)
 	str += "&response_type=code"
-	str += "&redirect_uri=" + x
+	str += "&redirect_uri=" + url.QueryEscape(os.Getenv("REDIRECT"))
 	str += "&integration_type=0"
 	str += "&scope=identify+email+bot+guilds"
+	fmt.Println(str)
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintln(w, str)
 }
@@ -62,6 +57,7 @@ type Result struct {
 
 type TokenResult struct {
 	Token string `json:"access_token"`
+	Refresh string `json:"refresh_token"`
 }
 
 type UserResult struct {
@@ -74,6 +70,8 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	var user UserResult
 	var tokid int
 	var owner = -1
+	var responseData map[string]interface{}
+
 	// make the request to discord api
 	clientid := os.Getenv("DISCORD_ID")
 	clientsecret := os.Getenv("DISCORD_SECRET")
@@ -87,45 +85,65 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	data.Set("client_secret", clientsecret)
 	data.Set("grant_type", "authorization_code")
 	data.Set("code", res.Code)
-	data.Set("redirect_uri", "https://area-jeepg.vercel.app/connected")
-	rep, err := http.PostForm(API_OAUTH, data)
+	data.Set("redirect_uri", os.Getenv("REDIRECT"))
+	rep, err := http.PostForm(API_OAUTH, data);
 	if err != nil {
-		fmt.Fprintln(w, "postform", err.Error())
+		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
 		return
 	}
 	defer rep.Body.Close()
-	err = json.NewDecoder(rep.Body).Decode(&tok)
+	body, err := io.ReadAll(rep.Body)
 	if err != nil {
-		fmt.Fprintln(w, "decode", err.Error())
+		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+		return
+	}
+	if err := json.Unmarshal(body, &responseData); err != nil {
+		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+		return
+	}
+	var ok bool
+	tok.Token, ok = responseData["access_token"].(string)
+	if !ok {
+		fmt.Fprintln(w, "{ \"error\": \"cant get access token\" }")
+		return
+	}
+	tok.Refresh, ok = responseData["refresh_token"].(string)
+	if !ok {
+		fmt.Fprintln(w, "{ \"error\": \"cant get refresh token\" }")
 		return
 	}
 
 	// make the request for the user
 	req, err = http.NewRequest("GET", API_USER, nil)
 	if err != nil {
-		fmt.Fprintln(w, "request error", err.Error())
+		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
 		return
 	}
 	req.Header.Set("Authorization", "Bearer "+tok.Token)
 	client := &http.Client{}
 	rep, err = client.Do(req)
 	if err != nil {
-		fmt.Fprintln(w, "client do", err.Error())
+		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
 		return
 	}
 	defer rep.Body.Close()
 	err = json.NewDecoder(rep.Body).Decode(&user)
 	if err != nil {
-		fmt.Fprintln(w, "decode", err.Error())
+		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+		return
+	}
+	if tok.Token == "" || tok.Refresh == "" {
+		fmt.Fprintln(w, "{ \"error\": \"token is empty\" }")
 		return
 	}
 
 	// seelect the user id shit
 	err = db.QueryRow("select id, owner from tokens where userid = $1", user.ID).Scan(&tokid, &owner)
 	if err != nil {
-		err = db.QueryRow("insert into tokens (service, token, userid) values ($1, $2, $3) returning id",
+		err = db.QueryRow("insert into tokens (service, token, refresh, userid) values ($1, $2, $3, $4) returning id",
 			"discord",
 			tok.Token,
+			tok.Refresh,
 			user.ID,
 		).Scan(&tokid)
 		if err != nil {
@@ -149,10 +167,10 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenStr, err := token.SignedString(secretBytes)
 	if err != nil {
-		fmt.Fprintln(w, "sign", err.Error())
+		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
 		return
 	}
-	fmt.Fprintf(w, `{"token": "%s"}\n`, tokenStr)
+	fmt.Fprintf(w, "{\"token\": \"%s\"}\n", tokenStr)
 }
 
 func doSomeSend(w http.ResponseWriter, req *http.Request) {
@@ -222,9 +240,12 @@ func connectToDatabase() (*sql.DB, error) {
 		log.Fatal("DB_PORT not found")
 	}
 	connectStr := fmt.Sprintf(
-		"postgresql://%s:%s@database:5432/area_database?sslmode=disable",
+		"postgresql://%s:%s@%s:%s/%s?sslmode=disable",
 		dbUser,
 		dbPassword,
+		dbHost,
+		dbPort,
+		dbName,
 	)
 	return sql.Open("postgres", connectStr)
 }
@@ -235,16 +256,75 @@ func miniproxy(f func(http.ResponseWriter, *http.Request, *sql.DB), c *sql.DB) f
 	}
 }
 
+type InfoSpice struct {
+	Name string `json:"name"`
+	Type string `json:"type"`
+	Title string `json:"title"`
+	Extra []string `json:"extra"`
+}
+
+type InfoRoute struct {
+	Type string `json:"type"`
+	Name string `json:"name"`
+	Desc string `json:"description"`
+	Spices []InfoSpice `json:"spices"`
+}
+
+type Infos struct {
+	Color string `json:"color"`
+	Image string `json:"image"`
+	Routes []InfoRoute `json:"areas"`
+}
+
+func getRoutes(w http.ResponseWriter, req *http.Request) {
+	var list = []InfoRoute{
+		InfoRoute{
+			Name: "send",
+			Type: "reaction",
+			Desc: "Sends a message in a channel.",
+			Spices: []InfoSpice{
+				{
+					Name: "channel",
+					Type: "input",
+					Title: "The discord channel id.",
+				},
+				{
+					Name: "message",
+					Type: "text",
+					Title: "The message you want to send.",
+				},
+			},
+		},
+	}
+	var infos = Infos{
+		Color: "#5865F2",
+		Image: "/assets/discord.webp",
+		Routes: list,
+	}
+	var data []byte
+	var err error
+
+	data, err = json.Marshal(infos)
+	if err != nil {
+		http.Error(w, `{ "error":  "marshal" }`, http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+    fmt.Fprintln(w, string(data))
+}
+
 func main() {
+	godotenv.Load("/usr/mount.d/.env", ".env")
 	db, err := connectToDatabase()
 	if err != nil {
 		os.Exit(84)
 	}
 	fmt.Println("discord microservice container is running !")
 	router := mux.NewRouter()
-	godotenv.Load("/usr/mound.d/.env", "/usr/mound.d/.env1")
+	fmt.Println(os.Getenv("DISCORD_ID"))
 	router.HandleFunc("/send", doSomeSend).Methods("POST")
 	router.HandleFunc("/oauth", getOAUTHLink).Methods("GET")
 	router.HandleFunc("/oauth", miniproxy(setOAUTHToken, db)).Methods("POST")
+	router.HandleFunc("/", getRoutes).Methods("GET")
 	log.Fatal(http.ListenAndServe(":80", router))
 }

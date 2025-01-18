@@ -19,6 +19,12 @@ type RegisterRequest struct {
     Password string `json:"password"`
 }
 
+type ChangePassword struct {
+    Email string `json:"email"`
+    Password string `json:"password"`
+    NewPassword string `json:"new_password"`
+}
+
 type RegisterError struct {
     message string
 }
@@ -110,7 +116,7 @@ func DoSomeLogin(a area.AreaRequest) {
 
     mail, password, err = getCredentials(a.Request)
     if err != nil {
-        a.Error(err, http.StatusInternalServerError)
+        a.Error(err, http.StatusBadRequest)
         return
     }
     fmt.Println("Email:", mail)
@@ -125,6 +131,41 @@ func DoSomeLogin(a area.AreaRequest) {
         return
     }
     tokenString, err = a.Area.NewToken(userid)
+    if err != nil {
+        a.Error(err, http.StatusInternalServerError)
+        return
+    }
+    a.Reply(map[string]any{
+        "token": tokenString,
+    }, http.StatusOK)
+}
+
+func DoSomeChangePassword(a area.AreaRequest) {
+    var realid int
+
+    mail, password, err := getCredentials(a.Request)
+    if err != nil {
+        a.Error(err, http.StatusBadRequest)
+        return
+    }
+    id, err := a.AssertToken()
+    if err != nil {
+        a.Error(err, http.StatusBadRequest)
+        return
+    }
+    err = a.Area.Database.QueryRow(
+        "select id from users where id = $1 and email = $2", id, mail).Scan(&realid)
+    fmt.Println("hello")
+    if err != nil {
+        a.Error(err, http.StatusBadRequest)
+        return
+    }
+    _, err = a.Area.Database.Exec("update users set password = $1 where id = $2", password, id)
+    if err != nil {
+        a.Error(err, http.StatusBadRequest)
+        return
+    }
+    tokenString, err := a.Area.NewToken(id)
     if err != nil {
         a.Error(err, http.StatusInternalServerError)
         return

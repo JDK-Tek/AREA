@@ -1,0 +1,160 @@
+from flask import Flask, jsonify
+from flask import request as Request
+from dotenv import load_dotenv
+import random
+import requests
+import string
+import os
+import psycopg2
+import time
+import jwt
+import datetime as dt
+from sys import stderr
+
+load_dotenv("/usr/mount.d/.env")
+
+CLIENT_ID = os.environ.get("ROBLOX_ID")
+CLIENT_SECRET = os.environ.get("ROBLOX_SECRET")
+BACKEND_KEY = os.environ.get("BACKEND_KEY")
+
+API_URL = "https://authorize.roblox.com/"
+TOKEN_URL = "https://apis.roblox.com/oauth/v1/token"
+ME_URL = "https://apis.roblox.com/oauth/v1/userinfo"
+
+EXPIRATION = 60 * 30
+
+SERVICE_SCOPES = "openid+group:read+group:write+user.user-notification:write+profile:read"
+AUTH_SCOPES = "profile:read+openid"
+
+while True:
+	try:
+		db = psycopg2.connect(
+			database=os.environ.get("DB_NAME"),
+			user=os.environ.get("DB_USER"),
+			password=os.environ.get("DB_PASSWORD"),
+			host=os.environ.get("DB_HOST"),
+			port=os.environ.get("DB_PORT")
+		)
+		break
+	except psycopg2.OperationalError:
+		continue
+
+app = Flask(__name__)
+runtime_routes = []
+
+class Command:
+    def __init__(self, name: str, data: dict[str, str]):
+        self.name = name
+        self.extra = " ".join([k + " " + v for k, v in data.items()])
+        self.str = self.name + " " + self.extra
+
+    def __str__(self):
+        return self.str
+
+@app.route("/newpart", methods=["POST"])
+def newpart():
+    data = Request.json
+    areaid = data.get("userid")
+    spices: dict = data.get("spices")
+
+    gameid = spices.get("gameid")
+    spices.pop("gameid")
+    command = Command("newarea", spices)
+
+    try:
+        with db.cursor() as cur:
+            print(command, gameid, file=stderr)
+            cur.execute("update micro_roblox "\
+                "set command = %s "\
+                "from tokens "\
+                "where micro_roblox.robloxid = tokens.userid "\
+                "and tokens.owner = %s "\
+                "and tokens.service = %s "\
+                "and micro_roblox.gameid = %s ",
+                (command, str(areaid), "roblox", gameid,)
+            )
+            db.commit()
+        return jsonify({ "status": "ok" }), 200
+    except (Exception, psycopg2.Error) as err:
+        return jsonify({ "error":  str(err)}), 400
+
+@app.route("/webhook", methods=["POST"])
+def webhook():
+    data = Request.json
+    robloxid = data.get("robloxid")
+    gameid = data.get("gameid")
+    try:
+        with db.cursor() as cur:
+            print(robloxid, gameid, file=stderr)
+            cur.execute(
+                 "insert into micro_roblox (robloxid, gameid) "\
+                 "values (%s, %s) "\
+                 "on conflict (gameid) "\
+                 "do nothing",
+                (robloxid, gameid,)
+            )
+            db.commit()
+        while True:
+            with db.cursor() as cur:
+                cur.execute(
+                     "select command from micro_roblox "\
+                     "where gameid = %s "\
+                     "and command is not null",
+                    (gameid,)
+                )
+                rows = cur.fetchone()
+                print(rows, file=stderr)
+                if rows:
+                    cur.execute(
+                        "update micro_roblox "\
+                        "set command = null "\
+                        "where gameid = %s",
+                        (gameid,)
+                    )
+                    db.commit()
+                    return jsonify({ "message": str(rows[0])}), 200
+            time.sleep(1)
+    except (psycopg2.Error) as err:
+        return jsonify({ "error": "postgres says <(" + str(err) + ")"}), 400
+    except Exception as err:
+        return jsonify({ "error": str(err)}), 400
+
+@app.route("/", methods=["GET"])
+def routes():
+    x = {
+        "color": "#000000",
+        "image": "/assets/roblox.png",
+        "areas": [
+            {
+                "name": "newpart",
+                "description": "Creates a new part",
+                "spices": [
+                    {
+                        "name": "color",
+                        "type": "text",
+                        "title": "The color of the part."
+                    },
+                    {
+                        "name": "position",
+                        "type": "text",
+                        "title": "3 numbers for the part coordinates."
+                    },
+                    {
+                        "name": "size",
+                        "type": "text",
+                        "title": "3 numbers for the part size."
+                    },
+                    {
+                        "name": "anchored",
+                        "type": "dropdown",
+                        "title": "Is the part anchored.",
+                        "extra": ["true", "false"]
+                    }
+                ]
+            }
+        ]
+    }
+    return jsonify(x), 200
+
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=80)

@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"area-backend/area"
+	"os"
 )
 
 type AreaObject struct {
@@ -23,6 +24,7 @@ type Bridge struct {
 type ToSend struct {
 	Spices json.RawMessage `json:"spices"`
 	Bridge int `json:"bridge"`
+	Id int `json:"userid"`
 }
 
 func createActionReaction(a area.AreaRequest, bridge Bridge) int {
@@ -100,7 +102,9 @@ func NewArea(a area.AreaRequest) {
 		return
 	}
 	tosend.Spices = bridge.Action.Spices
-	url := fmt.Sprintf("http://reverse-proxy:42002/service/%s/%s",
+	tosend.Id = id
+	url := fmt.Sprintf("http://reverse-proxy:%s/service/%s/%s",
+		os.Getenv("REVERSEPROXY_PORT"),
 		bridge.Action.Service,
 		bridge.Action.Name)
 	obj, err := json.Marshal(tosend)
@@ -122,13 +126,13 @@ func NewArea(a area.AreaRequest) {
 		return
 	}
 	defer rep.Body.Close()
-	body, err := ioutil.ReadAll(rep.Body)
+	body, err := io.ReadAll(rep.Body)
 	if err != nil {
 		a.Error(err, http.StatusInternalServerError)
 		return
 	}
 	a.Reply(map[string]any{
-		"res": "Your email is send" + string(body) + " " + string(id),
+		"status": "ok",
+		"body": string(body),
 	}, http.StatusOK)
-	// fmt.Fprintf(a.Writter, "Your email is %d, Awnser is %s", id, string(body))
 }

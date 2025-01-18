@@ -6,3 +6,6 @@ src/backend
 
 # trash files
 *.out
+
+# trash folders
+.vscode/
