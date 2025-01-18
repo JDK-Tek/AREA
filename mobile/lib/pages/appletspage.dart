@@ -84,6 +84,7 @@ class Applet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var ip = Provider.of<IPState>(context, listen: false).ip;
     return Container(
         width: MediaQuery.of(context).size.width <
                 MediaQuery.of(context).size.height
@@ -140,7 +141,7 @@ class Applet extends StatelessWidget {
                                   StackTrace? stackTrace) {
                                 return const Icon(Icons.broken_image, size: 40);
                               },
-                              icon1,
+                              "https://$ip" + icon1,
                               color: Colors.white,
                               width: MediaQuery.of(context).size.width <
                                       MediaQuery.of(context).size.height
@@ -173,7 +174,7 @@ class Applet extends StatelessWidget {
                                   StackTrace? stackTrace) {
                                 return const Icon(Icons.broken_image, size: 40);
                               },
-                              icon2,
+                              "https://$ip" + icon2,
                               color: Colors.white,
                               width: MediaQuery.of(context).size.width <
                                       MediaQuery.of(context).size.height
