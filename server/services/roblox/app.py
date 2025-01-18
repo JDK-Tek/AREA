@@ -183,6 +183,22 @@ def action_onclick():
 def action_ontouch():
     return general_action("ontouch")
 
+@app.route("/onplayeradded", methods=["POST"])
+def action_onplayeradded():
+    return general_action("onplayeradded")
+
+@app.route("/onplayerremoved", methods=["POST"])
+def action_onplayerremoved():
+    return general_action("onplayerremoved")
+
+@app.route("/onchat", methods=["POST"])
+def action_onchat():
+    return general_action("onchat")
+
+@app.route("/oninput", methods=["POST"])
+def action_oninput():
+    return general_action("oninput")
+
 def try_getting_informations(robloxid, gameid):
     if robloxid is None:
         print(1, "no roblox id ?", file=stderr)
