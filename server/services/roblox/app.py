@@ -172,15 +172,15 @@ def general_action(action_name):
         return jsonify({ "error": str(err)}), 400
 
 @app.route("/onprompt", methods=["POST"])
-def general_onprompt(action_name):
+def action_onprompt():
     return general_action("onprompt")
 
 @app.route("/onclick", methods=["POST"])
-def general_onclick(action_name):
+def action_onclick():
     return general_action("onclick")
 
 @app.route("/ontouch", methods=["POST"])
-def general_ontouch(action_name):
+def action_ontouch():
     return general_action("ontouch")
 
 def try_getting_informations(robloxid, gameid):
