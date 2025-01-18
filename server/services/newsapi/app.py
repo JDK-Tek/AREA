@@ -148,6 +148,51 @@ COUNTRIES = [
 # country
 # key word
 
+ACTION_NEW_ART_COUNTRY = "new-art-country"
+oreo.create_area(
+	ACTION_NEW_ART_COUNTRY,
+	NewOreo.TYPE_ACTIONS,
+	"When a new article is published in a specific country",
+	[
+		{
+			"name": "country",
+			"type": "dropdown",
+			"extra": COUNTRIES,
+			"title": "Select the country"
+		}
+	]
+)
+@app.route(f'/{ACTION_NEW_ART_COUNTRY}', methods=["POST"])
+def new_article_country():
+	app.logger.info(f"{ACTION_NEW_ART_COUNTRY} endpoint hit")
+
+	# get data
+	data = request.json
+	if not data:
+		return jsonify({"error": "Invalid JSON"}), 400
+
+	userid = data.get("userid")
+	bridge = data.get("bridge")
+	spices = data.get("spices", {})
+	if not userid or not bridge:
+		return jsonify({"error": f"Missing required fields: 'userid': {userid}, 'spices': {spices}, 'bridge': {bridge}"}), 400
+
+	with db.cursor() as cur:
+		cur.execute("INSERT INTO micro_newsapi" \
+			  "(userid, bridgeid, triggers, spices) " \
+			  "VALUES (%s, %s, %s, %s)", (
+				  userid,
+				  bridge,
+				  ACTION_NEW_ART_COUNTRY,
+				  json.dumps(spices)
+			  )
+		)
+
+		db.commit()
+
+	return jsonify({"status": "ok"}), 200
+
+
 ACTION_NEW_ART_TECH = "new-art-technology"
 oreo.create_area(
 	ACTION_NEW_ART_TECH,
@@ -459,6 +504,53 @@ def get_news_from_category(category):
 	print(f"Returning {len(res_articles)} new articles", file=sys.stderr)
 	return res_articles
 
+def get_news_from_country(country):
+	res = requests.get(f"{API_URL}/top-headlines?country={country}&apiKey={API_KEY}")
+	if res.status_code != 200:
+		print(f"Error getting news from {country} country: {res.text}", file=sys.stderr)
+		return None
+
+	data = res.json()
+	articles = data.get("articles", [])
+
+	if not articles:
+		return []
+
+	res_articles = []
+	for article in articles:
+		url = article.get("url")
+
+		with db.cursor() as cur:
+			cur.execute("SELECT url FROM micro_newsapi_articles "
+				"WHERE url = %s", (url,))
+
+			exist = cur.fetchone()
+			if exist is None:
+				res_articles.append(article)
+
+				cur.execute("INSERT INTO micro_newsapi_articles "
+					"(url) "
+					"VALUES (%s)", (article.get("url"),)
+				)
+				db.commit()
+
+			else:
+				print(f"Article {url} already exists in the database", file=sys.stderr)
+	
+	print(f"Returning {len(res_articles)} new articles", file=sys.stderr)
+	return res_articles
+
+def get_subbed_countries():
+	with db.cursor() as cur:
+		cur.execute("SELECT spices FROM micro_newsapi "
+			"WHERE triggers = %s", (ACTION_NEW_ART_COUNTRY,))
+		countries = cur.fetchall()
+
+		if not countries or len(countries) == 0:
+			return []
+
+		countries = [json.loads(c[0]).get("country") for c in countries]
+		return countries
 
 def webhook():
 	print("Starting newsapi webhook", file=sys.stderr)
@@ -478,7 +570,8 @@ def webhook():
 			
 			print(f"Found {len(users_sub)} users subscribed to the newsapi actions", file=sys.stderr)
 
-	
+
+			# check if there are users subscribed to a category news
 			for (action, category) in CATEGORIES.items():
 
 				cur.execute("SELECT userid, bridgeid FROM micro_newsapi "
@@ -519,6 +612,47 @@ def webhook():
 		
 					else:
 						print(f"No new articles in the {category} category", file=sys.stderr)
+			
+			# check if there are users subscribed to the country news
+			cur.execute("SELECT userid, bridgeid FROM micro_newsapi "
+				"WHERE triggers = %s", (ACTION_NEW_ART_COUNTRY,))
+			users_sub = cur.fetchall()
+
+			if users_sub and len(users_sub) > 0:
+				print(f"Found {len(users_sub)} users subscribed to the country news", file=sys.stderr)
+				subbed_countries = get_subbed_countries()
+		
+				for country in subbed_countries:
+					articles = get_news_from_country(country)
+
+					if articles and len(articles) > 0:
+						print(f"Found {len(articles)} new articles in the {country} country", file=sys.stderr)
+
+						# trigger the action for each user
+						for article in articles:
+							for user in users_sub:
+								userid = user[0]
+								bridge = user[1]
+
+								requests.put(
+									f"http://backend:{BACKEND_PORT}/api/orchestrator",
+									json={
+										"bridge": bridge,
+										"userid": userid,
+										"ingredients": {
+											"source": article.get("source").get("name"),
+											"author": article.get("author"),
+											"publishedAt": article.get("publishedAt"),
+											"title": article.get("title"),
+											"description": article.get("description"),
+											"url": article.get("url"),
+											"content": article.get("content")
+										}
+									}
+								)
+		
+					else:
+						print(f"No new articles in the {country} country", file=sys.stderr)
 
 
 ##
