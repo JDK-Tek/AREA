@@ -91,6 +91,14 @@ def react_newpart():
 def react_kill():
     return general_reaction("kill", Request.json)
 
+@app.route("/kick", methods=["POST"])
+def react_kill():
+    return general_reaction("kick", Request.json)
+
+@app.route("/insert", methods=["POST"])
+def react_kill():
+    return general_reaction("insert", Request.json)
+
 def try_getting_informations(robloxid, gameid):
     try:
         with db.cursor() as cur:
