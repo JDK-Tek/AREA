@@ -284,7 +284,6 @@ func playMusic(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 
     searchURL := "https://api.spotify.com/v1/search"
     query := fmt.Sprintf("%s", trackName)
-    searchBody := fmt.Sprintf(`{"q":"%s","type":"track","limit":1}`, query)
 
     reqSearch, err := http.NewRequest("GET", searchURL+"?q="+url.QueryEscape(query)+"&type=track&limit=1", nil)
     if err != nil {
