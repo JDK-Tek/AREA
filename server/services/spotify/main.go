@@ -671,6 +671,8 @@ func checkDeviceConnection(w http.ResponseWriter, req *http.Request, db *sql.DB)
     userID := requestBody.UserID
     bridgeID := requestBody.Bridge
 
+	fmt.Println("userID = ", userID)
+	fmt.Println("bridge = ", bridgeID)
     var spotifyToken string
     err = db.QueryRow("SELECT token FROM tokens WHERE owner = $1 AND service = 'spotify'", userID).Scan(&spotifyToken)
     if err != nil {
