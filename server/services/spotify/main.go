@@ -280,7 +280,7 @@ func playMusic(w http.ResponseWriter, req *http.Request, db *sql.DB) {
         return
     }
 
-    trackURI := "spotify:track:7nPjWVYzDEhhqOggotCIZH"
+    trackURI := "spotify:track:3n3P1vEXs6IfzozT8kVYAf"
     spotifyURL := "https://api.spotify.com/v1/me/player/play"
     body := fmt.Sprintf(`{"uris":["%s"]}`, trackURI)
 
@@ -325,7 +325,6 @@ func playMusic(w http.ResponseWriter, req *http.Request, db *sql.DB) {
         fmt.Fprintf(w, "{ \"error\": \"Failed to play music\" }\n")
     }
 }
-
 
 func connectToDatabase() (*sql.DB, error) {
 	dbPassword := os.Getenv("DB_PASSWORD")
