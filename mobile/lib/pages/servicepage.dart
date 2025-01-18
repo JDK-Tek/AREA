@@ -83,6 +83,7 @@ class Service extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var ip = Provider.of<IPState>(context, listen: false).ip;
     return Container(
       width:
           MediaQuery.of(context).size.width < MediaQuery.of(context).size.height
@@ -124,10 +125,10 @@ class Service extends StatelessWidget {
               },
               errorBuilder:
                   (BuildContext context, Object error, StackTrace? stackTrace) {
-                return const Icon(Icons.broken_image,
-                    size: 40);
+                print(icon);
+                return const Icon(Icons.broken_image, size: 40);
               },
-              icon,
+              "https://$ip" + icon,
               width: MediaQuery.of(context).size.width <
                       MediaQuery.of(context).size.height
                   ? MediaQuery.of(context).size.width * 0.2
@@ -147,7 +148,7 @@ class Service extends StatelessWidget {
                       ? MediaQuery.of(context).size.width * 0.038
                       : MediaQuery.of(context).size.width * 0.025,
                   fontWeight: FontWeight.w700,
-                  color: Colors.black,
+                  color: Colors.white,
                   fontFamily: 'Nunito-Bold'),
             ),
           ],
@@ -260,7 +261,7 @@ class _ServiceSectionState extends State<ServiceSection> {
             children: services.map(
               (service) {
                 final serviceName = service['name'] ?? 'Unknown';
-                final icon = service['icon'] ?? '';
+                final icon = service['image'] ?? '';
                 final color = service['color'] ?? '#FFFFFF';
 
                 return Service(

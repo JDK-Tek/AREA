@@ -138,7 +138,7 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
         .where((service) => service[type] != null && service[type].isNotEmpty)
         .map((service) => {
               "name": service['name'] ?? 'Unnamed Service',
-              "icon": service['icon'] ?? '',
+              "image": service['image'] ?? '',
               "color": service['color'] ?? '#000000',
               "actionsOrReactions": service[type]
             })
@@ -151,6 +151,7 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
           itemCount: items.length,
           itemBuilder: (context, index) {
             final item = items[index];
+            var ip = Provider.of<IPState>(context, listen: false).ip;
             return ListTile(
               leading: Image.network(
                 loadingBuilder: (BuildContext context, Widget child,
@@ -172,11 +173,14 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
                     StackTrace? stackTrace) {
                   return const Icon(Icons.broken_image, size: 40);
                 },
-                item['icon'] ?? '',
+                "https://$ip" + item['image'],
                 width: 40,
                 height: 40,
               ),
-              title: Text(item['name'] ?? 'Unnamed Service'),
+              title: Text(
+                item['name'] ?? 'Unnamed Service',
+                style: const TextStyle(color: Colors.white),
+              ),
               tileColor: _colorFromHex(item['color'] ?? '#000000'),
               onTap: () {
                 _selectService(type, item['actionsOrReactions'],
@@ -208,8 +212,8 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
                     selectedTriggers.add({
                       "service": serviceName,
                       "name": option['name'] ?? 'Unnamed Option',
-                      "icon": services.firstWhere(
-                              (s) => s['name'] == serviceName)['icon'] ??
+                      "image": services.firstWhere(
+                              (s) => s['name'] == serviceName)['image'] ??
                           '',
                       "color": services.firstWhere(
                               (s) => s['name'] == serviceName)['color'] ??
@@ -220,8 +224,8 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
                     selectedReactions.add({
                       "service": serviceName,
                       "name": option['name'] ?? 'Unnamed Option',
-                      "icon": services.firstWhere(
-                              (s) => s['name'] == serviceName)['icon'] ??
+                      "image": services.firstWhere(
+                              (s) => s['name'] == serviceName)['image'] ??
                           '',
                       "color": services.firstWhere(
                               (s) => s['name'] == serviceName)['color'] ??
@@ -377,9 +381,12 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
                       ),
                     ),
                     ...selectedTriggers.map((trigger) => ListTile(
-                          title: Text(trigger['name'] ?? 'Unnamed Trigger'),
+                          title: Text(
+                            trigger['name'] ?? 'Unnamed Trigger',
+                            style: const TextStyle(color: Colors.white),
+                          ),
                           leading: Image.network(
-                            trigger['icon'] ?? '',
+                            trigger['image'] ?? '',
                             loadingBuilder: (BuildContext context, Widget child,
                                 ImageChunkEvent? loadingProgress) {
                               if (loadingProgress == null) {
@@ -436,9 +443,12 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
                       ),
                     ),
                     ...selectedReactions.map((reaction) => ListTile(
-                          title: Text(reaction['name'] ?? 'Unnamed Reaction'),
+                          title: Text(
+                            reaction['name'] ?? 'Unnamed Reaction',
+                            style: const TextStyle(color: Colors.white),
+                          ),
                           leading: Image.network(
-                            reaction['icon'] ?? '',
+                            reaction['image'] ?? '',
                             loadingBuilder: (BuildContext context, Widget child,
                                 ImageChunkEvent? loadingProgress) {
                               if (loadingProgress == null) {
