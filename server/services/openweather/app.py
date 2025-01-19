@@ -85,7 +85,7 @@ BACKEND_PORT = os.environ.get("BACKEND_PORT")
 
 API_URL = "https://api.openweathermap.org/data/2.5"
 
-METEO = {
+WEATHER = {
 	"Clear": {"min": 800, "max": 800},
 	"Clouds": {"min": 801, "max": 804},
 	"Drizzle": {"min": 300, "max": 321},
@@ -100,11 +100,11 @@ METEO = {
 ## ACTIONS
 ##
 
-ACTION_METEO_AT_CITY = "when-meteo-at-city"
+ACTION_WEATHER_AT_CITY = "when-weather-at-city"
 oreo.create_area(
-	ACTION_METEO_AT_CITY,
+	ACTION_WEATHER_AT_CITY,
 	NewOreo.TYPE_ACTIONS,
-	"When a specific meteo is detected in a city",
+	"When a specific weater is detected in a city",
 	[
 		{
 			"name": "city",
@@ -112,16 +112,22 @@ oreo.create_area(
 			"title": "The name of the city"
 		},
 		{
-			"name": "meteo",
+			"name": "weather",
 			"type": "dropdown",
-			"title": "The meteo to detect",
-			"extra": [key for key in METEO.keys()]
+			"title": "The weater to detect",
+			"extra": [key for key in WEATHER.keys()]
 		},
+		{
+			"name": "unit",
+			"type": "dropdown",
+			"title": "The weather unit",
+			"extra": ["kelvin", "imperial", "metric"]
+		}
 	]
 )
-@app.route(f'/{ACTION_METEO_AT_CITY}', methods=["POST"])
+@app.route(f'/{ACTION_WEATHER_AT_CITY}', methods=["POST"])
 def new_article_general():
-	app.logger.info(f"{ACTION_METEO_AT_CITY} endpoint hit")
+	app.logger.info(f"{ACTION_WEATHER_AT_CITY} endpoint hit")
 
 	# get data
 	data = request.json
@@ -140,7 +146,7 @@ def new_article_general():
 			  "VALUES (%s, %s, %s, %s, %s)", (
 				  userid,
 				  bridge,
-				  ACTION_METEO_AT_CITY,
+				  ACTION_WEATHER_AT_CITY,
 				  json.dumps(spices),
 				  ""
 			  )
@@ -156,75 +162,86 @@ def webhook():
 	print("Starting newsapi webhook", file=sys.stderr)
 
 	while True:
-		print("Checking for new meteo", file=sys.stderr)
+		print("Checking for new weather", file=sys.stderr)
 		time.sleep(10)
 
 		with db.cursor() as cur:
 			cur.execute("SELECT userid, bridgeid, triggers, spices, last_weather FROM micro_openweather "
-			   "WHERE triggers = %s", (ACTION_METEO_AT_CITY,))
+			   "WHERE triggers = %s", (ACTION_WEATHER_AT_CITY,))
 	
-			for row in cur.fetchall():
+			rows = cur.fetchall()
+			print(f"Checking weather for {len(rows)} users", file=sys.stderr)
+	
+			for row in rows:
 				userid, bridgeid, triggers, spices, last_weather = row
 				spices = json.loads(spices)
-
-				print(f"Checking meteo for {userid} user", file=sys.stderr)
-				# get the weather
+	
+				unit = spices.get("unit")
 				city = spices.get("city")
-				meteo = spices.get("meteo")
-				if not city or not meteo:
+				weather = spices.get("weather")
+				if not city or not weather or not unit:
+					print(f"Missing required fields: 'city': {city}, 'weather': {weather}, 'unit': {unit}", file=sys.stderr)
 					continue
 
-				url = f"{API_URL}/weather?q={quote(city)}&appid={API_KEY}"
+				unit_url = f"&units={quote(unit)}" if (unit != "kelvin") else ""
+				url = f"{API_URL}/weather?" \
+					f"appid={API_KEY}" \
+					f"&q={quote(city)}"	\
+					f"{unit_url}" \
+	
+				print(f"Requesting weather for {city} at {url}", file=sys.stderr)
+
 				res = requests.get(url)
 				if res.status_code != 200:
 					print(f"Error while fetching weather for {city}", file=sys.stderr)
 					continue
 
-				weather = res.json()
-				if not weather:
+				print(f"Got weather for {city}", file=sys.stderr)
+				# update the last weather
+				cur.execute("UPDATE micro_openweather "
+					"SET last_weather = %s "
+					"WHERE userid = %s AND bridgeid = %s AND triggers = %s AND spices = %s", (
+					weather,
+					userid,
+					bridgeid,
+					triggers,
+					json.dumps(spices)
+				))
+
+				db.commit()
+
+				data = res.json()
+				if not data:
 					continue
 
-				weather_id = weather["weather"][0]["id"]
+				weather_id = data["weather"][0]["id"]
 				if not weather_id:
 					continue
 
-				if (last_weather != meteo
-				and weather_id >= METEO[meteo]["min"]
-				and weather_id <= METEO[meteo]["max"]):
-					if last_weather != meteo:
+				if (last_weather != weather
+				and weather_id >= WEATHER[weather]["min"]
+				and weather_id <= WEATHER[weather]["max"]):
 
-						res = requests.put(
-							f"http://backend:{BACKEND_PORT}/api/orchestrator",
-							json={
-								"bridge": bridgeid,
-								"userid": userid,
-								"ingredients": {
-									# "meteo": weather.get("weather")[0].get("main"),
-									# "temperature": weather.get("main").get("temp"),
-									# "feels_like": weather.get("main").get("feels_like"),
-									# "humidity": weather.get("main").get("humidity"),
-									# "pressure": weather.get("main").get("pressure"),
-									# "wind_speed": weather.get("wind").get("speed"),
-									# "wind_deg": weather.get("wind").get("deg"),
-									# "clouds": weather.get("clouds").get("all"),
-									# "visibility": weather.get("visibility"),
-								}
+					res = requests.put(
+						f"http://backend:{BACKEND_PORT}/api/orchestrator",
+						json={
+							"bridge": bridgeid,
+							"userid": userid,
+							"ingredients": {
+								"weather": str(data.get("weather")[0].get("description")),
+								"temperature": str(data.get("main").get("temp")),
+								"feels_like": str(data.get("main").get("feels_like")),
+								"humidity": str(data.get("main").get("humidity")),
+								"pressure": str(data.get("main").get("pressure")),
+								"wind_speed": str(data.get("wind").get("speed")),
+								"wind_deg": str(data.get("wind").get("deg")),
+								"clouds": str(data.get("clouds").get("all")),
+								"visibility": str(data.get("visibility")),
 							}
-						)
-						print(f"New meteo detected: {meteo} in {city}: {res.json()}", file=sys.stderr)
+						}
+					)
+					print(f"New weather detected: {weather} in {city}: {res.json()}", file=sys.stderr)
 
-					# update the last weather
-					cur.execute("UPDATE micro_openweather "
-						"SET last_weather = %s "
-						"WHERE userid = %s AND bridgeid = %s AND triggers = %s AND spices = %s", (
-						meteo,
-						userid,
-						bridgeid,
-						triggers,
-						json.dumps(spices)
-					))
-
-					db.commit()
 
 ##
 ## INFO
