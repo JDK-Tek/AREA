@@ -1,12 +1,15 @@
 import 'package:area/pages/GithubOAuthPage.dart';
 import 'package:area/pages/OutlookOAuthPage.dart';
+import 'package:area/pages/RedditAuthPage.dart';
 import 'package:area/pages/SpotifyOAuthPage.dart';
+import 'package:area/tools/providers.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:area/tools/user_ouput.dart';
-import 'package:area/pages/DiscordAuthPage.dart';
 import 'package:area/pages/OAuthRoblox.dart';
 import 'dart:async';
+
+import 'package:provider/provider.dart';
 
 class UserBox extends StatefulWidget {
   const UserBox(
@@ -168,6 +171,14 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPage extends State<LoginPage> {
   @override
+  void initState() {
+    super.initState();
+    if (Provider.of<UserState>(context, listen: false).token != null) {
+      context.go("/");
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return SafeArea(
         child: Scaffold(
@@ -176,7 +187,7 @@ class _LoginPage extends State<LoginPage> {
         child: Stack(
           children: [
             const AnimatedBackground(),
-            Column(children: [
+            Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
               Align(
                 alignment: Alignment.topLeft,
                 child: ElevatedButton(
@@ -192,16 +203,29 @@ class _LoginPage extends State<LoginPage> {
                         color: Colors.white,
                         size: MediaQuery.of(context).size.height * 0.05)),
               ),
-              const UserOuput(
-                  title: "login",
-                  icon: Icons.email,
-                  obscureText: true,
-                  u: "api/tmp"),
-              const DiscordLoginButton(),
-              const RobloxLoginButton(),
-              const OutlookLoginButton(),
-              const SpotifyLoginButton(),
-              const GithubLoginButton(),
+              Provider.of<UserState>(context, listen: false).token == null
+                  ? const UserOuput(
+                      title: "login",
+                      icon: Icons.email,
+                      obscureText: true,
+                      u: "api/tmp")
+                  : const Text(
+                      "You're already logged...",
+                      style: TextStyle(color: Colors.white, fontSize: 50),
+                      textAlign: TextAlign.center,
+                    ),
+              const Padding(
+                padding: EdgeInsets.only(left: 45, right: 45),
+                child: Column(
+                  children: [
+                    RobloxLoginButton(),
+                    OutlookLoginButton(),
+                    SpotifyLoginButton(),
+                    GithubLoginButton(),
+                    RedditLoginButton(),
+                  ],
+                ),
+              ),
             ])
           ],
         ),

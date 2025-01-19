@@ -18,9 +18,21 @@ class RobloxLoginButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var ip = Provider.of<IPState>(context, listen: false).ip;
     return ElevatedButton(
+      style: ElevatedButton.styleFrom(backgroundColor: const Color.fromARGB(255, 0, 0, 0)),
       onPressed: () => _launchURL(context),
-      child: const Text('Se connecter avec Roblox'),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          SizedBox(
+              child: Image.network(
+            "https://$ip/assets/roblox.png",
+            scale: 25,
+          )),
+          const Text('Se connecter avec Roblox', style: TextStyle(color: Colors.white)),
+        ],
+      ),
     );
   }
 }

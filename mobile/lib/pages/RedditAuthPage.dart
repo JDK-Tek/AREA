@@ -6,44 +6,45 @@ import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:go_router/go_router.dart';
 
-class DiscordLoginButton extends StatelessWidget {
-  const DiscordLoginButton({super.key});
+class RedditLoginButton extends StatelessWidget {
+  const RedditLoginButton({super.key});
   Future<void> _launchURL(BuildContext context) async {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const DiscordAuthPage()),
+      MaterialPageRoute(builder: (context) => const RedditAuthPage()),
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
     var ip = Provider.of<IPState>(context, listen: false).ip;
-    return  ElevatedButton(
-      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xff5865F2)),
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xffff4500)),
       onPressed: () => _launchURL(context),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           SizedBox(
               child: Image.network(
-            "https://$ip/assets/discord.webp",
+            "https://$ip/assets/reddit.webp",
             scale: 10,
           )),
-          const Text('Se connecter avec Discord', style: TextStyle(color: Colors.white)),
+          const Text('Se connecter avec Reddit', style: TextStyle(color: Colors.white)),
         ],
       ),
     );
   }
 }
 
-class DiscordAuthPage extends StatefulWidget {
-  const DiscordAuthPage({super.key});
+class RedditAuthPage extends StatefulWidget {
+  const RedditAuthPage({super.key});
 
   @override
-  State<DiscordAuthPage> createState() => _DiscordAuthPageState();
+  State<RedditAuthPage> createState() => _RedditAuthPageState();
 }
 
-class _DiscordAuthPageState extends State<DiscordAuthPage> {
+class _RedditAuthPageState extends State<RedditAuthPage> {
   bool _isWebViewInitialized = false;
   String url = "";
   late WebViewController _webViewController;
@@ -57,7 +58,7 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
   }
 
   Future<void> _initialize() async {
-    await _makeDemand("api/oauth/discord");
+    await _makeDemand("api/oauth/reddit");
     setState(() {
       _initializeWebView();
 
@@ -105,7 +106,7 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
                 setState(() {
                   _authCode = code;
                   if (_authCode != "") {
-                    _makeRequest(_authCode, "api/oauth/discord");
+                    _makeRequest(_authCode, "api/oauth/reddit");
                     if (!context.mounted) return;
                     context.go("/");
                   }
@@ -192,7 +193,7 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Discord Authentication")),
+      appBar: AppBar(title: const Text("Reddit Authentication")),
       body: _isWebViewInitialized
           ? WebViewWidget(controller: _webViewController)
           : const Center(child: CircularProgressIndicator()),
