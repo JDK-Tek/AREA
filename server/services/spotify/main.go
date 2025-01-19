@@ -98,7 +98,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	var user UserResult
 	//var tokid int
 	var owner = -1
-	var responseData map[string]interface{}
+	//var responseData map[string]interface{}
 	var atok = req.Header.Get("Authorization")
 
 	clientID := os.Getenv("SPOTIFY_CLIENT_ID")
@@ -125,19 +125,13 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	}
 	defer rep.Body.Close()
 
-	body, err := io.ReadAll(rep.Body)
+	err = json.NewDecoder(rep.Body).Decode(&tok)
 	if err != nil {
-		fmt.Fprintln(w, "Erreur lors de la lecture du corps de la réponse:", err.Error())
+		fmt.Fprintln(w, "decode", err.Error())
 		return
 	}
 
-	if err := json.Unmarshal(body, &responseData); err != nil {
-		fmt.Fprintln(w, "Erreur lors de l'analyse de la réponse JSON:", err.Error())
-		return
-	}
-
-	tok.Token = responseData["access_token"].(string)
-	tok.Refresh = responseData["refresh_token"].(string)
+	tok.Refresh = ""
 
 	req, err = http.NewRequest("GET", "https://api.spotify.com/v1/me", nil)
 	if err != nil {
@@ -160,7 +154,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		return
 	}
 
-	if tok.Token == "" || tok.Refresh == "" {
+	if tok.Token == "" {
 		fmt.Fprintln(w, "Erreur : token ou refresh token manquant")
 		return
 	}

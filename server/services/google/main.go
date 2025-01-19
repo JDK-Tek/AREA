@@ -108,7 +108,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	var user UserResult
 	//var tokid int
 	var owner = -1
-	var responseData map[string]interface{}
+	//var responseData map[string]interface{}
 	var atok = req.Header.Get("Authorization")
 
 	clientID := os.Getenv("GOOGLE_CLIENT_ID")
@@ -143,21 +143,11 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	}
 	defer rep.Body.Close()
 
-	body, err := io.ReadAll(rep.Body)
-	fmt.Println("rep = ", string(body))
-	fmt.Println("status = ", rep.StatusCode)
+	err = json.NewDecoder(rep.Body).Decode(&tok)
 	if err != nil {
-		fmt.Fprintln(w, "Erreur lors de la lecture du corps de la réponse:", err.Error())
-		fmt.Println("error: ", err.Error())
+		fmt.Fprintln(w, "decode", err.Error())
 		return
 	}
-
-	if err := json.Unmarshal(body, &responseData); err != nil {
-		fmt.Fprintln(w, "Erreur lors de l'analyse de la réponse JSON:", err.Error())
-		return
-	}
-
-	tok.Token = responseData["access_token"].(string)
 
 	fmt.Println("acess token = ", tok.Token)
 	fmt.Println("refresk token = ", "")
