@@ -278,6 +278,28 @@ def master_thread():
             print("an error occured (unknwon): ", str(err), file=stderr)
         sleep(5)
 
+@app.route("/", methods=["GET"])
+def about():
+    return jsonify({
+        "color": "#6441a5",
+        "image": "/assets/twitch.png",
+        "oauth": True,
+        "areas": [
+            {
+                "name": "onstreamstart",
+                "description": "When a streamer has started streaming.",
+                "type": "action",
+                "spices": [
+                    {
+                        "name": "streamer",
+                        "type": "text",
+                        "title": "The streameer you want to know about."
+                    }
+                ]
+            }
+        ]
+    }), 200
+
 if __name__ == "__main__":
     threading.Thread(target=master_thread).start()
     app.run(host='0.0.0.0', port=80)
