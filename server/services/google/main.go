@@ -90,7 +90,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     data.Set("client_id", clientID)
     data.Set("client_secret", clientSecret)
     data.Set("grant_type", "authorization_code")
-    data.Set("code", res.Code)
+    data.Set("access_token", res.Code)
     data.Set("redirect_uri", redirectURI)
     
     rep, err := http.PostForm("https://oauth2.googleapis.com/token", data)
