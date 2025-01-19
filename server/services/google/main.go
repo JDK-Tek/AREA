@@ -69,6 +69,7 @@ func getOAUTHLink(w http.ResponseWriter, req *http.Request) {
 }
 
 func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
+	fmt.Println("i m here")
     var res Result
     var tok TokenResult
     var user UserResult
@@ -101,7 +102,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     defer rep.Body.Close()
     
     body, err := io.ReadAll(rep.Body)
-	fmt.Print("rep = ", body)
+	fmt.Println("rep = ", body)
     if err != nil {
         fmt.Fprintln(w, "Erreur lors de la lecture du corps de la réponse:", err.Error())
 		fmt.Println("error: ", err.Error())
