@@ -321,8 +321,7 @@ func doctor(a area.AreaRequest) {
 		QueryRow("select email from users where id = $1", id).
 		Scan(&email)
 	if err != nil {
-		a.Reply(Message{Message: "i'm ill: " + err.Error(), Authentificated: true}, http.StatusOK)
-		return
+		x.Email = ""
 	}
 	if email.Valid {
 		x.Email = email.String
@@ -332,14 +331,14 @@ func doctor(a area.AreaRequest) {
 	var stuff string
 	for rows.Next() {
 		if err := rows.Scan(&stuff); err != nil {
-			a.Reply(Message{Message: "i'm ill: " + err.Error(), Authentificated: true}, http.StatusOK)
+			a.Reply(Message{Message: "i'm ill 2: " + err.Error(), Authentificated: true}, http.StatusOK)
 			return
 		}
 		fmt.Println(stuff)
 		x.Oauths = append(x.Oauths, stuff)
 	}
 	if err := rows.Err(); err != nil {
-		a.Reply(Message{Message: "i'm ill: " + err.Error(), Authentificated: true}, http.StatusOK)
+		a.Reply(Message{Message: "i'm ill 3: " + err.Error(), Authentificated: true}, http.StatusOK)
 		return
 	}
 	a.Reply(x, http.StatusOK)
