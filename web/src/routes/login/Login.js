@@ -16,7 +16,7 @@ export default function Login( {setToken} ) {
     const [error, setError] = useState(null);
 
     return (
-        <div className="bg-gradient-to-br from-zinc-900 via-indigo-900 to-violet-900 animate-gradient bg-300%">
+        <div className="bg-gradient-to-br from-zinc-900 via-indigo-900 to-violet-900">
             {error && <Notification error={true} msg={error} setError={setError} />}
             <HeaderBar />
             <Content setToken={setToken} setError={setError} />

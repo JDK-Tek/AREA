@@ -7,8 +7,7 @@
 
 import axios from "axios";
 import { useEffect, useState } from "react";
-import { Plus } from "lucide-react";
-import { Trash2 } from "lucide-react";
+import { Plus, PencilLine, Trash2 } from "lucide-react";
 
 import HeaderBar from "../../components/Header/HeaderBar"
 import SidePannel from "../../components/SidePannel"
@@ -25,16 +24,18 @@ function Triger({title, color, spices, onClick}) {
             <div className="flex items-center">
                 <label className="block text-2xl font-bold font-spartan text-white">{title}</label>
             </div>
-            <Button
-                styleClolor={`bg-chartpurple-200 hover:bg-chartpurple-100 text-white`}
-                icon={<Trash2 />}
-                onClick={onClick}
-            />
-            <Button
-                styleClolor={`bg-chartpurple-200 hover:bg-chartpurple-100 text-white`}
-                icon={<Trash2 />}
-                onClick={onClick}
-            />
+            <div>
+                <Button
+                    styleClolor={`bg-chartpurple-200 hover:bg-chartpurple-100 text-white`}
+                    icon={<PencilLine />}
+                    onClick={onClick}
+                />
+                <Button
+                    styleClolor={`bg-chartpurple-200 hover:bg-chartpurple-100 text-white`}
+                    icon={<Trash2 />}
+                    onClick={onClick}
+                />
+            </div>
         </div>
     )
 }

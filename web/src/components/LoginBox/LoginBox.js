@@ -106,12 +106,14 @@ export default function LoginBox ( {setToken, setError} ) {
                 You don't have an account ? 
                 <a href="/register" className="font-bold text-white dark:text-white hover:underline"> Register here!</a>
             </div>
-            <LRButton text="Login" handleClick={handleSubmit}/>
-            <div className="flex flex-row space-x-4 justify-center pt-4">
-                <LRButton text="Connect with Discord" handleClick={() => handleOauth("discord")} /> 
-                <LRButton text="Connect with Reddit" handleClick={() => handleOauth("reddit")} /> 
-                <LRButton text="Connect with Github" handleClick={() => handleOauth("github")} />
-                <LRButton text="Connect with Spotify" handleClick={() => handleOauth("spotify")} />
+            <div className="text-center pt-4 items-center">
+                <LRButton text="Login" handleClick={handleSubmit}/>
+                    <div className=" justify-center pt-4 overflow-y-auto max-h-[100px]      ">
+                        <LRButton color="#5865F2" img="/assets/services/discord.webp" text="Connect with Discord" handleClick={() => handleOauth("discord")} />
+                        <LRButton color="#ff4500" img="/assets/services/reddit.webp"  text="Connect with Reddit" handleClick={() => handleOauth("reddit")} />
+                        <LRButton color="#24292e" img="/assets/services/github.webp"  text="Connect with Github" handleClick={() => handleOauth("github")} />
+                        <LRButton color="#1DB954" img="/assets/services/spotify.png" text="Connect with Spotify" handleClick={() => handleOauth("spotify")} />
+                    </div>
             </div>
         </LRBox>
     )
