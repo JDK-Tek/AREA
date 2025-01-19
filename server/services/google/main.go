@@ -49,7 +49,7 @@ type EmailContent struct {
 func getOAUTHLink(w http.ResponseWriter, req *http.Request) {
     str := "https://accounts.google.com/o/oauth2/v2/auth?"
     
-    redirectURI := url.QueryEscape(os.Getenv("REDIRECT_URI"))
+    redirectURI := url.QueryEscape(os.Getenv("REDIRECT"))
 	fmt.Println("test test")
     fmt.Println("Redirect URI = ", redirectURI)
 
