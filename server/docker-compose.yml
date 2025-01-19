@@ -45,6 +45,7 @@ services:
       - ./server/database/roblox.sql:/docker-entrypoint-initdb.d/roblox.sql
       - ./server/database/newsapi.sql:/docker-entrypoint-initdb.d/newsapi.sql
       - ./server/database/openweather.sql:/docker-entrypoint-initdb.d/openweather.sql
+      - ./server/database/twitch.sql:/docker-entrypoint-initdb.d/twitch.sql
     networks:
       - web
     
@@ -118,6 +119,31 @@ services:
       - DB_NAME=${DATABASE_NAME}
     networks:
       - web
+
+  service-twitch:
+    env_file:
+      - .env
+    container_name: area-service-twitch
+    build:
+      context: ./server/services/twitch
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.twitch.rule=PathPrefix(`/service/twitch/`)"
+      - "traefik.http.services.twitch.loadbalancer.server.port=80"
+      - "traefik.http.routers.twitch.middlewares=stripprefix-service-twitch"
+      - "traefik.http.middlewares.stripprefix-service-twitch.stripprefix.prefixes=/service/twitch"
+    environment:
+      - BACKEND_KEY=${BACKEND_KEY}
+      - REDIRECT=${REDIRECT}
+      - DB_HOST=database
+      - DB_PORT=${DATABASE_PORT}
+      - DB_USER=${DATABASE_USER}
+      - DB_PASSWORD=${DATABASE_PASSWORD}
+      - DB_NAME=${DATABASE_NAME}
+    networks:
+      - web
+    volumes:
+      - ./server/services/twitch/.env:/usr/mount.d/.env
 
   service-outlook:
     env_file:
