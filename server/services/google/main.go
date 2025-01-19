@@ -74,112 +74,122 @@ type UserResult struct {
 }
 
 func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
-	var res Result
-	var tok TokenResult
-	var user UserResult
-	var tokid int
-	var owner = -1
-	var responseData map[string]interface{}
+	fmt.Println("i m here")
+    var res Result
+    var tok TokenResult
+    var user UserResult
+    var tokid int
+    var owner = -1
+    var responseData map[string]interface{}
 
-	clientID := os.Getenv("SPOTIFY_CLIENT_ID")
-	clientSecret := os.Getenv("SPOTIFY_CLIENT_SECRET")
-	redirectURI := os.Getenv("REDIRECT")
-	data := url.Values{}
-	
-	err := json.NewDecoder(req.Body).Decode(&res)
-	if err != nil {
-		fmt.Fprintln(w, "Erreur lors du décodage de la requête:", err.Error())
-		return
-	}
+    clientID := os.Getenv("GOOGLE_CLIENT_ID")
+    clientSecret := os.Getenv("GOOGLE_CLIENT_SECRET")
+    redirectURI := os.Getenv("REDIRECT")
+    data := url.Values{}
+    
+    err := json.NewDecoder(req.Body).Decode(&res)
+    if err != nil {
+        fmt.Fprintln(w, "Erreur lors du décodage de la requête:", err.Error())
+        return
+    }
 
-	data.Set("client_id", clientID)
-	data.Set("client_secret", clientSecret)
-	data.Set("grant_type", "authorization_code")
-	data.Set("code", res.Code)
-	data.Set("redirect_uri", redirectURI)
-	
-	rep, err := http.PostForm("https://accounts.spotify.com/api/token", data)
-	if err != nil {
-		fmt.Fprintln(w, "Erreur lors de l'échange du code:", err.Error())
-		return
-	}
-	defer rep.Body.Close()
-	
-	body, err := io.ReadAll(rep.Body)
-	if err != nil {
-		fmt.Fprintln(w, "Erreur lors de la lecture du corps de la réponse:", err.Error())
-		return
-	}
-	
-	if err := json.Unmarshal(body, &responseData); err != nil {
-		fmt.Fprintln(w, "Erreur lors de l'analyse de la réponse JSON:", err.Error())
-		return
-	}
+    data.Set("client_id", clientID)
+    data.Set("client_secret", clientSecret)
+    data.Set("grant_type", "authorization_code")
+    data.Set("access_token", res.Code)
+    data.Set("redirect_uri", redirectURI)
+    
+    rep, err := http.PostForm("https://oauth2.googleapis.com/token", data)
+    if err != nil {
+        fmt.Fprintln(w, "Erreur lors de l'échange du code:", err.Error())
+        return
+    }
+    defer rep.Body.Close()
+    
+    body, err := io.ReadAll(rep.Body)
+	fmt.Println("rep = ", body)
+    if err != nil {
+        fmt.Fprintln(w, "Erreur lors de la lecture du corps de la réponse:", err.Error())
+		fmt.Println("error: ", err.Error())
+        return
+    }
+    
+    if err := json.Unmarshal(body, &responseData); err != nil {
+        fmt.Fprintln(w, "Erreur lors de l'analyse de la réponse JSON:", err.Error())
+        return
+    }
 
-	tok.Token = responseData["access_token"].(string)
-	tok.Refresh = responseData["refresh_token"].(string)
+    if tokenStr, ok := responseData["access_token"].(string); ok {
+        tok.Token = tokenStr
+    } else {
+        fmt.Fprintln(w, "Erreur : access_token manquant ou incorrect")
+        return
+    }
 
-	req, err = http.NewRequest("GET", "https://api.spotify.com/v1/me", nil)
-	if err != nil {
-		fmt.Fprintln(w, "Erreur lors de la création de la requête utilisateur:", err.Error())
-		return
-	}
-	req.Header.Set("Authorization", "Bearer "+tok.Token)
-	
-	client := &http.Client{}
-	rep, err = client.Do(req)
-	if err != nil {
-		fmt.Fprintln(w, "Erreur lors de l'appel à l'API Spotify:", err.Error())
-		return
-	}
-	defer rep.Body.Close()
-	
-	err = json.NewDecoder(rep.Body).Decode(&user)
-	if err != nil {
-		fmt.Fprintln(w, "Erreur lors du décodage des informations utilisateur:", err.Error())
-		return
-	}
+    if refreshTokenStr, ok := responseData["refresh_token"].(string); ok {
+        tok.Refresh = refreshTokenStr
+    } else {
+        fmt.Fprintln(w, "Erreur : refresh_token manquant ou incorrect")
+        return
+    }
 
-	if tok.Token == "" || tok.Refresh == "" {
-		fmt.Fprintln(w, "Erreur : token ou refresh token manquant")
-		return
-	}
+    req, err = http.NewRequest("GET", "https://www.googleapis.com/oauth2/v2/userinfo", nil)
+    if err != nil {
+        fmt.Fprintln(w, "Erreur lors de la création de la requête utilisateur:", err.Error())
+        return
+    }
+    req.Header.Set("Authorization", "Bearer "+tok.Token)
+    
+    client := &http.Client{}
+    rep, err = client.Do(req)
+    if err != nil {
+        fmt.Fprintln(w, "Erreur lors de l'appel à l'API Google:", err.Error())
+        return
+    }
+    defer rep.Body.Close()
+    
+    err = json.NewDecoder(rep.Body).Decode(&user)
+    if err != nil {
+        fmt.Fprintln(w, "Erreur lors du décodage des informations utilisateur:", err.Error())
+        return
+    }
 
-	err = db.QueryRow("SELECT id, owner FROM tokens WHERE userid = $1", user.ID).Scan(&tokid, &owner)
-	if err != nil {
-		err = db.QueryRow("INSERT INTO tokens (service, token, refresh, userid) VALUES ($1, $2, $3, $4) RETURNING id",
-			"spotify",
-			tok.Token,
-			tok.Refresh,
-			user.ID,
-		).Scan(&tokid)
-		if err != nil {
-			fmt.Fprintln(w, "Erreur lors de l'insertion du token:", err.Error())
-			return
-		}
+    if tok.Token == "" || tok.Refresh == "" {
+        fmt.Fprintln(w, "Erreur : token ou refresh token manquant")
+        return
+    }
 
-		err = db.QueryRow("INSERT INTO users (tokenid) VALUES ($1) RETURNING id", tokid).Scan(&owner)
-		if err != nil {
-			fmt.Fprintln(w, "Erreur lors de l'insertion de l'utilisateur:", err.Error())
-			return
-		}
-		db.Exec("UPDATE tokens SET owner = $1 WHERE id = $2", owner, tokid)
-	}
+    err = db.QueryRow("SELECT id, owner FROM tokens WHERE userid = $1", user.ID).Scan(&tokid, &owner)
+    if err != nil {
+        err = db.QueryRow("INSERT INTO tokens (service, token, refresh, userid) VALUES ($1, $2, $3, $4) RETURNING id",
+            "google", tok.Token, tok.Refresh, user.ID).Scan(&tokid)
+        if err != nil {
+            fmt.Fprintln(w, "Erreur lors de l'insertion du token:", err.Error())
+            return
+        }
 
-	secretBytes := []byte(os.Getenv("BACKEND_KEY"))
-	claims := jwt.MapClaims{
-		"id":  owner,
-		"exp": time.Now().Add(time.Second * EXPIRATION).Unix(),
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenStr, err := token.SignedString(secretBytes)
-	if err != nil {
-		fmt.Fprintln(w, "Erreur lors de la signature du token:", err.Error())
-		return
-	}
-	
-	fmt.Println("Succès de l'authentification avec Spotify, token =", tokenStr)
-	fmt.Fprintf(w, "{\"token\": \"%s\"}\n", tokenStr)
+        err = db.QueryRow("INSERT INTO users (tokenid) VALUES ($1) RETURNING id", tokid).Scan(&owner)
+        if err != nil {
+            fmt.Fprintln(w, "Erreur lors de l'insertion de l'utilisateur:", err.Error())
+            return
+        }
+        db.Exec("UPDATE tokens SET owner = $1 WHERE id = $2", owner, tokid)
+    }
+
+    secretBytes := []byte(os.Getenv("BACKEND_KEY"))
+    claims := jwt.MapClaims{
+        "id":  owner,
+        "exp": time.Now().Add(time.Second * EXPIRATION).Unix(),
+    }
+    token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+    tokenStr, err := token.SignedString(secretBytes)
+    if err != nil {
+        fmt.Fprintln(w, "Erreur lors de la signature du token:", err.Error())
+        return
+    }
+    
+    fmt.Println("Succès de l'authentification avec Google, token =", tokenStr)
+    fmt.Fprintf(w, "{\"token\": \"%s\"}\n", tokenStr)
 }
 
 func getUserInfo(w http.ResponseWriter, req *http.Request) {
