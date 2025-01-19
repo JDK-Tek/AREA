@@ -2388,6 +2388,107 @@ func createPlaylist(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     }
 }
 
+func deletePlaylist(w http.ResponseWriter, req *http.Request, db *sql.DB) {
+    fmt.Println("Headers received:", req.Header)
+
+    bodyBytes, err := io.ReadAll(req.Body)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error reading request body:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+        return
+    }
+    fmt.Println("Request Body:", string(bodyBytes))
+
+    req.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+
+    var requestBody struct {
+        UserID    int    `json:"userid"`
+        Spices    struct {
+            PlaylistID string `json:"name"`
+        } `json:"spices"`
+    }
+
+    decoder := json.NewDecoder(req.Body)
+    err = decoder.Decode(&requestBody)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error decoding JSON:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+        return
+    }
+
+    userID := requestBody.UserID
+    playlistID := requestBody.Spices.PlaylistID
+    fmt.Println("Extracted userID:", userID)
+    fmt.Println("Playlist ID to delete:", playlistID)
+
+    var spotifyToken string
+    err = db.QueryRow("SELECT token FROM tokens WHERE owner = $1 AND service = 'spotify'", userID).Scan(&spotifyToken)
+    if err != nil {
+        if err == sql.ErrNoRows {
+            w.WriteHeader(http.StatusNotFound)
+            fmt.Println("No Spotify token found for user:", userID)
+            fmt.Fprintf(w, "{ \"error\": \"No Spotify token found for user\" }\n")
+        } else {
+            w.WriteHeader(http.StatusInternalServerError)
+            fmt.Println("Database error:", err.Error())
+            fmt.Fprintf(w, "{ \"error\": \"Database error: %s\" }\n", err.Error())
+        }
+        return
+    }
+
+    if spotifyToken == "" {
+        w.WriteHeader(http.StatusUnauthorized)
+        fmt.Println("No Spotify token available for user:", userID)
+        fmt.Fprintf(w, "{ \"error\": \"No Spotify token available\" }\n")
+        return
+    }
+
+    spotifyURL := fmt.Sprintf("https://api.spotify.com/v1/playlists/%s", playlistID)
+
+    reqSpotify, err := http.NewRequest("DELETE", spotifyURL, nil)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error creating Spotify request:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+        return
+    }
+
+    reqSpotify.Header.Set("Authorization", "Bearer "+spotifyToken)
+    reqSpotify.Header.Set("Content-Type", "application/json")
+
+    client := &http.Client{}
+    respSpotify, err := client.Do(reqSpotify)
+    if err != nil {
+        w.WriteHeader(http.StatusBadGateway)
+        fmt.Println("Error deleting playlist:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+        return
+    }
+    defer respSpotify.Body.Close()
+
+    bodyResp, err := io.ReadAll(respSpotify.Body)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error reading Spotify response body:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"Error reading Spotify response body\" }\n")
+        return
+    }
+    fmt.Println("Spotify Response Body:", string(bodyResp))
+
+    if respSpotify.StatusCode == http.StatusNoContent {
+        fmt.Println("Playlist successfully deleted!")
+        w.WriteHeader(http.StatusOK)
+        fmt.Fprintf(w, "{ \"status\": \"Playlist successfully deleted!\" }\n")
+    } else {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Failed to delete playlist. Status:", respSpotify.StatusCode)
+        fmt.Fprintf(w, "{ \"error\": \"Failed to delete playlist\" }\n")
+    }
+}
+
+
 
 func connectToDatabase() (*sql.DB, error) {
 	dbPassword := os.Getenv("DB_PASSWORD")
@@ -2539,6 +2640,18 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 				},
 			},
 		},
+		{
+			Name: "deletePlaylist",
+			Type: "reaction",
+			Desc: "delete une playlist",
+			Spices: []InfoSpice{
+				{
+					Name: "name",
+					Type: "text",
+					Title: "The title of the playlist",
+				},
+			},
+		},
 	}
 	var infos = Infos{
 		Color: "#1DB954",
@@ -2581,6 +2694,7 @@ func main() {
 	router.HandleFunc("/removeFromPlaylistIfPresent", miniproxy(removeFromPlaylistIfPresent, db)).Methods("POST")
 	router.HandleFunc("/addToPlaylistIfNotPresent", miniproxy(addToPlaylistIfNotPresent, db)).Methods("POST")
 	router.HandleFunc("/createPlaylist", miniproxy(createPlaylist, db)).Methods("POST")
+	router.HandleFunc("/deletePlaylist", miniproxy(deletePlaylist, db)).Methods("POST")
 	router.HandleFunc("/user", getUserInfo).Methods("GET")
 	router.HandleFunc("/", getRoutes).Methods("GET")
 	log.Fatal(http.ListenAndServe(":80", router))
