@@ -54,17 +54,17 @@ create table if not exists tokens (
     owner int default null
 );
 
-insert into users (tokenid) values (
-    1
-);
+-- insert into users (tokenid) values (
+--     1
+-- );
 
-insert into tokens (service, token, refresh, userid, owner) values (
-    'roblox',
-    '<token>',
-    '<refresh>',
-    '3462185362',
-    1
-);
+-- insert into tokens (service, token, refresh, userid, owner) values (
+--     'roblox',
+--     '<token>',
+--     '<refresh>',
+--     '3462185362',
+--     1
+-- );
 
 
 -- EXEMPLES FOR MVP
