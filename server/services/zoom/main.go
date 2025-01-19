@@ -241,7 +241,7 @@ type Message struct {
 
 func checkDeviceConnection(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     bodyBytes, err := io.ReadAll(req.Body)
-	backendPort := os.Getenv("BACKEND_PORT")
+    backendPort := os.Getenv("BACKEND_PORT")
     if err != nil {
         w.WriteHeader(http.StatusInternalServerError)
         fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
@@ -267,8 +267,8 @@ func checkDeviceConnection(w http.ResponseWriter, req *http.Request, db *sql.DB)
     userID := requestBody.UserID
     bridgeID := requestBody.Bridge
 
-	fmt.Println("userID = ", userID)
-	fmt.Println("bridge = ", bridgeID)
+    fmt.Println("userID = ", userID)
+    fmt.Println("bridge = ", bridgeID)
 
     var zoomToken string
     err = db.QueryRow("SELECT token FROM tokens WHERE owner = $1 AND service = 'zoom'", userID).Scan(&zoomToken)
@@ -291,7 +291,8 @@ func checkDeviceConnection(w http.ResponseWriter, req *http.Request, db *sql.DB)
 
     go func() {
         client := &http.Client{}
-        userStatusURL := fmt.Sprintf("https://api.zoom.us/v2/users/%d/status", userID)
+
+        userStatusURL := "https://api.zoom.us/v2/users/me/status"  // Utilisation de "me" pour l'utilisateur authentifié avec le token OAuth
 
         for {
             reqStatus, err := http.NewRequest("GET", userStatusURL, nil)
@@ -374,7 +375,6 @@ func checkDeviceConnection(w http.ResponseWriter, req *http.Request, db *sql.DB)
     w.WriteHeader(http.StatusOK)
     fmt.Fprintf(w, "{ \"status\": \"ok !\" }\n")
 }
-
 
 func getRoutes(w http.ResponseWriter, req *http.Request) {
 	var list = []InfoRoute{
