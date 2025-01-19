@@ -2298,8 +2298,10 @@ func createPlaylist(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     req.Body = io.NopCloser(bytes.NewReader(bodyBytes))
 
     var requestBody struct {
-        UserID    int    `json:"userid"`
-        PlaylistName string `json:"name"`
+        UserID int    `json:"userid"`
+        Spices struct {
+            Musique string `json:"name"`
+        } `json:"spices"`
     }
 
     decoder := json.NewDecoder(req.Body)
@@ -2312,7 +2314,7 @@ func createPlaylist(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     }
 
     userID := requestBody.UserID
-    playlistName := requestBody.PlaylistName
+    playlistName := requestBody.Spices.Musique
     fmt.Println("Extracted userID:", userID)
     fmt.Println("Playlist Name:", playlistName)
 
@@ -2385,6 +2387,7 @@ func createPlaylist(w http.ResponseWriter, req *http.Request, db *sql.DB) {
         fmt.Fprintf(w, "{ \"error\": \"Failed to create playlist\" }\n")
     }
 }
+
 
 func connectToDatabase() (*sql.DB, error) {
 	dbPassword := os.Getenv("DB_PASSWORD")
