@@ -241,7 +241,7 @@ type Message struct {
 
 func checkDeviceConnection(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     bodyBytes, err := io.ReadAll(req.Body)
-    backendPort := os.Getenv("BACKEND_PORT")
+	backendPort := os.Getenv("BACKEND_PORT")
     if err != nil {
         w.WriteHeader(http.StatusInternalServerError)
         fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
@@ -289,50 +289,68 @@ func checkDeviceConnection(w http.ResponseWriter, req *http.Request, db *sql.DB)
         return
     }
 
-	fmt.Print("zoom token = ", zoomToken)
-
     go func() {
         client := &http.Client{}
         
-        userStatusURL := "https://api.zoom.us/v2/users/me/status"
+        // URL pour obtenir les réunions de l'utilisateur
+        userMeetingsURL := fmt.Sprintf("https://api.zoom.us/v2/users/%s/meetings", userID)
 
         for {
-            reqStatus, err := http.NewRequest("GET", userStatusURL, nil)
+            reqMeetings, err := http.NewRequest("GET", userMeetingsURL, nil)
             if err != nil {
                 fmt.Println("Error creating request:", err.Error())
                 return
             }
-            reqStatus.Header.Set("Authorization", "Bearer "+zoomToken)
+            reqMeetings.Header.Set("Authorization", "Bearer "+zoomToken)
 
-            respStatus, err := client.Do(reqStatus)
+            respMeetings, err := client.Do(reqMeetings)
             if err != nil {
-                fmt.Println("Error fetching user status:", err.Error())
+                fmt.Println("Error fetching user meetings:", err.Error())
                 return
             }
-            defer respStatus.Body.Close()
+            defer respMeetings.Body.Close()
 
-            bodyResp, err := io.ReadAll(respStatus.Body)
+            bodyResp, err := io.ReadAll(respMeetings.Body)
             if err != nil {
                 fmt.Println("Error reading response body:", err.Error())
                 return
             }
 
-            if respStatus.StatusCode != http.StatusOK {
-                fmt.Println("Failed to get user status:", respStatus.StatusCode)
-                fmt.Println("Response body:", string(bodyResp))
+            if respMeetings.StatusCode != http.StatusOK {
+                fmt.Println("Failed to get user meetings:", respMeetings.StatusCode)
+                fmt.Println("Response body:", string(bodyResp)) // Ajout d'un log pour aider à déboguer
                 return
             }
 
-            var statusResponse struct {
-                Status string `json:"status"`
+            var meetingsResponse struct {
+                Meetings []struct {
+                    ID        string `json:"id"`
+                    Topic     string `json:"topic"`
+                    StartTime string `json:"start_time"`
+                    Status    string `json:"status"`
+                } `json:"meetings"`
             }
 
-            if err := json.Unmarshal(bodyResp, &statusResponse); err != nil {
+            if err := json.Unmarshal(bodyResp, &meetingsResponse); err != nil {
                 fmt.Println("Error unmarshalling response:", err.Error())
                 return
             }
 
-            if statusResponse.Status == "in_meeting" {
+            var activeMeeting *struct {
+                ID        string `json:"id"`
+                Topic     string `json:"topic"`
+                StartTime string `json:"start_time"`
+                Status    string `json:"status"`
+            }
+
+            for _, meeting := range meetingsResponse.Meetings {
+                if meeting.Status == "started" {
+                    activeMeeting = &meeting
+                    break
+                }
+            }
+
+            if activeMeeting != nil {
                 url := fmt.Sprintf("http://backend:%s/api/orchestrator", backendPort)
                 var requestBody Message
 
@@ -378,7 +396,6 @@ func checkDeviceConnection(w http.ResponseWriter, req *http.Request, db *sql.DB)
     w.WriteHeader(http.StatusOK)
     fmt.Fprintf(w, "{ \"status\": \"ok !\" }\n")
 }
-
 
 func getRoutes(w http.ResponseWriter, req *http.Request) {
 	var list = []InfoRoute{
