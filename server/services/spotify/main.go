@@ -2283,6 +2283,109 @@ func addToPlaylistIfNotPresent(w http.ResponseWriter, req *http.Request, db *sql
     }
 }
 
+func createPlaylist(w http.ResponseWriter, req *http.Request, db *sql.DB) {
+    fmt.Println("Headers received:", req.Header)
+
+    bodyBytes, err := io.ReadAll(req.Body)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error reading request body:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+        return
+    }
+    fmt.Println("Request Body:", string(bodyBytes))
+
+    req.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+
+    var requestBody struct {
+        UserID    int    `json:"userid"`
+        PlaylistName string `json:"playlist_name"`
+    }
+
+    decoder := json.NewDecoder(req.Body)
+    err = decoder.Decode(&requestBody)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error decoding JSON:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+        return
+    }
+
+    userID := requestBody.UserID
+    playlistName := requestBody.PlaylistName
+    fmt.Println("Extracted userID:", userID)
+    fmt.Println("Playlist Name:", playlistName)
+
+    var spotifyToken string
+    err = db.QueryRow("SELECT token FROM tokens WHERE owner = $1 AND service = 'spotify'", userID).Scan(&spotifyToken)
+    if err != nil {
+        if err == sql.ErrNoRows {
+            w.WriteHeader(http.StatusNotFound)
+            fmt.Println("No Spotify token found for user:", userID)
+            fmt.Fprintf(w, "{ \"error\": \"No Spotify token found for user\" }\n")
+        } else {
+            w.WriteHeader(http.StatusInternalServerError)
+            fmt.Println("Database error:", err.Error())
+            fmt.Fprintf(w, "{ \"error\": \"Database error: %s\" }\n", err.Error())
+        }
+        return
+    }
+
+    if spotifyToken == "" {
+        w.WriteHeader(http.StatusUnauthorized)
+        fmt.Println("No Spotify token available for user:", userID)
+        fmt.Fprintf(w, "{ \"error\": \"No Spotify token available\" }\n")
+        return
+    }
+
+    spotifyURL := "https://api.spotify.com/v1/me/playlists"
+    createPlaylistPayload := fmt.Sprintf(`{
+        "name": "%s",
+        "description": "A new playlist created via API",
+        "public": false
+    }`, playlistName)
+
+    reqSpotify, err := http.NewRequest("POST", spotifyURL, bytes.NewBuffer([]byte(createPlaylistPayload)))
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error creating Spotify request:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+        return
+    }
+
+    reqSpotify.Header.Set("Authorization", "Bearer "+spotifyToken)
+    reqSpotify.Header.Set("Content-Type", "application/json")
+
+    client := &http.Client{}
+    respSpotify, err := client.Do(reqSpotify)
+    if err != nil {
+        w.WriteHeader(http.StatusBadGateway)
+        fmt.Println("Error creating playlist:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+        return
+    }
+    defer respSpotify.Body.Close()
+
+    bodyResp, err := io.ReadAll(respSpotify.Body)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error reading Spotify response body:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"Error reading Spotify response body\" }\n")
+        return
+    }
+    fmt.Println("Spotify Response Body:", string(bodyResp))
+
+    if respSpotify.StatusCode == http.StatusCreated {
+        fmt.Println("Playlist successfully created!")
+        w.WriteHeader(http.StatusOK)
+        fmt.Fprintf(w, "{ \"status\": \"Playlist successfully created!\" }\n")
+    } else {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Failed to create playlist. Status:", respSpotify.StatusCode)
+        fmt.Fprintf(w, "{ \"error\": \"Failed to create playlist\" }\n")
+    }
+}
+
 func connectToDatabase() (*sql.DB, error) {
 	dbPassword := os.Getenv("DB_PASSWORD")
 	if dbPassword == "" {
@@ -2421,6 +2524,18 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 			Desc: "add the current music if she are in a playlist",
 			Spices: []InfoSpice{},
 		},
+		{
+			Name: "createPlaylist",
+			Type: "reaction",
+			Desc: "creer une playlist",
+			Spices: []InfoSpice{
+				{
+					Name: "name",
+					Type: "text",
+					Title: "The title for the playlist",
+				},
+			},
+		},
 	}
 	var infos = Infos{
 		Color: "#1DB954",
@@ -2462,6 +2577,7 @@ func main() {
 	router.HandleFunc("/previousMusic", miniproxy(previousMusic, db)).Methods("POST")
 	router.HandleFunc("/removeFromPlaylistIfPresent", miniproxy(removeFromPlaylistIfPresent, db)).Methods("POST")
 	router.HandleFunc("/addToPlaylistIfNotPresent", miniproxy(addToPlaylistIfNotPresent, db)).Methods("POST")
+	router.HandleFunc("/createPlaylist", miniproxy(createPlaylist, db)).Methods("POST")
 	router.HandleFunc("/user", getUserInfo).Methods("GET")
 	router.HandleFunc("/", getRoutes).Methods("GET")
 	log.Fatal(http.ListenAndServe(":80", router))
