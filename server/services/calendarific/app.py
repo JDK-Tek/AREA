@@ -99,7 +99,7 @@ oreo.create_area(
 	[]
 )
 @app.route(f'/{SUBSCRIBE_FRENCH_EVENT}', methods=["POST"])
-def new_article_general():
+def new_french_events():
 	app.logger.info(f"{SUBSCRIBE_FRENCH_EVENT} endpoint hit")
 
 	# get data
@@ -129,8 +129,88 @@ def new_article_general():
 
 	return jsonify({"status": "ok"}), 200
 
+SUBSCRIBE_USA_EVENT = "when-usa-events"
+oreo.create_area(
+	SUBSCRIBE_USA_EVENT,
+	NewOreo.TYPE_ACTIONS,
+	"When a USA events is coming",
+	[]
+)
+@app.route(f'/{SUBSCRIBE_USA_EVENT}', methods=["POST"])
+def new_usa_event():
+	app.logger.info(f"{SUBSCRIBE_USA_EVENT} endpoint hit")
+
+	# get data
+	data = request.json
+	if not data:
+		return jsonify({"error": "Invalid JSON"}), 400
+
+	userid = data.get("userid")
+	bridge = data.get("bridge")
+	spices = data.get("spices", {})
+	if not userid or not bridge:
+		return jsonify({"error": f"Missing required fields: 'userid': {userid}, 'spices': {spices}, 'bridge': {bridge}"}), 400
+
+	with db.cursor() as cur:
+		cur.execute("INSERT INTO micro_calendarific" \
+			  "(userid, bridgeid, triggers, spices, events) " \
+			  "VALUES (%s, %s, %s, %s, %s)", (
+				  userid,
+				  bridge,
+				  SUBSCRIBE_USA_EVENT,
+				  json.dumps(spices),
+				  ""
+			  )
+		)
+
+		db.commit()
+
+	return jsonify({"status": "ok"}), 200
+
+
+SUBSCRIBE_PORTUGAL_EVENT = "when-portugal-events"
+oreo.create_area(
+	SUBSCRIBE_PORTUGAL_EVENT,
+	NewOreo.TYPE_ACTIONS,
+	"When a Portugal events is coming",
+	[]
+)
+@app.route(f'/{SUBSCRIBE_PORTUGAL_EVENT}', methods=["POST"])
+def new_portugal_event():
+	app.logger.info(f"{SUBSCRIBE_PORTUGAL_EVENT} endpoint hit")
+
+	# get data
+	data = request.json
+	if not data:
+		return jsonify({"error": "Invalid JSON"}), 400
+
+	userid = data.get("userid")
+	bridge = data.get("bridge")
+	spices = data.get("spices", {})
+	if not userid or not bridge:
+		return jsonify({"error": f"Missing required fields: 'userid': {userid}, 'spices': {spices}, 'bridge': {bridge}"}), 400
+
+	with db.cursor() as cur:
+		cur.execute("INSERT INTO micro_calendarific" \
+			  "(userid, bridgeid, triggers, spices, events) " \
+			  "VALUES (%s, %s, %s, %s, %s)", (
+				  userid,
+				  bridge,
+				  SUBSCRIBE_PORTUGAL_EVENT,
+				  json.dumps(spices),
+				  ""
+			  )
+		)
+
+		db.commit()
+
+	return jsonify({"status": "ok"}), 200
+
+
 EVENTS = [
 	(SUBSCRIBE_FRENCH_EVENT, "FR"),
+	(SUBSCRIBE_USA_EVENT, "US"),
+	(SUBSCRIBE_PORTUGAL_EVENT, "PT")
 ]
 
 ##
