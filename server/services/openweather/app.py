@@ -126,7 +126,7 @@ oreo.create_area(
 	]
 )
 @app.route(f'/{ACTION_WEATHER_AT_CITY}', methods=["POST"])
-def new_article_general():
+def weather_at_city():
 	app.logger.info(f"{ACTION_WEATHER_AT_CITY} endpoint hit")
 
 	# get data
@@ -156,7 +156,71 @@ def new_article_general():
 
 	return jsonify({"status": "ok"}), 200
 
+ACTION_PRESSURE_AT_CITY = "when-pressure-at-city"
+oreo.create_area(
+	ACTION_PRESSURE_AT_CITY,
+	NewOreo.TYPE_ACTIONS,
+	"When a specific pressure is detected in a city",
+	[
+		{
+			"name": "city",
+			"type": "input",
+			"title": "The name of the city"
+		},
+		{
+			"name": "data",
+			"type": "number",
+			"title": "The pressure to compare to",
+		},
+		{
+			"name": "comparaison",
+			"type": "dropdown",
+			"title": "The comparaison",
+			"extra": ["inferior", "superior", "equal", "inferior or equal", "superior or equal"]
+		},
+		{
+			"name": "unit",
+			"type": "dropdown",
+			"title": "The weather unit",
+			"extra": ["kelvin", "imperial", "metric"]
+		}
+	]
+)
+@app.route(f'/{ACTION_PRESSURE_AT_CITY}', methods=["POST"])
+def pressure_at_city():
+	app.logger.info(f"{ACTION_PRESSURE_AT_CITY} endpoint hit")
 
+	# get data
+	data = request.json
+	if not data:
+		return jsonify({"error": "Invalid JSON"}), 400
+
+	userid = data.get("userid")
+	bridge = data.get("bridge")
+	spices = data.get("spices", {})
+	if not userid or not bridge:
+		return jsonify({"error": f"Missing required fields: 'userid': {userid}, 'spices': {spices}, 'bridge': {bridge}"}), 400
+
+	with db.cursor() as cur:
+		cur.execute("INSERT INTO micro_openweather" \
+			  "(userid, bridgeid, triggers, spices, last_weather) " \
+			  "VALUES (%s, %s, %s, %s, %s)", (
+				  userid,
+				  bridge,
+				  ACTION_PRESSURE_AT_CITY,
+				  json.dumps(spices),
+				  ""
+			  )
+		)
+
+		db.commit()
+
+	return jsonify({"status": "ok"}), 200
+
+WEATHER_DATA_COMP = [
+	ACTION_HUMIDITY_AT_CITY,
+	ACTION_PRESSURE_AT_CITY
+]
 
 def webhook():
 	print("Starting newsapi webhook", file=sys.stderr)
@@ -241,6 +305,98 @@ def webhook():
 						}
 					)
 					print(f"New weather detected: {weather} in {city}: {res.json()}", file=sys.stderr)
+
+			for weather_data in WEATHER_DATA_COMP:
+				print(f"Checking data weather for {weather_data}", file=sys.stderr)
+		
+				cur.execute("SELECT userid, bridgeid, triggers, spices, last_weather FROM micro_openweather "
+				   "WHERE triggers = %s", (weather_data,))
+		
+				rows = cur.fetchall()
+				print(f"Checking weather for {len(rows)} users", file=sys.stderr)
+		
+				for row in rows:
+					userid, bridgeid, triggers, spices, last_weather = row
+					spices = json.loads(spices)
+		
+					unit = spices.get("unit")
+					city = spices.get("city")
+					value = spices.get("data")
+					comparaison = spices.get("comparaison")
+					if not city or not value or not comparaison or not unit:
+						print(f"Missing required fields: 'city': {city}, 'value': {value}, 'comparaison': {comparaison}, 'unit': {unit}", file=sys.stderr)
+						continue
+
+					unit_url = f"&units={quote(unit)}" if (unit != "kelvin") else ""
+					url = f"{API_URL}/weather?" \
+						f"appid={API_KEY}" \
+						f"&q={quote(city)}"	\
+						f"{unit_url}" \
+	
+					print(f"Requesting weather for {city} at {url}", file=sys.stderr)
+		
+					res = requests.get(url)
+					if res.status_code != 200:
+						print(f"Error while fetching weather for {city}", file=sys.stderr)
+						continue
+		
+					print(f"Got weather for {city}", file=sys.stderr)
+		
+					data = res.json()
+					if not data:
+						continue
+		
+					if (last_weather != "true"
+					and (comparaison == "inferior" and data.get("main").get("pressure") < value
+					or comparaison == "superior" and data.get("main").get("pressure") > value
+					or comparaison == "equal" and data.get("main").get("pressure") == value
+					or comparaison == "inferior or equal" and data .get("main").get("pressure") <= value
+					or comparaison == "superior or equal" and data.get("main").get("pressure") >= value)):
+		
+						cur.execute("UPDATE micro_openweather "
+							"SET last_weather = %s "
+							"WHERE userid = %s AND bridgeid = %s AND triggers = %s AND spices = %s", (
+							"true",
+							userid,
+							bridgeid,
+							triggers,
+							json.dumps(spices)
+						))
+			
+						db.commit()
+
+						res = requests.put(
+							f"http://backend:{BACKEND_PORT}/api/orchestrator",
+							json={
+								"bridge": bridgeid,
+								"userid": userid,
+								"ingredients": {
+									"weather": str(data.get("weather")[0].get("description")),
+									"temperature": str(data.get("main").get("temp")),
+									"feels_like": str(data.get("main").get("feels_like")),
+									"humidity": str(data.get("main").get("humidity")),
+									"pressure": str(data.get("main").get("pressure")),
+									"wind_speed": str(data.get("wind").get("speed")),
+									"wind_deg": str(data.get("wind").get("deg")),
+									"clouds": str(data.get("clouds").get("all")),
+									"visibility": str(data.get("visibility")),
+								}
+							}
+						)
+						print(f"New weather detected: {value} in {city}: {res.json()}", file=sys.stderr)
+					elif (last_weather != "true"):
+						# update the last weather
+						cur.execute("UPDATE micro_openweather "
+							"SET last_weather = %s "
+							"WHERE userid = %s AND bridgeid = %s AND triggers = %s AND spices = %s", (
+							"false",
+							userid,
+							bridgeid,
+							triggers,
+							json.dumps(spices)
+						))
+			
+						db.commit()
 
 
 ##
