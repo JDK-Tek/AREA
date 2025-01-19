@@ -2824,7 +2824,6 @@ func addToPlaylistByName(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 }
 
 
-
 func connectToDatabase() (*sql.DB, error) {
 	dbPassword := os.Getenv("DB_PASSWORD")
 	if dbPassword == "" {
