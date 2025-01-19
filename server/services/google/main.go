@@ -197,6 +197,34 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     fmt.Fprintf(w, "{\"token\": \"%s\"}\n", tokenStr)
 }
 
+
+func sendEmail(gmailToken, recipientEmail, subject, body string) error {
+    ctx := context.Background()
+    token := &oauth2.Token{
+        AccessToken: gmailToken,
+    }
+    tokenSource := oauth2.StaticTokenSource(token)
+    srv, err := gmail.NewService(ctx, option.WithTokenSource(tokenSource))
+    if err != nil {
+        return fmt.Errorf("Unable to create Gmail service: %v", err)
+    }
+
+    message := gmail.Message{}
+    msgBody := "From: 'me'\r\n" +
+        "To: " + recipientEmail + "\r\n" +
+        "Subject: " + subject + "\r\n" +
+        "\r\n" +
+        body
+    message.Raw = base64.URLEncoding.EncodeToString([]byte(msgBody))
+
+    _, err = srv.Users.Messages.Send("me", &message).Do()
+    if err != nil {
+        return fmt.Errorf("Unable to send email: %v", err)
+    }
+
+    return nil
+}
+
 func sendEmailNotification(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     fmt.Println("Headers received:", req.Header)
 
@@ -211,7 +239,6 @@ func sendEmailNotification(w http.ResponseWriter, req *http.Request, db *sql.DB)
 
     req.Body = io.NopCloser(bytes.NewReader(bodyBytes))
 
-    // Structure simplifiée pour décoder la requête
     var requestBody struct {
         UserID int `json:"userid"`
         Spices []struct {
@@ -221,7 +248,6 @@ func sendEmailNotification(w http.ResponseWriter, req *http.Request, db *sql.DB)
         } `json:"spices"`
     }
 
-    // Décodage de la requête
     decoder := json.NewDecoder(req.Body)
     err = decoder.Decode(&requestBody)
     if err != nil {
@@ -256,7 +282,6 @@ func sendEmailNotification(w http.ResponseWriter, req *http.Request, db *sql.DB)
         return
     }
 
-    // Extraire les informations de l'email depuis spices
     if len(requestBody.Spices) == 0 {
         w.WriteHeader(http.StatusBadRequest)
         fmt.Println("Missing email information in spices")
@@ -264,7 +289,7 @@ func sendEmailNotification(w http.ResponseWriter, req *http.Request, db *sql.DB)
         return
     }
 
-    spice := requestBody.Spices[0] // On prend le premier élément, car on suppose qu'il y en a un seul
+    spice := requestBody.Spices[0]
 
     subject := spice.Subject
     recipientEmail := spice.Email
@@ -277,7 +302,6 @@ func sendEmailNotification(w http.ResponseWriter, req *http.Request, db *sql.DB)
         return
     }
 
-    // Envoi de l'email
     err = sendEmail(gmailToken, recipientEmail, subject, body)
     if err != nil {
         w.WriteHeader(http.StatusInternalServerError)
@@ -288,33 +312,6 @@ func sendEmailNotification(w http.ResponseWriter, req *http.Request, db *sql.DB)
 
     w.WriteHeader(http.StatusOK)
     fmt.Fprintf(w, "{ \"status\": \"Email sent successfully!\" }\n")
-}
-
-func sendEmail(gmailToken, recipientEmail, subject, body string) error {
-    ctx := context.Background()
-    token := &oauth2.Token{
-        AccessToken: gmailToken,
-    }
-    tokenSource := oauth2.StaticTokenSource(token)
-    srv, err := gmail.NewService(ctx, option.WithTokenSource(tokenSource))
-    if err != nil {
-        return fmt.Errorf("Unable to create Gmail service: %v", err)
-    }
-
-    message := gmail.Message{}
-    msgBody := "From: 'me'\r\n" +
-        "To: " + recipientEmail + "\r\n" +
-        "Subject: " + subject + "\r\n" +
-        "\r\n" +
-        body
-    message.Raw = base64.URLEncoding.EncodeToString([]byte(msgBody))
-
-    _, err = srv.Users.Messages.Send("me", &message).Do()
-    if err != nil {
-        return fmt.Errorf("Unable to send email: %v", err)
-    }
-
-    return nil
 }
 
 func getUserInfo(w http.ResponseWriter, req *http.Request) {
@@ -419,116 +416,24 @@ type Message struct {
 func getRoutes(w http.ResponseWriter, req *http.Request) {
 	var list = []InfoRoute{
 		{
-			Name: "playMusic",
+			Name: "sendEmailNotification",
 			Type: "reaction",
-			Desc: "Chose a music to play !",
+			Desc: "send an email",
 			Spices: []InfoSpice{
 				{
-					Name: "musique",
+					Name: "email",
 					Type: "text",
-					Title: "The message you want to send.",
+					Title: "The email.",
 				},
-			},
-		},
-		{
-			Name: "pauseMusic",
-			Type: "reaction",
-			Desc: "Stop the current music !",
-			Spices: []InfoSpice{},
-		},
-		{
-			Name: "resumeMusic",
-			Type: "reaction",
-			Desc: "Resume the current music !",
-			Spices: []InfoSpice{},
-		},
-		{
-			Name: "checkDeviceConnection",
-			Type: "action",
-			Desc: "check if you have a current spotify running !",
-			Spices: []InfoSpice{},
-		},
-		{
-			Name: "checkSongRunning",
-			Type: "action",
-			Desc: "check if you have a song whose running and got id, type and current song !",
-			Spices: []InfoSpice{},
-		},
-		{
-			Name: "checkPodcastRunning",
-			Type: "action",
-			Desc: "check if you have a podcast whose running and got the podcast name and episode + follow him !",
-			Spices: []InfoSpice{},
-		},
-		{
-			Name: "likeCurrentMusic",
-			Type: "reaction",
-			Desc: "like the current music you listening",
-			Spices: []InfoSpice{},
-		},
-		{
-			Name: "unlikeCurrentMusic",
-			Type: "reaction",
-			Desc: "unlike the current music you listening",
-			Spices: []InfoSpice{},
-		},
-		{
-			Name: "nextMusic",
-			Type: "reaction",
-			Desc: "next music",
-			Spices: []InfoSpice{},
-		},
-		{
-			Name: "previousMusic",
-			Type: "reaction",
-			Desc: "previous music",
-			Spices: []InfoSpice{},
-		},
-		{
-			Name: "removeFromPlaylistIfPresent",
-			Type: "reaction",
-			Desc: "remove the current music if she are in a playlist",
-			Spices: []InfoSpice{},
-		},
-		{
-			Name: "addToPlaylistIfNotPresent",
-			Type: "reaction",
-			Desc: "add the current music if she are in a playlist",
-			Spices: []InfoSpice{},
-		},
-		{
-			Name: "createPlaylist",
-			Type: "reaction",
-			Desc: "creer une playlist",
-			Spices: []InfoSpice{
 				{
-					Name: "name",
+					Name: "subject",
 					Type: "text",
-					Title: "The title for the playlist",
+					Title: "The subject",
 				},
-			},
-		},
-		{
-			Name: "clearPlaylist",
-			Type: "reaction",
-			Desc: "clear une playlist",
-			Spices: []InfoSpice{
 				{
-					Name: "name",
+					Name: "body",
 					Type: "text",
-					Title: "The title of the playlist",
-				},
-			},
-		},
-		{
-			Name: "addToPlaylistByName",
-			Type: "reaction",
-			Desc: "add the current song listening to the playlist selected",
-			Spices: []InfoSpice{
-				{
-					Name: "name",
-					Type: "text",
-					Title: "The title of the playlist",
+					Title: "The body you want to send.",
 				},
 			},
 		},
@@ -561,6 +466,7 @@ func main() {
 
 	router.HandleFunc("/oauth", getOAUTHLink).Methods("GET")
 	router.HandleFunc("/oauth", miniproxy(setOAUTHToken, db)).Methods("POST")
+	router.HandleFunc("/sendEmailNotification", miniproxy(sendEmailNotification, db)).Methods("POST")
 	router.HandleFunc("/user", getUserInfo).Methods("GET")
 	router.HandleFunc("/", getRoutes).Methods("GET")
 	log.Fatal(http.ListenAndServe(":80", router))
