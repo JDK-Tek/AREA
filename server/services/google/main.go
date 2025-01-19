@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"strconv"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -79,6 +80,36 @@ type UserResult struct {
 	ID string `json:"id"`
 }
 
+func getIdFromToken(tokenString string) (int, error) {
+	if strings.HasPrefix(tokenString, "Bearer ") {
+		tokenString = tokenString[len("Bearer "):]
+	}
+	fmt.Println(tokenString)
+	secretKey := []byte(os.Getenv("BACKEND_KEY"))
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method %v", token.Header["alg"])
+		}
+		return secretKey, nil
+	})
+	if err != nil {
+		return -1, err
+	}
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		id, ok := claims["id"].(string)
+		if !ok {
+			return -1, fmt.Errorf("'id' field not found or not a string")
+		}
+		idInt, err := strconv.Atoi(id)
+		if err != nil {
+			return -1, fmt.Errorf("error converting id to int: %v", err)
+		}
+		return idInt, nil
+	} else {
+		return -1, fmt.Errorf("invalid token")
+	}
+}
+
 func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	fmt.Println("i m here")
 	var res Result
@@ -87,6 +118,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	var tokid int
 	var owner = -1
 	var responseData map[string]interface{}
+	var atok = req.Header.Get("Authorization")
 
 	clientID := os.Getenv("GOOGLE_CLIENT_ID")
 	clientSecret := os.Getenv("GOOGLE_CLIENT_SECRET")
@@ -165,22 +197,50 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		return
 	}
 
-	err = db.QueryRow("SELECT id, owner FROM tokens WHERE userid = $1", user.ID).Scan(&tokid, &owner)
-	if err != nil {
-		err = db.QueryRow("INSERT INTO tokens (service, token, refresh, userid) VALUES ($1, $2, $3, $4) RETURNING id",
-			"google", tok.Token, tok.Refresh, user.ID).Scan(&tokid)
+	// inserting into database, first i get the 'users' token
+	if atok != "" {
+		// if the user is logged, i get the userid
+		tokid, err = getIdFromToken(tok.Token)
 		if err != nil {
-			fmt.Fprintln(w, "Erreur lors de l'insertion du token:", err.Error())
+			fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
 			return
 		}
-
-		err = db.QueryRow("INSERT INTO users (tokenid) VALUES ($1) RETURNING id", tokid).Scan(&owner)
+	} else {
+		// if the user is not logged, create an empty user
+		err = db.QueryRow("insert into users default values returning id").Scan(&tokid)
 		if err != nil {
-			fmt.Fprintln(w, "Erreur lors de l'insertion de l'utilisateur:", err.Error())
+			fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
 			return
 		}
-		db.Exec("UPDATE tokens SET owner = $1 WHERE id = $2", owner, tokid)
 	}
+
+	// then i will insert it into yo mama
+	query := `
+		insert into tokens (service, token, refresh, userid, owner)
+        values ($1, $2, $3, $4, $5)
+	`
+	_, err = db.Exec(query, "discord", tok.Token, tok.Refresh, user.ID, tokid)
+	if err != nil {
+		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+		return
+	}
+
+	// err = db.QueryRow("SELECT id, owner FROM tokens WHERE userid = $1", user.ID).Scan(&tokid, &owner)
+	// if err != nil {
+	// 	err = db.QueryRow("INSERT INTO tokens (service, token, refresh, userid) VALUES ($1, $2, $3, $4) RETURNING id",
+	// 		"google", tok.Token, tok.Refresh, user.ID).Scan(&tokid)
+	// 	if err != nil {
+	// 		fmt.Fprintln(w, "Erreur lors de l'insertion du token:", err.Error())
+	// 		return
+	// 	}
+
+	// 	err = db.QueryRow("INSERT INTO users (tokenid) VALUES ($1) RETURNING id", tokid).Scan(&owner)
+	// 	if err != nil {
+	// 		fmt.Fprintln(w, "Erreur lors de l'insertion de l'utilisateur:", err.Error())
+	// 		return
+	// 	}
+	// 	db.Exec("UPDATE tokens SET owner = $1 WHERE id = $2", owner, tokid)
+	// }
 
 	secretBytes := []byte(os.Getenv("BACKEND_KEY"))
 	claims := jwt.MapClaims{
