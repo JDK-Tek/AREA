@@ -322,6 +322,7 @@ func main() {
 	godotenv.Load("/usr/mount.d/.env")
 	db, err := connectToDatabase()
 	if err != nil {
+		log.Fatal(err.Error())
 		os.Exit(84)
 	}
     fmt.Println("Zoom microservice container is running !")
