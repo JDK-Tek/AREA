@@ -83,25 +83,25 @@ func getUserInfo(w http.ResponseWriter, req *http.Request) {
 }
 
 func getOAUTHLink(w http.ResponseWriter, req *http.Request) {
-    fmt.Println("test test")
-    str := "https://zoom.us/oauth/authorize?"
+	fmt.Println("test test")
+	str := "https://zoom.us/oauth/authorize?"
 
-    redirectURI := url.QueryEscape(os.Getenv("REDIRECT"))
-    fmt.Println("Redirect URI = ", redirectURI)
+	redirectURI := url.QueryEscape(os.Getenv("REDIRECT"))
+	fmt.Println("Redirect URI = ", redirectURI)
 
-    scopes := "user:read " +
-              "meeting:write " +
-              "user:write " +
-              "account:read"
+	scopes := "user:read " +
+		"meeting:write " +
+		"user:write " +
+		"account:read"
 
-    str += "client_id=" + os.Getenv("ZOOM_CLIENT_ID")
-    str += "&response_type=code"
-    str += "&scope=" + url.QueryEscape(scopes)
-    str += "&state=some-state-value"
-    str += "&redirect_uri=" + redirectURI
+	str += "&response_type=code"
+	str += "&scope=" + url.QueryEscape(scopes)
+	str += "&state=some-state-value"
+	str += "client_id=" + os.Getenv("ZOOM_CLIENT_ID")
+	str += "&redirect_uri=" + redirectURI
 
-    w.WriteHeader(http.StatusOK)
-    fmt.Fprintln(w, str)
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintln(w, str)
 }
 
 func getRoutes(w http.ResponseWriter, req *http.Request) {
