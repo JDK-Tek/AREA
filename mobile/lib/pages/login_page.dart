@@ -1,4 +1,5 @@
 import 'package:area/pages/GithubOAuthPage.dart';
+import 'package:area/pages/GoogleAuthPage.dart';
 import 'package:area/pages/OutlookOAuthPage.dart';
 import 'package:area/pages/RedditAuthPage.dart';
 import 'package:area/pages/SpotifyOAuthPage.dart';
@@ -224,6 +225,7 @@ class _LoginPage extends State<LoginPage> {
                     SpotifyLoginButton(),
                     GithubLoginButton(),
                     RedditLoginButton(),
+                    GoogleLoginButton(),
                     ZoomLoginButton(),
                   ],
                 ),
