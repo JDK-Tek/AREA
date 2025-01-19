@@ -2406,7 +2406,7 @@ func clearPlaylist(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     var requestBody struct {
         UserID int `json:"userid"`
         Spices struct {
-            PlaylistName string `json:"name"` // Changement de 'id' à 'name'
+            PlaylistName string `json:"name"`
         } `json:"spices"`
     }
 
@@ -2446,7 +2446,6 @@ func clearPlaylist(w http.ResponseWriter, req *http.Request, db *sql.DB) {
         return
     }
 
-    // Rechercher l'ID de la playlist par son nom
     searchURL := fmt.Sprintf("https://api.spotify.com/v1/search?q=%s&type=playlist", playlistName)
     reqSearch, err := http.NewRequest("GET", searchURL, nil)
     if err != nil {
@@ -2509,7 +2508,6 @@ func clearPlaylist(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     playlistID := searchResult.Playlists.Items[0].ID
     fmt.Println("Found playlist ID:", playlistID)
 
-    // Utilisez maintenant playlistID pour récupérer et vider la playlist comme dans le code précédent
     spotifyURL := fmt.Sprintf("https://api.spotify.com/v1/playlists/%s/tracks", playlistID)
 
     reqSpotify, err := http.NewRequest("GET", spotifyURL, nil)
@@ -2617,7 +2615,6 @@ func clearPlaylist(w http.ResponseWriter, req *http.Request, db *sql.DB) {
         fmt.Fprintf(w, "{ \"error\": \"Failed to clear playlist\" }\n")
     }
 }
-
 
 func addToPlaylistByName(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     fmt.Println("Headers received:", req.Header)
