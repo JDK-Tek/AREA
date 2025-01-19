@@ -13,6 +13,8 @@ import logo from "../../assets/logo.png"
 import { LRTextFieldsBox } from "../TextFields/TextFields"
 import { LRButton } from "../Button"
 
+import { backendUrl } from "../../App"
+
 function LoginTexts() {
     return (
         <div className="text-center">
@@ -28,8 +30,6 @@ function LoginTexts() {
 }
 
 export default function LoginBox ( {setToken, setError} ) {
-
-    const backendUrl = process.env.REACT_APP_BACKEND_URL
 
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")

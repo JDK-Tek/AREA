@@ -17,8 +17,10 @@ import { LRButton } from "./Button";
 import Button from "./Button";
 import { Undo2 } from 'lucide-react';
 
+import { backendUrl } from "../App";
+
 function handleOauth(service, setToken) {
-    axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/oauth/${service}`)
+    axios.get(`${backendUrl}/api/oauth/${service}`)
         .then((response) => {
             const oauthWindow = window.open(response.data, "_blank");
 
@@ -30,7 +32,7 @@ function handleOauth(service, setToken) {
                 if (code !== null) {
                     oauthWindow.close();
                     window.removeEventListener('message', handleMessage);
-                    axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/oauth/${service}`, {
+                    axios.post(`${backendUrl}/api/oauth/${service}`, {
                         code: code
                     }, {
                         headers: {
@@ -69,7 +71,7 @@ export default function SidePannel({ action, open, setOpen, setArea, loggedServi
 
     useEffect(() => {
         const getAboutJson = async () => {
-            axios.get(`${process.env.REACT_APP_BACKEND_URL}/about.json`, { headers: { "Content-Type": "application/json" } })
+            axios.get(`${backendUrl}/about.json`, { headers: { "Content-Type": "application/json" } })
                 .then((response) => {
                     setAboutjson(response.data);
                 })
@@ -126,7 +128,7 @@ export default function SidePannel({ action, open, setOpen, setArea, loggedServi
                     <div className="flex flex-col items-center">
                         <LRButton
                             color={service.color}
-                            img={`${process.env.REACT_APP_BACKEND_URL}${service.image}`}
+                            img={`${backendUrl}${service.image}`}
                             text={"Connect to " + service.name}
                             handleClick={() => {
                                 handleOauth(service.name, setToken);

@@ -12,6 +12,7 @@ import axios from "axios";
 import Button from "../../components/Button";
 import AppletKit from "./../../components/Applet/AppletKit";
 import ServiceKit from "./../../components/Service/ServiceKit";
+import { backendUrl } from "../../App";
 
 export default function Content({ setError }) {
     const [services, setServices] = useState([]);
@@ -20,7 +21,7 @@ export default function Content({ setError }) {
     
     useEffect(() => {
         const getServices = async () => {
-            axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/services`, {headers: {"Content-Type": "application/json"}})
+            axios.get(`${backendUrl}/api/services`, {headers: {"Content-Type": "application/json"}})
             .then((response) => {
                 const res = response.data.slice(0, 5);
                 setServices(res)
@@ -34,7 +35,7 @@ export default function Content({ setError }) {
     
     useEffect(() => {
         const getApplets = async () => {
-            axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/applets`, {headers: {"Content-Type": "application/json"}})
+            axios.get(`${backendUrl}/api/applets`, {headers: {"Content-Type": "application/json"}})
             .then((response) => {
                 const applets = response.data.res;
             

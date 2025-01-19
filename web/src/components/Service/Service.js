@@ -6,6 +6,7 @@
 */
 
 import { useEffect, useState } from "react"; 
+import { backendUrl } from "../../App";
 
 export default function Service({ service, rounded, setService }) {
     const [serviceName, setServiceName] = useState("");
@@ -34,7 +35,7 @@ export default function Service({ service, rounded, setService }) {
         >
             <img 
                 className="w-[50px] h-[50px]" 
-                src={`${process.env.REACT_APP_BACKEND_URL}${serviceImage}`}
+                src={`${backendUrl}${serviceImage}`}
                 alt={serviceName} 
             />
 

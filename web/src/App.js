@@ -22,6 +22,8 @@ import Connected from './routes/connected/Connected';
 import ServiceInfo from "./routes/serivce/ServiceInfo";
 import MyApplets from "./routes/myapplets/MyApplets";
 
+export const backendUrl = process.env.REACT_APP_BACKEND_URL;
+
 function App() {
   const [token, setToken] = useState(sessionStorage.getItem("token") === null ? "" : sessionStorage.getItem("token"));
   sessionStorage.setItem("token", token);

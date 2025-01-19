@@ -11,6 +11,7 @@ import React, { useState, useEffect } from "react";
 import Notification from "../../components/Notification";
 import HeaderBar from "../../components/Header/HeaderBar";
 import FindService from "../../components/Service/FindService";
+import { backendUrl } from "../../App";
 
 export default function Explore() {
     const [service, setService] = useState(null);
@@ -20,7 +21,7 @@ export default function Explore() {
     useEffect(() => {
         const getServices = async () => {
             axios
-                .get(`${process.env.REACT_APP_BACKEND_URL}/about.json`, {
+                .get(`${backendUrl}/about.json`, {
                     headers: { "Content-Type": "application/json" },
                 })
                 .then(response => {

@@ -7,6 +7,7 @@
 
 import Icon from "./../../assets/icon.png"
 import formatNumber from "./../../utils/FormatNumber";
+import { backendUrl } from "../../App";
 
 export default function Applet({
         title,
@@ -32,13 +33,13 @@ export default function Applet({
             <div className="flex space-x-1">
                     <img
                         key={1}
-                        src={`${process.env.REACT_APP_BACKEND_URL}${imageAction}`}
+                        src={`${backendUrl}${imageAction}`}
                         alt={serviceAction}
                         className="w-6 h-6"
                     />
                     <img
                         key={2}
-                        src={`${process.env.REACT_APP_BACKEND_URL}${imageReaction}`}
+                        src={`${backendUrl}${imageReaction}`}
                         alt={serviceReaction}
                         className="w-6 h-6"
                     />
@@ -49,7 +50,7 @@ export default function Applet({
             <div className="absolute bottom-6 w-full">
                 <div className="flex items-center mt-2 space-x-2">
                     <img
-                        src={`${process.env.REACT_APP_BACKEND_URL}${imageAction}`}
+                        src={`${backendUrl}${imageAction}`}
                         alt={serviceAction}
                         className="w-5 h-5"
                     />

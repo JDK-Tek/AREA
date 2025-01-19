@@ -15,6 +15,7 @@ import Notification from "../../components/Notification";
 import Button from "../../components/Button";
 
 import { Undo2 } from 'lucide-react';
+import { backendUrl } from "../../App";
 
 export default function ServiceInfo() {
     const { service } = useParams();
@@ -23,7 +24,7 @@ export default function ServiceInfo() {
 
     useEffect(() => {
         axios
-            .get(`${process.env.REACT_APP_BACKEND_URL}/api/services/${service}`, {
+            .get(`${backendUrl}/api/services/${service}`, {
                 headers: { "Content-Type": "application/json" },
             })
             .then(response => {
@@ -50,7 +51,7 @@ export default function ServiceInfo() {
                 <div className="flex flex-col justify-center items-center text-center">
                     <img
                         className="w-[125px] h-[125px] p-5 m-4 rounded-lg"
-                        src={`${process.env.REACT_APP_BACKEND_URL}${serviceInfo?.image}`}
+                        src={`${backendUrl}${serviceInfo?.image}`}
                         alt={service}
                         style={{ backgroundColor: serviceInfo?.color }}
                     />

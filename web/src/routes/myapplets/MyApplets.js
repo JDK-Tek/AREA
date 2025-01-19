@@ -11,13 +11,14 @@ import { useEffect, useState } from "react";
 import HeaderBar from "../../components/Header/HeaderBar";
 import Notification from "../../components/Notification";
 import AppletKit from "../../components/Applet/AppletKit";
+import { backendUrl } from "../../App";
 
 export default function MyApplets() {
     const [applets, setApplets] = useState([]);
     const [error, setError] = useState(false);
 
     const checkConnection = () => {
-        axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/doctor`, {
+        axios.get(`${backendUrl}/api/doctor`, {
             headers: {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${sessionStorage.getItem("token")}`,
@@ -38,7 +39,7 @@ export default function MyApplets() {
 
     useEffect(() => {
         axios
-            .get(`${process.env.REACT_APP_BACKEND_URL}/api/area`, {
+            .get(`${backendUrl}/api/area`, {
                 headers: {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${sessionStorage.getItem("token")}`

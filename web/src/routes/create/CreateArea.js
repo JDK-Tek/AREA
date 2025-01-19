@@ -14,6 +14,7 @@ import SidePannel from "../../components/SidePannel"
 import Button from "../../components/Button";
 import InputBox from "../../components/spices/InputBox";
 import Notification from "../../components/Notification";
+import { backendUrl } from "../../App";
 
 function Triger({title, color, spices, onClickTrash, onClickPencil}) {
     return (
@@ -59,7 +60,7 @@ export default function CreateArea({setToken}) {
     sessionStorage.setItem("area", JSON.stringify(area));
     
     const checkConnection = () => {
-        axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/doctor`, {
+        axios.get(`${backendUrl}/api/doctor`, {
             headers: {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${sessionStorage.getItem("token")}`,
@@ -201,7 +202,7 @@ export default function CreateArea({setToken}) {
                                     "Authorization": `Bearer ${token}`,
                             };
 
-                            axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/area`, body, {
+                            axios.post(`${backendUrl}/api/area`, body, {
                                 headers: header
                             })
                             .then((res) => {
