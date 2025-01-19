@@ -290,7 +290,13 @@ def routes():
             {
                 "name": "newpart",
                 "description": "Creates a new part",
+                "type": "reaction",
                 "spices": [
+                    {
+                        "name": "gameid",
+                        "type": "text",
+                        "title": "The game ID."
+                    },
                     {
                         "name": "color",
                         "type": "text",
@@ -317,7 +323,13 @@ def routes():
             {
                 "name": "kill",
                 "description": "Kill a player",
+                "type": "reaction",
                 "spices": [
+                    {
+                        "name": "gameid",
+                        "type": "text",
+                        "title": "The game ID."
+                    },
                     {
                         "name": "userid",
                         "type": "text",
@@ -328,14 +340,273 @@ def routes():
             {
                 "name": "kick",
                 "description": "Kick a player",
+                "type": "reaction",
                 "spices": [
+                    {
+                        "name": "gameid",
+                        "type": "text",
+                        "title": "The game ID."
+                    },
+                    {
+                        "name": "message",
+                        "type": "text",
+                        "title": "The message you want to send. (optionnal)"
+                    },
                     {
                         "name": "userid",
                         "type": "text",
-                        "title": "The player userid you want to kill."
+                        "title": "The player userid you want to kick."
                     },
                 ]
-            }
+            },
+            {
+                "name": "insert",
+                "description": "Insert an asset from toolbox.",
+                "type": "reaction",
+                "spices": [
+                    {
+                        "name": "gameid",
+                        "type": "text",
+                        "title": "The game ID."
+                    },
+                    {
+                        "name": "parent",
+                        "type": "text",
+                        "title": "Where to insert it."
+                    },
+                    {
+                        "name": "id",
+                        "type": "text",
+                        "title": "The ID of the asset."
+                    },
+                ]
+            },
+            {
+                "name": "statupdate",
+                "description": "Update leaderstats.",
+                "type": "reaction",
+                "spices": [
+                    {
+                        "name": "gameid",
+                        "type": "text",
+                        "title": "The game ID."
+                    },
+                    {
+                        "name": "userid",
+                        "type": "text",
+                        "title": "The player userid you want to update."
+                    },
+                    {
+                        "name": "stat",
+                        "type": "text",
+                        "title": "The field to update."
+                    },
+                    {
+                        "name": "add",
+                        "type": "text",
+                        "title": "How much to add (optionnal)."
+                    },
+                    {
+                        "name": "dec",
+                        "type": "text",
+                        "title": "How much to decrement (optionnal)."
+                    },
+                ]
+            },
+            {
+                "name": "givebadge",
+                "description": "Gives a badge to a user.",
+                "type": "reaction",
+                "spices": [
+                    {
+                        "name": "gameid",
+                        "type": "text",
+                        "title": "The game ID."
+                    },
+                    {
+                        "name": "badgeid",
+                        "type": "text",
+                        "title": "The badge id."
+                    },
+                    {
+                        "name": "userid",
+                        "type": "text",
+                        "title": "The player userid whom you want to give it."
+                    },
+                ]
+            },
+            {
+                "name": "giveitem",
+                "description": "Give an item to a player",
+                "type": "reaction",
+                "spices": [
+                    {
+                        "name": "gameid",
+                        "type": "text",
+                        "title": "The game ID."
+                    },
+                    {
+                        "name": "userid",
+                        "type": "text",
+                        "title": "The player userid whom you want to give it."
+                    },
+                    {
+                        "name": "id",
+                        "type": "text",
+                        "title": "The asset id of the tool."
+                    },
+                ]
+            },
+            {
+                "name": "changeprop",
+                "description": "Change an Instance property",
+                "type": "reaction",
+                "spices": [
+                    {
+                        "name": "gameid",
+                        "type": "text",
+                        "title": "The game ID."
+                    },
+                    {
+                        "name": "instance",
+                        "type": "text",
+                        "title": "The Instance path."
+                    },
+                    {
+                        "name": "property",
+                        "type": "text",
+                        "title": "The property you want to change."
+                    },
+                    {
+                        "name": "value",
+                        "type": "text",
+                        "title": "The new value."
+                    },
+                ]
+            },
+            {
+                "name": "copy",
+                "description": "Copy an instance.",
+                "type": "reaction",
+                "spices": [
+                    {
+                        "name": "gameid",
+                        "type": "text",
+                        "title": "The game ID."
+                    },
+                    {
+                        "name": "from",
+                        "type": "text",
+                        "title": "The source instance path."
+                    },
+                    {
+                        "name": "to",
+                        "type": "text",
+                        "title": "The parent instance path."
+                    },
+                ]
+            },
+            {
+                "name": "sendmessage",
+                "description": "Send a message",
+                "type": "reaction",
+                "spices": [
+                    {
+                        "name": "gameid",
+                        "type": "text",
+                        "title": "The game ID."
+                    },
+                    {
+                        "name": "message",
+                        "type": "text",
+                        "title": "The message you want to send."
+                    },
+                ]
+            },
+            {
+                "name": "onchat",
+                "description": "When a player chats.",
+                "type": "action",
+                "spices": [
+                    {
+                        "name": "gameid",
+                        "type": "text",
+                        "title": "The game ID."
+                    },
+                ]
+            },
+            {
+                "name": "onprompt",
+                "description": "When a prompt is triggered.",
+                "type": "action",
+                "spices": [
+                    {
+                        "name": "gameid",
+                        "type": "text",
+                        "title": "The game ID."
+                    },
+                ]
+            },
+            {
+                "name": "onclick",
+                "description": "When a stuff is clicked.",
+                "type": "action",
+                "spices": [
+                    {
+                        "name": "gameid",
+                        "type": "text",
+                        "title": "The game ID."
+                    },
+                ]
+            },
+            {
+                "name": "ontouch",
+                "description": "When a basepart is touched.",
+                "type": "action",
+                "spices": [
+                    {
+                        "name": "gameid",
+                        "type": "text",
+                        "title": "The game ID."
+                    },
+                ]
+            },
+            {
+                "name": "onplayeradded",
+                "description": "When a player is added.",
+                "type": "action",
+                "spices": [
+                    {
+                        "name": "gameid",
+                        "type": "text",
+                        "title": "The game ID."
+                    },
+                ]
+            },
+            {
+                "name": "onplayerremoved",
+                "description": "When a player is removed.",
+                "type": "action",
+                "spices": [
+                    {
+                        "name": "gameid",
+                        "type": "text",
+                        "title": "The game ID."
+                    },
+                ]
+            },
+            {
+                "name": "oninput",
+                "description": "When a key is pressed.",
+                "type": "action",
+                "spices": [
+                    {
+                        "name": "gameid",
+                        "type": "text",
+                        "title": "The game ID."
+                    },
+                ]
+            },
         ]
     }
     return jsonify(x), 200
