@@ -1,7 +1,7 @@
 package main
 
 import (
-	//"bytes"
+	"bytes"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -232,6 +232,149 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     fmt.Println("Succès de l'authentification avec Zoom, token =", tokenStr)
     fmt.Fprintf(w, "{\"token\": \"%s\"}\n", tokenStr)
 }
+
+type Message struct {
+    Bridge int `json:"bridge"`
+    UserId int `json:"userid"`
+    Ingredients map[string]string `json:"ingredients"`
+}
+
+func checkDeviceConnection(w http.ResponseWriter, req *http.Request, db *sql.DB) {
+    bodyBytes, err := io.ReadAll(req.Body)
+	backendPort := os.Getenv("BACKEND_PORT")
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+        return
+    }
+
+    req.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+
+    var requestBody struct {
+        UserID int `json:"userid"`
+        Bridge int `json:"bridge"`
+        Spices struct{} `json:"spices"`
+    }
+
+    decoder := json.NewDecoder(req.Body)
+    err = decoder.Decode(&requestBody)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+        return
+    }
+
+    userID := requestBody.UserID
+    bridgeID := requestBody.Bridge
+
+	fmt.Println("userID = ", userID)
+	fmt.Println("bridge = ", bridgeID)
+
+    var zoomToken string
+    err = db.QueryRow("SELECT token FROM tokens WHERE owner = $1 AND service = 'zoom'", userID).Scan(&zoomToken)
+    if err != nil {
+        if err == sql.ErrNoRows {
+            w.WriteHeader(http.StatusNotFound)
+            fmt.Fprintf(w, "{ \"error\": \"No Zoom token found for user\" }\n")
+        } else {
+            w.WriteHeader(http.StatusInternalServerError)
+            fmt.Fprintf(w, "{ \"error\": \"Database error: %s\" }\n", err.Error())
+        }
+        return
+    }
+
+    if zoomToken == "" {
+        w.WriteHeader(http.StatusUnauthorized)
+        fmt.Fprintf(w, "{ \"error\": \"No Zoom token available\" }\n")
+        return
+    }
+
+    go func() {
+        client := &http.Client{}
+        userStatusURL := fmt.Sprintf("https://api.zoom.us/v2/users/%d/status", userID)
+
+        for {
+            reqStatus, err := http.NewRequest("GET", userStatusURL, nil)
+            if err != nil {
+                fmt.Println("Error creating request:", err.Error())
+                return
+            }
+            reqStatus.Header.Set("Authorization", "Bearer "+zoomToken)
+
+            respStatus, err := client.Do(reqStatus)
+            if err != nil {
+                fmt.Println("Error fetching user status:", err.Error())
+                return
+            }
+            defer respStatus.Body.Close()
+
+            bodyResp, err := io.ReadAll(respStatus.Body)
+            if err != nil {
+                fmt.Println("Error reading response body:", err.Error())
+                return
+            }
+
+            if respStatus.StatusCode != http.StatusOK {
+                fmt.Println("Failed to get user status:", respStatus.StatusCode)
+                return
+            }
+
+            var statusResponse struct {
+                Status string `json:"status"`
+            }
+
+            if err := json.Unmarshal(bodyResp, &statusResponse); err != nil {
+                fmt.Println("Error unmarshalling response:", err.Error())
+                return
+            }
+
+            if statusResponse.Status == "in_meeting" {
+                url := fmt.Sprintf("http://backend:%s/api/orchestrator", backendPort)
+                var requestBody Message
+
+                requestBody.Bridge = bridgeID
+                requestBody.UserId = userID
+                requestBody.Ingredients = make(map[string]string)
+                requestBody.Ingredients["zoom_status"] = "in_meeting"
+
+                jsonData, err := json.Marshal(requestBody)
+                if err != nil {
+                    fmt.Println("Error marshaling JSON:", err.Error())
+                    return
+                }
+
+                reqPut, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonData))
+                if err != nil {
+                    fmt.Println("Error creating PUT request:", err.Error())
+                    return
+                }
+
+                reqPut.Header.Set("Content-Type", "application/json")
+
+                respPut, err := client.Do(reqPut)
+                if err != nil {
+                    fmt.Println("Error sending PUT request:", err.Error())
+                    return
+                }
+                defer respPut.Body.Close()
+
+                if respPut.StatusCode != http.StatusOK {
+                    fmt.Println("Failed to send PUT request:", respPut.StatusCode)
+                    return
+                }
+
+                fmt.Println("User is in a meeting, updating orchestrator")
+                return
+            }
+
+            time.Sleep(1 * time.Second)
+        }
+    }()
+
+    w.WriteHeader(http.StatusOK)
+    fmt.Fprintf(w, "{ \"status\": \"ok !\" }\n")
+}
+
 
 func getRoutes(w http.ResponseWriter, req *http.Request) {
 	var list = []InfoRoute{
