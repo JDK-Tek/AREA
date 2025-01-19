@@ -259,6 +259,29 @@ services:
     volumes:
     - ./server/services/openweather/.env:/usr/mount.d/.env
 
+  service-slack:
+    env_file:
+      - .env
+    container_name: area-service-slack
+    build:
+      context: ./server/services/slack
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.slack.rule=PathPrefix(`/service/slack/`)"
+      - "traefik.http.services.slack.loadbalancer.server.port=80"
+      - "traefik.http.routers.slack.middlewares=stripprefix-service-slack"
+      - "traefik.http.middlewares.stripprefix-service-slack.stripprefix.prefixes=/service/slack"
+    environment:
+      - DB_HOST=database
+      - DB_PORT=${DATABASE_PORT}
+      - DB_USER=${DATABASE_USER}
+      - DB_PASSWORD=${DATABASE_PASSWORD}
+      - DB_NAME=${DATABASE_NAME}
+    networks:
+      - web
+    volumes:
+    - ./server/services/slack/.env:/usr/mount.d/.env
+
   reverse-proxy:
     env_file:
     - .env
