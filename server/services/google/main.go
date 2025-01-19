@@ -47,102 +47,135 @@ type EmailContent struct {
 }
 
 func getOAUTHLink(w http.ResponseWriter, req *http.Request) {
-	params := url.Values{}
-	params.Set("client_id", os.Getenv("GOOGLE_CLIENT_ID"))
-	params.Set("response_type", "code")
-	params.Set("redirect_uri", os.Getenv("REDIRECT"))
-	params.Set("scope", "openid profile email offline_access Gmail.Send")
-	params.Set("state", "some-state-value")
+    str := "https://accounts.google.com/o/oauth2/v2/auth?"
+    
+    redirectURI := url.QueryEscape(os.Getenv("REDIRECT_URI"))
+    fmt.Println("Redirect URI = ", redirectURI)
 
-	oauthURL := "https://accounts.google.com/o/oauth2/auth?" + params.Encode()
+    scopes := "https://www.googleapis.com/auth/drive.file " +
+              "https://www.googleapis.com/auth/userinfo.profile " +
+              "https://www.googleapis.com/auth/userinfo.email " +
+              "https://www.googleapis.com/auth/gmail.send"
 
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, oauthURL)
+    str += "client_id=" + os.Getenv("GOOGLE_CLIENT_ID")
+    str += "&response_type=code"
+    str += "&redirect_uri=" + redirectURI
+    str += "&scope=" + url.QueryEscape(scopes)
+    str += "&state=some-state-value"
+    
+    w.WriteHeader(http.StatusOK)
+    fmt.Fprintln(w, str)
 }
 
 func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	var res Result
 	var tok TokenResult
 	var user UserResult
+	var tokid int
+	var owner = -1
 	var responseData map[string]interface{}
 
-	clientid := os.Getenv("GOOGLE_CLIENT_ID")
-	clientsecret := os.Getenv("GOOGLE_CLIENT_SECRET")
+	clientID := os.Getenv("GOOGLE_CLIENT_ID")
+	clientSecret := os.Getenv("GOOGLE_CLIENT_SECRET")
+	redirectURI := os.Getenv("REDIRECT_URI")
 	data := url.Values{}
+	
 	err := json.NewDecoder(req.Body).Decode(&res)
 	if err != nil {
-		fmt.Fprintln(w, "decode", err.Error())
+		fmt.Fprintln(w, "Erreur lors du décodage de la requête:", err.Error())
 		return
 	}
-	data.Set("client_id", clientid)
-	data.Set("client_secret", clientsecret)
+
+	data.Set("client_id", clientID)
+	data.Set("client_secret", clientSecret)
 	data.Set("grant_type", "authorization_code")
 	data.Set("code", res.Code)
-	data.Set("redirect_uri", os.Getenv("REDIRECT"))
-	rep, err := http.PostForm(API_OAUTH_GOOGLE, data)
-	body, err := io.ReadAll(rep.Body)
+	data.Set("redirect_uri", redirectURI)
+	
+	rep, err := http.PostForm("https://oauth2.googleapis.com/token", data)
 	if err != nil {
-		fmt.Fprintln(w, "postform", err.Error())
+		fmt.Fprintln(w, "Erreur lors de l'échange du code:", err.Error())
 		return
 	}
 	defer rep.Body.Close()
-
+	
+	body, err := io.ReadAll(rep.Body)
+	if err != nil {
+		fmt.Fprintln(w, "Erreur lors de la lecture du corps de la réponse:", err.Error())
+		return
+	}
+	
 	if err := json.Unmarshal(body, &responseData); err != nil {
-		fmt.Fprintln(w, "unmarshal json", err.Error())
+		fmt.Fprintln(w, "Erreur lors de l'analyse de la réponse JSON:", err.Error())
 		return
 	}
 
 	tok.Token = responseData["access_token"].(string)
 	tok.Refresh = responseData["refresh_token"].(string)
 
-	req, err = http.NewRequest("GET", API_USER_GOOGLE, nil)
+	req, err = http.NewRequest("GET", "https://www.googleapis.com/oauth2/v2/userinfo", nil)
 	if err != nil {
-		fmt.Fprintln(w, "request error", err.Error())
+		fmt.Fprintln(w, "Erreur lors de la création de la requête utilisateur:", err.Error())
 		return
 	}
-	req.Header.Set("Authorization", "Bearer " + tok.Token)
+	req.Header.Set("Authorization", "Bearer "+tok.Token)
+	
 	client := &http.Client{}
 	rep, err = client.Do(req)
 	if err != nil {
-		fmt.Fprintln(w, "client do", err.Error())
+		fmt.Fprintln(w, "Erreur lors de l'appel à l'API Google:", err.Error())
 		return
 	}
 	defer rep.Body.Close()
+	
 	err = json.NewDecoder(rep.Body).Decode(&user)
 	if err != nil {
-		fmt.Fprintln(w, "decode", err.Error())
+		fmt.Fprintln(w, "Erreur lors du décodage des informations utilisateur:", err.Error())
 		return
 	}
 
 	if tok.Token == "" || tok.Refresh == "" {
-		fmt.Fprintln(w, "error: token is empty")
+		fmt.Fprintln(w, "Erreur : token ou refresh token manquant")
 		return
 	}
 
-	var tokid int
-	err = db.QueryRow("select id from tokens where userid = $1", user.ID).Scan(&tokid)
+	err = db.QueryRow("SELECT id, owner FROM tokens WHERE userid = $1", user.ID).Scan(&tokid, &owner)
 	if err != nil {
-		err = db.QueryRow("insert into tokens (service, token, userid) values ($1, $2, $3) returning id",
-			"google", tok.Token, user.ID).Scan(&tokid)
+		err = db.QueryRow("INSERT INTO tokens (service, token, refresh, userid) VALUES ($1, $2, $3, $4) RETURNING id",
+			"google",
+			tok.Token,
+			tok.Refresh,
+			user.ID,
+		).Scan(&tokid)
 		if err != nil {
-			fmt.Fprintln(w, "db insert", err.Error())
+			fmt.Fprintln(w, "Erreur lors de l'insertion du token:", err.Error())
 			return
 		}
+
+		err = db.QueryRow("INSERT INTO users (tokenid) VALUES ($1) RETURNING id", tokid).Scan(&owner)
+		if err != nil {
+			fmt.Fprintln(w, "Erreur lors de l'insertion de l'utilisateur:", err.Error())
+			return
+		}
+		db.Exec("UPDATE tokens SET owner = $1 WHERE id = $2", owner, tokid)
 	}
 
 	secretBytes := []byte(os.Getenv("BACKEND_KEY"))
 	claims := jwt.MapClaims{
-		"id":  user.ID,
+		"id":  owner,
 		"exp": time.Now().Add(time.Second * EXPIRATION).Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenStr, err := token.SignedString(secretBytes)
 	if err != nil {
-		fmt.Fprintln(w, "sign", err.Error())
+		fmt.Fprintln(w, "Erreur lors de la signature du token:", err.Error())
 		return
 	}
-	fmt.Fprintf(w, `{"token": "%s"}\n`, tokenStr)
+	
+	fmt.Println("Succès de l'authentification avec Google, token =", tokenStr)
+	fmt.Fprintf(w, "{\"token\": \"%s\"}\n", tokenStr)
 }
+
 
 func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	var emailContent EmailContent
@@ -232,22 +265,55 @@ func encodeWeb64(subject, body, to string) string {
 	return encoded
 }
 
-func main() {
-	godotenv.Load()
-
-	db, err := sql.Open("postgres", os.Getenv("DB_CONNECTION"))
-	if err != nil {
-		log.Fatal("Erreur de connexion à la base de données", err)
+func connectToDatabase() (*sql.DB, error) {
+	dbPassword := os.Getenv("DB_PASSWORD")
+	if dbPassword == "" {
+		log.Fatal("DB_PASSWORD not found")
 	}
+	dbUser := os.Getenv("DB_USER")
+	if dbUser == "" {
+		log.Fatal("DB_USER not found")
+	}
+	dbHost := os.Getenv("DB_HOST")
+	if dbHost == "" {
+		log.Fatal("DB_HOST not found")
+	}
+	dbName := os.Getenv("DB_NAME")
+	if dbName == "" {
+		log.Fatal("DB_NAME not found")
+	}
+	dbPort := os.Getenv("DB_PORT")
+	if dbPort == "" {
+		log.Fatal("DB_PORT not found")
+	}
+	connectStr := fmt.Sprintf(
+		"postgresql://%s:%s@%s:%s/%s?sslmode=disable",
+		dbUser,
+		dbPassword,
+		dbHost,
+		dbPort,
+		dbName,
+	)
+	return sql.Open("postgres", connectStr)
+}
 
-	r := mux.NewRouter()
-	r.HandleFunc("/oauth/google", getOAUTHLink).Methods("GET")
-	r.HandleFunc("/oauth/callback", func(w http.ResponseWriter, r *http.Request) {
-		setOAUTHToken(w, r, db)
-	}).Methods("POST")
-	r.HandleFunc("/send", func(w http.ResponseWriter, r *http.Request) {
-		sendEmail(w, r, db)
-	}).Methods("POST")
+func miniproxy(f func(http.ResponseWriter, *http.Request, *sql.DB), c *sql.DB) func(http.ResponseWriter, *http.Request) {
+	return func(a http.ResponseWriter, b *http.Request) {
+		f(a, b, c)
+	}
+}
 
-	log.Fatal(http.ListenAndServe(":80", r))
+
+func main() {
+	db, err := connectToDatabase()
+	if err != nil {
+		os.Exit(84)
+	}
+	fmt.Println("Google microservice container is running !")
+	router := mux.NewRouter()
+	godotenv.Load(".env")
+
+	router.HandleFunc("/oauth", getOAUTHLink).Methods("GET")
+	router.HandleFunc("/oauth", miniproxy(setOAUTHToken, db)).Methods("POST")
+	log.Fatal(http.ListenAndServe(":80", router))
 }
