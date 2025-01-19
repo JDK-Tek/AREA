@@ -165,7 +165,10 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     }
 
     tok.Token = responseData["access_token"].(string)
-    tok.Refresh = ""
+    tok.Refresh = responseData["refresh_token"].(string)
+
+	fmt.Println("token = ", tok.Token)
+	fmt.Println("refresh = ", tok.Refresh)
 
     req, err = http.NewRequest("GET", "https://api.zoom.us/v2/users/me", nil)
     if err != nil {
