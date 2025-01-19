@@ -65,34 +65,25 @@ type UserResult struct {
 	ID string `json:"id"`
 }
 
-func getIdFromToken(tokenString string) (int, error) {
-	if strings.HasPrefix(tokenString, "Bearer ") {
-		tokenString = tokenString[len("Bearer "):]
-	}
-	fmt.Println(tokenString)
-	secretKey := []byte(os.Getenv("BACKEND_KEY"))
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+func getIdFromToken(str string) (int, error) {
+	str = strings.TrimPrefix(str, "Bearer ")
+	var token, err = jwt.Parse(str, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method %v", token.Header["alg"])
+			return nil, fmt.Errorf("bad method")
 		}
-		return secretKey, nil
+		return []byte(os.Getenv("BACKEND_KEY")), nil
 	})
+	var ok bool
+	var claims jwt.MapClaims
+
 	if err != nil {
 		return -1, err
 	}
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		id, ok := claims["id"].(string)
-		if !ok {
-			return -1, fmt.Errorf("'id' field not found or not a string")
-		}
-		idInt, err := strconv.Atoi(id)
-		if err != nil {
-			return -1, fmt.Errorf("error converting id to int: %v", err)
-		}
-		return idInt, nil
-	} else {
-		return -1, fmt.Errorf("invalid token")
+	if claims, ok = token.Claims.(jwt.MapClaims); ok && token.Valid {
+		var id = claims["id"].(float64)
+		return int(id), nil
 	}
+	return -1, fmt.Errorf("invalid token or expired")
 }
 
 func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
