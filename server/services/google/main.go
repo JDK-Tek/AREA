@@ -47,10 +47,10 @@ type EmailContent struct {
 }
 
 func getOAUTHLink(w http.ResponseWriter, req *http.Request) {
+	fmt.Println("test test")
     str := "https://accounts.google.com/o/oauth2/v2/auth?"
     
     redirectURI := url.QueryEscape(os.Getenv("REDIRECT"))
-	fmt.Println("test test")
     fmt.Println("Redirect URI = ", redirectURI)
 
     scopes := "https://www.googleapis.com/auth/drive.file " +
