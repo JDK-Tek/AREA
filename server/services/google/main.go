@@ -129,10 +129,9 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     }
 
     tok.Token = responseData["access_token"].(string)
-	tok.Refresh = responseData["refresh_token"].(string)
 
     fmt.Println("acess token = ", tok.Token)
-	fmt.Println("refresk token = ", tok.Refresh)
+	fmt.Println("refresk token = ", "")
 
     req, err = http.NewRequest("GET", "https://www.googleapis.com/oauth2/v2/userinfo", nil)
     if err != nil {
