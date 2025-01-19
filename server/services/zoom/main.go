@@ -153,6 +153,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     defer rep.Body.Close()
    
     body, err := io.ReadAll(rep.Body)
+	fmt.Println("body = ", body)
     if err != nil {
         fmt.Fprintln(w, "Erreur lors de la lecture du corps de la réponse:", err.Error())
         return
@@ -164,7 +165,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     }
 
     tok.Token = responseData["access_token"].(string)
-    tok.Refresh = responseData["refresh_token"].(string)
+    tok.Refresh = ""
 
     req, err = http.NewRequest("GET", "https://api.zoom.us/v2/users/me", nil)
     if err != nil {
