@@ -95,6 +95,29 @@ services:
     networks:
       - web
 
+  service-google:
+    env_file:
+      - .env
+    container_name: area-service-google
+    build:
+      context: ./server/services/google
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.google.rule=PathPrefix(`/service/google/`)"
+      - "traefik.http.services.google.loadbalancer.server.port=80"
+      - "traefik.http.routers.google.middlewares=stripprefix-service-google"
+      - "traefik.http.middlewares.stripprefix-service-google.stripprefix.prefixes=/service/google"
+    environment:
+      - BACKEND_KEY=${BACKEND_KEY}
+      - REDIRECT=${REDIRECT}
+      - DB_HOST=database
+      - DB_PORT=${DATABASE_PORT}
+      - DB_USER=${DATABASE_USER}
+      - DB_PASSWORD=${DATABASE_PASSWORD}
+      - DB_NAME=${DATABASE_NAME}
+    networks:
+      - web
+
   service-outlook:
     env_file:
       - .env
