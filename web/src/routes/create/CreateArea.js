@@ -54,10 +54,10 @@ export default function CreateArea({setToken}) {
         actions: [],
         reactions: []
     };
-
+    
     const [area, setArea] = useState(sessionStorage.getItem("area") === null ? defaultArea : JSON.parse(sessionStorage.getItem("area")));
     sessionStorage.setItem("area", JSON.stringify(area));
-
+    
     const checkConnection = () => {
         axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/doctor`, {
             headers: {
