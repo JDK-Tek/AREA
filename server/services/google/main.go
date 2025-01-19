@@ -100,8 +100,8 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     data.Set("redirect_uri", strings.TrimSpace(redirectURI))
     
 	fmt.Println("code = ", res.Code)
-	fmt.Println("client secret = ", clientSecret)
-	fmt.Println("so redirect = ", redirectURI)
+	fmt.Println("client secret = ", strings.TrimSpace(clientSecret))
+	fmt.Println("so redirect = ", strings.TrimSpace(redirectURI))
 
     rep, err := http.PostForm("https://oauth2.googleapis.com/token", data)
     if err != nil {
