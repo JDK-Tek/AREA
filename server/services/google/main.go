@@ -240,13 +240,13 @@ func sendEmailNotification(w http.ResponseWriter, req *http.Request, db *sql.DB)
     req.Body = io.NopCloser(bytes.NewReader(bodyBytes))
 
     var requestBody struct {
-        UserID int `json:"userid"`
-        Spices []struct {
-            Subject string `json:"subject"`
-            Email   string `json:"email"`
-            Body    string `json:"body"`
-        } `json:"spices"`
-    }
+		UserID int `json:"userid"`
+		Spices struct { 
+			Subject string `json:"subject"`
+			Email   string `json:"email"`
+			Body    string `json:"body"`
+		} `json:"spices"`
+	}
 
     decoder := json.NewDecoder(req.Body)
     err = decoder.Decode(&requestBody)
