@@ -50,6 +50,7 @@ func getOAUTHLink(w http.ResponseWriter, req *http.Request) {
     str := "https://accounts.google.com/o/oauth2/v2/auth?"
     
     redirectURI := url.QueryEscape(os.Getenv("REDIRECT_URI"))
+	fmt.Println("test test")
     fmt.Println("Redirect URI = ", redirectURI)
 
     scopes := "https://www.googleapis.com/auth/drive.file " +
