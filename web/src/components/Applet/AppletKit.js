@@ -6,7 +6,12 @@
 */
 import Applet from "./Applet";
 
-export default function AppletKit({ title, applets, color = "text-black" }) {
+export default function AppletKit({
+        title,
+        applets,
+        color = "text-black",
+        onClick
+    }) {
 
     return (
         <div className="text-center p-5">
@@ -15,7 +20,14 @@ export default function AppletKit({ title, applets, color = "text-black" }) {
                 {applets.map((applet, index) => (
                     <Applet
                         key={index}
-                        applet={applet}
+                        title={applet.name}
+                        color={applet.action.color}
+                        serviceAction={applet.action.service}
+                        imageAction={applet.action.image}
+                        serviceReaction={applet.reaction.service}
+                        imageReaction={applet.reaction.image}
+                        users={applet.users}
+                        onClick={onClick}
                     />
                 ))}
             </div>

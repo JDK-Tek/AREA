@@ -14,7 +14,7 @@ class RedditLoginButton extends StatelessWidget {
       MaterialPageRoute(builder: (context) => const RedditAuthPage()),
     );
   }
-
+ 
   @override
   Widget build(BuildContext context) {
     var ip = Provider.of<IPState>(context, listen: false).ip;
