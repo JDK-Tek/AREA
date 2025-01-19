@@ -1,4 +1,5 @@
 import 'package:area/pages/appletspage.dart';
+import 'package:area/pages/myApplets.dart';
 import 'package:area/pages/servicepage.dart';
 import 'package:flutter/material.dart';
 import 'package:area/pages/home_page.dart';
@@ -69,6 +70,12 @@ class MyApp extends StatelessWidget {
         path: '/applets',
         builder: (context, state) {
           return const AppletsPage();
+        },
+      ),
+      GoRoute(
+        path: '/myapplets',
+        builder: (context, state) {
+          return const MyAppletsPage();
         },
       ),
       GoRoute(

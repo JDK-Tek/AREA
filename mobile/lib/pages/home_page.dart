@@ -169,8 +169,11 @@ class HeaderSection extends StatelessWidget {
             child: ElevatedButton(
               onPressed: () {
                 if (token != null) {
+                  context.go("/myapplets");
                 }
-                context.go("/register");
+                else {
+                  context.go("/register");
+                } 
               },
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.all(0.0),

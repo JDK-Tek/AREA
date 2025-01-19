@@ -144,7 +144,7 @@ class Service extends StatelessWidget {
               style: TextStyle(
                   fontSize: MediaQuery.of(context).size.width <
                           MediaQuery.of(context).size.height
-                      ? MediaQuery.of(context).size.width * 0.038
+                      ? MediaQuery.of(context).size.width * 0.030
                       : MediaQuery.of(context).size.width * 0.025,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,

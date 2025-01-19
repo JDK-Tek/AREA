@@ -28,9 +28,14 @@ class GithubLoginButton extends StatelessWidget {
           SizedBox(
               child: Image.network(
             "https://$ip/assets/github.webp",
+            errorBuilder:
+                (BuildContext context, Object error, StackTrace? stackTrace) {
+              return const Icon(Icons.error, size: 40);
+            },
             scale: 10,
           )),
-          const Text('Se connecter avec Github', style: TextStyle(color: Colors.white)),
+          const Text('Se connecter avec Github',
+              style: TextStyle(color: Colors.white)),
         ],
       ),
     );

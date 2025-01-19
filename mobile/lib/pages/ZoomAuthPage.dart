@@ -20,7 +20,8 @@ class ZoomLoginButton extends StatelessWidget {
   Widget build(BuildContext context) {
     var ip = Provider.of<IPState>(context, listen: false).ip;
     return ElevatedButton(
-      style: ElevatedButton.styleFrom(backgroundColor: const Color.fromARGB(255, 0, 0, 0)),
+      style: ElevatedButton.styleFrom(
+          backgroundColor: const Color.fromARGB(255, 0, 0, 0)),
       onPressed: () => _launchURL(context),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -28,9 +29,14 @@ class ZoomLoginButton extends StatelessWidget {
           SizedBox(
               child: Image.network(
             "https://$ip/assets/zoom.png",
+            errorBuilder:
+                (BuildContext context, Object error, StackTrace? stackTrace) {
+              return const Icon(Icons.error, size: 40);
+            },
             scale: 25,
           )),
-          const Text('Se connecter avec Zoom', style: TextStyle(color: Colors.white)),
+          const Text('Se connecter avec Zoom',
+              style: TextStyle(color: Colors.white)),
         ],
       ),
     );
