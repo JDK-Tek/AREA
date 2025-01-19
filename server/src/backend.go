@@ -286,10 +286,11 @@ type Message struct {
 }
 
 type MessageWithIDAndOauths struct {
-	Message         string   `json:"message"`
-	Authentificated bool     `json:"authentificated"`
-	ID              int      `json:"id"`
-	Oauths          []string `json:"oauths"`
+	Message         string   		`json:"message"`
+	Authentificated bool     		`json:"authentificated"`
+	ID              int      		`json:"id"`
+	Oauths          []string 		`json:"oauths"`
+	Email 			sql.NullString 	`json:"email"`
 }
 
 func doctor(a area.AreaRequest) {
@@ -308,9 +309,22 @@ func doctor(a area.AreaRequest) {
 	}
 	defer rows.Close()
 
-	// check for no oauths
+	// reetrieve the email if any
+	x := MessageWithIDAndOauths{
+		Message: "i'm ok thanks",
+		Authentificated: true,
+		ID: id, Oauths: []string{},
+	}
+	err = a.Area.Database.
+		QueryRow("select email from users where id = $1", id).
+		Scan(&x.Email)
+	if err != nil {
+		a.Reply(Message{Message: "i'm ill: " + err.Error(), Authentificated: true}, http.StatusOK)
+		return
+	}
+
+	// check for oauths
 	var stuff string
-	x := MessageWithIDAndOauths{Message: "i'm ok thanks", Authentificated: true, ID: id, Oauths: []string{}}
 	for rows.Next() {
 		if err := rows.Scan(&stuff); err != nil {
 			a.Reply(Message{Message: "i'm ill: " + err.Error(), Authentificated: true}, http.StatusOK)
