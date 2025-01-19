@@ -1,9 +1,14 @@
 package main
 
 import (
-	//"bytes"
+	"bytes"
 	"database/sql"
+	"context"
 	"encoding/json"
+	"google.golang.org/api/gmail/v1"
+	"google.golang.org/api/option"
+	"golang.org/x/oauth2"
+	"encoding/base64"
 	"fmt"
 	"log"
 	"net/http"
@@ -190,6 +195,126 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     
     fmt.Println("Succès de l'authentification avec Google, token =", tokenStr)
     fmt.Fprintf(w, "{\"token\": \"%s\"}\n", tokenStr)
+}
+
+func sendEmailNotification(w http.ResponseWriter, req *http.Request, db *sql.DB) {
+    fmt.Println("Headers received:", req.Header)
+
+    bodyBytes, err := io.ReadAll(req.Body)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error reading request body:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+        return
+    }
+    fmt.Println("Request Body:", string(bodyBytes))
+
+    req.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+
+    // Structure simplifiée pour décoder la requête
+    var requestBody struct {
+        UserID int `json:"userid"`
+        Spices []struct {
+            Subject string `json:"subject"`
+            Email   string `json:"email"`
+            Body    string `json:"body"`
+        } `json:"spices"`
+    }
+
+    // Décodage de la requête
+    decoder := json.NewDecoder(req.Body)
+    err = decoder.Decode(&requestBody)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error decoding JSON:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+        return
+    }
+
+    userID := requestBody.UserID
+    fmt.Println("Extracted userID:", userID)
+
+    var gmailToken string
+    err = db.QueryRow("SELECT token FROM tokens WHERE owner = $1 AND service = 'google'", userID).Scan(&gmailToken)
+    if err != nil {
+        if err == sql.ErrNoRows {
+            w.WriteHeader(http.StatusNotFound)
+            fmt.Println("No Google token found for user:", userID)
+            fmt.Fprintf(w, "{ \"error\": \"No Google token found for user\" }\n")
+        } else {
+            w.WriteHeader(http.StatusInternalServerError)
+            fmt.Println("Database error:", err.Error())
+            fmt.Fprintf(w, "{ \"error\": \"Database error: %s\" }\n", err.Error())
+        }
+        return
+    }
+
+    if gmailToken == "" {
+        w.WriteHeader(http.StatusUnauthorized)
+        fmt.Println("No Gmail token available for user:", userID)
+        fmt.Fprintf(w, "{ \"error\": \"No Gmail token available\" }\n")
+        return
+    }
+
+    // Extraire les informations de l'email depuis spices
+    if len(requestBody.Spices) == 0 {
+        w.WriteHeader(http.StatusBadRequest)
+        fmt.Println("Missing email information in spices")
+        fmt.Fprintf(w, "{ \"error\": \"Missing email information\" }\n")
+        return
+    }
+
+    spice := requestBody.Spices[0] // On prend le premier élément, car on suppose qu'il y en a un seul
+
+    subject := spice.Subject
+    recipientEmail := spice.Email
+    body := spice.Body
+
+    if recipientEmail == "" || subject == "" || body == "" {
+        w.WriteHeader(http.StatusBadRequest)
+        fmt.Println("Missing email field (subject, email, or body) in spices")
+        fmt.Fprintf(w, "{ \"error\": \"Missing one or more fields: subject, email, body\" }\n")
+        return
+    }
+
+    // Envoi de l'email
+    err = sendEmail(gmailToken, recipientEmail, subject, body)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error sending email:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"Failed to send email\" }\n")
+        return
+    }
+
+    w.WriteHeader(http.StatusOK)
+    fmt.Fprintf(w, "{ \"status\": \"Email sent successfully!\" }\n")
+}
+
+func sendEmail(gmailToken, recipientEmail, subject, body string) error {
+    ctx := context.Background()
+    token := &oauth2.Token{
+        AccessToken: gmailToken,
+    }
+    tokenSource := oauth2.StaticTokenSource(token)
+    srv, err := gmail.NewService(ctx, option.WithTokenSource(tokenSource))
+    if err != nil {
+        return fmt.Errorf("Unable to create Gmail service: %v", err)
+    }
+
+    message := gmail.Message{}
+    msgBody := "From: 'me'\r\n" +
+        "To: " + recipientEmail + "\r\n" +
+        "Subject: " + subject + "\r\n" +
+        "\r\n" +
+        body
+    message.Raw = base64.URLEncoding.EncodeToString([]byte(msgBody))
+
+    _, err = srv.Users.Messages.Send("me", &message).Do()
+    if err != nil {
+        return fmt.Errorf("Unable to send email: %v", err)
+    }
+
+    return nil
 }
 
 func getUserInfo(w http.ResponseWriter, req *http.Request) {
