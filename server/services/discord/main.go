@@ -172,7 +172,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	// inserting into database, first i get the 'users' token
 	if atok != "" {
 		// if the user is logged, i get the userid
-		tokid, err = getIdFromToken(tok.Token)
+		tokid, err = getIdFromToken(atok)
 		if err != nil {
 			fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
 			return
