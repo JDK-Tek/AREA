@@ -337,7 +337,7 @@ type Infos struct {
 
 func getRoutes(w http.ResponseWriter, req *http.Request) {
 	var list = []InfoRoute{
-		InfoRoute{
+		{
 			Name: "sendEmail",
 			Type: "reaction",
 			Desc: "Sends an email.",
@@ -377,6 +377,39 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 	fmt.Fprintln(w, string(data))
 }
 
+func getUserInfo(w http.ResponseWriter, req *http.Request) {
+	authHeader := req.Header.Get("Authorization")
+	if authHeader == "" {
+		http.Error(w, "Token d'accès manquant", http.StatusUnauthorized)
+		return
+	}
+
+	reqUser, err := http.NewRequest("GET", API_USER_GOOGLE, nil)
+	if err != nil {
+		http.Error(w, "Erreur lors de la création de la requête utilisateur", http.StatusInternalServerError)
+		return
+	}
+
+	reqUser.Header.Set("Authorization", "Bearer "+authHeader[7:])
+
+	client := &http.Client{}
+	resp, err := client.Do(reqUser)
+	if err != nil {
+		http.Error(w, "Erreur lors de l'appel API Spotify", http.StatusBadGateway)
+		return
+	}
+	defer resp.Body.Close()
+
+	var userInfo map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&userInfo); err != nil {
+		http.Error(w, "Erreur lors de la décodification des informations utilisateur", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(userInfo)
+}
+
 func main() {
 	db, err := connectToDatabase()
 	if err != nil {
@@ -389,5 +422,6 @@ func main() {
 	router.HandleFunc("/oauth", getOAUTHLink).Methods("GET")
 	router.HandleFunc("/oauth", miniproxy(setOAUTHToken, db)).Methods("POST")
 	router.HandleFunc("/", getRoutes).Methods("GET")
+	router.HandleFunc("/user", getUserInfo).Methods("GET")
 	log.Fatal(http.ListenAndServe(":80", router))
 }
