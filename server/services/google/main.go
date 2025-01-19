@@ -169,11 +169,6 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     }
 
     secretBytes := []byte(os.Getenv("BACKEND_KEY"))
-    if len(secretBytes) == 0 {
-        fmt.Fprintln(w, "Erreur : clé secrète de signature JWT manquante")
-        return
-    }
-
     claims := jwt.MapClaims{
         "id":  owner,
         "exp": time.Now().Add(time.Second * EXPIRATION).Unix(),
