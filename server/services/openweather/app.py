@@ -86,15 +86,25 @@ BACKEND_PORT = os.environ.get("BACKEND_PORT")
 API_URL = "https://api.openweathermap.org/data/2.5"
 
 WEATHER = {
-	"Clear": {"min": 800, "max": 800},
-	"Clouds": {"min": 801, "max": 804},
-	"Drizzle": {"min": 300, "max": 321},
-	"Rain": {"min": 500, "max": 531},
-	"Thunderstorm": {"min": 200, "max": 232},
-	"Snow": {"min": 600, "max": 622},
-	"Extreme": {"min": 900, "max": 906},
-	"Additional": {"min": 951, "max": 962}
+    "Clear": {"min": 800, "max": 800},
+    "Clouds": {"min": 801, "max": 804},
+    "Drizzle": {"min": 300, "max": 321},
+    "Rain": {"min": 500, "max": 531},
+    "Thunderstorm": {"min": 200, "max": 232},
+    "Snow": {"min": 600, "max": 622},
+    "Mist": {"min": 701, "max": 701},
+    "Smoke": {"min": 711, "max": 711},
+    "Haze": {"min": 721, "max": 721},
+    "Dust": {"min": 731, "max": 731},
+    "Fog": {"min": 741, "max": 741},
+    "Dust": {"min": 761, "max": 761},
+    "Ash": {"min": 762, "max": 762},
+    "Squall": {"min": 771, "max": 771},
+    "Tornado": {"min": 781, "max": 781},
+    "Extreme": {"min": 900, "max": 906},
+    "Additional": {"min": 951, "max": 962}
 }
+
 
 ##
 ## ACTIONS
@@ -104,7 +114,7 @@ ACTION_WEATHER_AT_CITY = "when-weather-at-city"
 oreo.create_area(
 	ACTION_WEATHER_AT_CITY,
 	NewOreo.TYPE_ACTIONS,
-	"When a specific weater is detected in a city",
+	"When a specific weather is detected in a city",
 	[
 		{
 			"name": "city",
@@ -176,7 +186,7 @@ oreo.create_area(
 			"name": "comparaison",
 			"type": "dropdown",
 			"title": "The comparaison",
-			"extra": ["inferior", "superior", "equal", "inferior or equal", "superior or equal"]
+			"extra": ["inferior", "superior", "inferior or equal", "superior or equal"]
 		},
 		{
 			"name": "unit",
@@ -237,7 +247,7 @@ oreo.create_area(
 			"name": "comparaison",
 			"type": "dropdown",
 			"title": "The comparaison",
-			"extra": ["inferior", "superior", "equal", "inferior or equal", "superior or equal"]
+			"extra": ["inferior", "superior", "inferior or equal", "superior or equal"]
 		},
 		{
 			"name": "unit",
@@ -298,7 +308,7 @@ oreo.create_area(
 			"name": "comparaison",
 			"type": "dropdown",
 			"title": "The comparaison",
-			"extra": ["inferior", "superior", "equal", "inferior or equal", "superior or equal"]
+			"extra": ["inferior", "superior", "inferior or equal", "superior or equal"]
 		},
 		{
 			"name": "unit",
@@ -359,7 +369,7 @@ oreo.create_area(
 			"name": "comparaison",
 			"type": "dropdown",
 			"title": "The comparaison",
-			"extra": ["inferior", "superior", "equal", "inferior or equal", "superior or equal"]
+			"extra": ["inferior", "superior", "inferior or equal", "superior or equal"]
 		},
 		{
 			"name": "unit",
@@ -400,12 +410,75 @@ def visibility_at_city():
 
 	return jsonify({"status": "ok"}), 200
 
+ACTION_WIND_AT_CITY = "when-wind-at-city"
+oreo.create_area(
+	ACTION_WIND_AT_CITY,
+	NewOreo.TYPE_ACTIONS,
+	"When a specific wind speed is detected in a city",
+	[
+		{
+			"name": "city",
+			"type": "input",
+			"title": "The name of the city"
+		},
+		{
+			"name": "data",
+			"type": "number",
+			"title": "The wind speed to compare to",
+		},
+		{
+			"name": "comparaison",
+			"type": "dropdown",
+			"title": "The comparaison",
+			"extra": ["inferior", "superior", "inferior or equal", "superior or equal"]
+		},
+		{
+			"name": "unit",
+			"type": "dropdown",
+			"title": "The weather unit",
+			"extra": ["kelvin", "imperial", "metric"]
+		}
+	]
+)
+@app.route(f'/{ACTION_WIND_AT_CITY}', methods=["POST"])
+def wind_at_city():
+	app.logger.info(f"{ACTION_WIND_AT_CITY} endpoint hit")
+
+	# get data
+	data = request.json
+	if not data:
+		return jsonify({"error": "Invalid JSON"}), 400
+
+	userid = data.get("userid")
+	bridge = data.get("bridge")
+	spices = data.get("spices", {})
+	if not userid or not bridge:
+		return jsonify({"error": f"Missing required fields: 'userid': {userid}, 'spices': {spices}, 'bridge': {bridge}"}), 400
+
+	with db.cursor() as cur:
+		cur.execute("INSERT INTO micro_openweather" \
+			  "(userid, bridgeid, triggers, spices, last_weather) " \
+			  "VALUES (%s, %s, %s, %s, %s)", (
+				  userid,
+				  bridge,
+				  ACTION_WIND_AT_CITY,
+				  json.dumps(spices),
+				  ""
+			  )
+		)
+
+		db.commit()
+
+	return jsonify({"status": "ok"}), 200
+
+
 
 WEATHER_DATA_COMP = [
-	ACTION_VISIBILITY_AT_CITY,
-	ACTION_TEMP_AT_CITY,
-	ACTION_HUMIDITY_AT_CITY,
-	ACTION_PRESSURE_AT_CITY
+	(ACTION_WIND_AT_CITY, "wind/speed"),
+	(ACTION_VISIBILITY_AT_CITY, "visibility"),
+	(ACTION_TEMP_AT_CITY, "main/temp"),
+	(ACTION_HUMIDITY_AT_CITY, "main/humidity"),
+	(ACTION_PRESSURE_AT_CITY, "main/pressure"),
 ]
 
 def webhook():
@@ -492,7 +565,7 @@ def webhook():
 					)
 					print(f"New weather detected: {weather} in {city}: {res.json()}", file=sys.stderr)
 
-			for weather_data in WEATHER_DATA_COMP:
+			for (weather_data, path_comp) in WEATHER_DATA_COMP:
 				print(f"Checking data weather for {weather_data}", file=sys.stderr)
 		
 				cur.execute("SELECT userid, bridgeid, triggers, spices, last_weather FROM micro_openweather "
@@ -532,12 +605,20 @@ def webhook():
 					if not data:
 						continue
 		
-					if (last_weather != "true"
-					and (comparaison == "inferior" and data.get("main").get("pressure") < value
-					or comparaison == "superior" and data.get("main").get("pressure") > value
-					or comparaison == "equal" and data.get("main").get("pressure") == value
-					or comparaison == "inferior or equal" and data .get("main").get("pressure") <= value
-					or comparaison == "superior or equal" and data.get("main").get("pressure") >= value)):
+					path_splited = path_comp.split("/")
+					value_to_compare = data
+					for key in path_splited:
+						if isinstance(value_to_compare, dict) and key in value_to_compare:
+							value_to_compare = value_to_compare[key]
+						else:
+							value_to_compare = None
+							break
+
+					if (last_weather != "true" and (
+					(comparaison == "inferior" and value_to_compare < value)
+					or (comparaison == "superior" and value_to_compare > value)
+					or (comparaison == "inferior or equal" and value_to_compare <= value)
+					or (comparaison == "superior or equal" and value_to_compare >= value))):
 		
 						cur.execute("UPDATE micro_openweather "
 							"SET last_weather = %s "
