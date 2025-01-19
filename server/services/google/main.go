@@ -315,6 +315,67 @@ func miniproxy(f func(http.ResponseWriter, *http.Request, *sql.DB), c *sql.DB) f
 	}
 }
 
+type InfoSpice struct {
+	Name  string   `json:"name"`
+	Type  string   `json:"type"`
+	Title string   `json:"title"`
+	Extra []string `json:"extra"`
+}
+
+type InfoRoute struct {
+	Type   string      `json:"type"`
+	Name   string      `json:"name"`
+	Desc   string      `json:"description"`
+	Spices []InfoSpice `json:"spices"`
+}
+
+type Infos struct {
+	Color  string      `json:"color"`
+	Image  string      `json:"image"`
+	Routes []InfoRoute `json:"areas"`
+}
+
+func getRoutes(w http.ResponseWriter, req *http.Request) {
+	var list = []InfoRoute{
+		InfoRoute{
+			Name: "sendEmail",
+			Type: "reaction",
+			Desc: "Sends an email.",
+			Spices: []InfoSpice{
+				{
+					Name:  "to",
+					Type:  "text",
+					Title: "email to be sending",
+				},
+				{
+					Name:  "subject",
+					Type:  "text",
+					Title: "The subject",
+				},
+				{
+					Name:  "message",
+					Type:  "text",
+					Title: "The message you want to send.",
+				},
+			},
+		},
+	}
+	var infos = Infos{
+		Color:  "#0078d4",
+		Image:  "/assets/outlook.png",
+		Routes: list,
+	}
+	var data []byte
+	var err error
+
+	data, err = json.Marshal(infos)
+	if err != nil {
+		http.Error(w, `{ "error":  "marshal" }`, http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintln(w, string(data))
+}
 
 func main() {
 	db, err := connectToDatabase()
@@ -327,5 +388,6 @@ func main() {
 
 	router.HandleFunc("/oauth", getOAUTHLink).Methods("GET")
 	router.HandleFunc("/oauth", miniproxy(setOAUTHToken, db)).Methods("POST")
+	router.HandleFunc("/", getRoutes).Methods("GET")
 	log.Fatal(http.ListenAndServe(":80", router))
 }
