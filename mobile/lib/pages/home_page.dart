@@ -1,16 +1,16 @@
 import 'package:area/tools/login_button.dart';
+import 'package:area/tools/providers.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:area/pages/appletspage.dart';
+import 'package:provider/provider.dart';
 
 List<Color> predefinedColors = [
   const Color(0xff222222),
   const Color(0xff410cab),
   const Color(0xff5e17eb),
 ];
-
-
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -24,12 +24,7 @@ class HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final List<String> dest = [
-      "/applets",
-      "/create",
-      "/services",
-      "/plus"
-    ];
+    final List<String> dest = ["/applets", "/create", "/services", "/plus"];
 
     return SafeArea(
         child: Scaffold(
@@ -57,13 +52,12 @@ class HomePageState extends State<HomePage> {
         ],
       ),
       backgroundColor: Colors.white,
-      body: SingleChildScrollView(
+      body: const SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const HeaderSection(),
+            HeaderSection(),
             AppletSection(),
-            // const ServiceSection()
           ],
         ),
       ),
@@ -76,6 +70,7 @@ class HeaderSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var token = Provider.of<UserState>(context, listen: false).token;
     return Container(
       padding: const EdgeInsets.all(0.0),
       margin: const EdgeInsets.all(0.0),
@@ -173,7 +168,12 @@ class HeaderSection extends StatelessWidget {
                 : MediaQuery.of(context).size.width * 0.2,
             child: ElevatedButton(
               onPressed: () {
-                context.go("/register");
+                if (token != null) {
+                  context.go("/myapplets");
+                }
+                else {
+                  context.go("/register");
+                } 
               },
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.all(0.0),
@@ -184,7 +184,7 @@ class HeaderSection extends StatelessWidget {
                 ),
               ),
               child: Text(
-                "Get started →",
+                token != null ? "My Applets" : "Get started →",
                 textAlign: TextAlign.center,
                 style: TextStyle(
                     fontWeight: FontWeight.w900,

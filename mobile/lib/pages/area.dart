@@ -317,42 +317,41 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
   }
 
   Widget listOAuths() {
-  Map<String, dynamic> rep =
-      _makeDemandOauths("/api/doctor") as Map<String, dynamic>;
+    Map<String, dynamic> rep =
+        _makeDemandOauths("/api/doctor") as Map<String, dynamic>;
 
-  if (rep["authentificated"] == false) {
-    return const Text(
-      "You need to be logged in first...",
-      style: TextStyle(color: Colors.white, fontSize: 50),
-      textAlign: TextAlign.center,
+    if (rep["authentificated"] == false) {
+      return const Text(
+        "You need to be logged in first...",
+        style: TextStyle(color: Colors.white, fontSize: 50),
+        textAlign: TextAlign.center,
+      );
+    }
+
+    Map<String, dynamic> oauth = {
+      "roblox": const RobloxLoginButton(),
+      "outlook": const OutlookLoginButton(),
+      "spotify": const SpotifyLoginButton(),
+      "github": const GithubLoginButton(),
+      "reddit": const RedditLoginButton(),
+    };
+
+    List<String> authenticatedOAuths = rep["oauths"];
+
+    List<Widget> unauthenticatedButtons = [];
+    oauth.forEach((key, widget) {
+      if (!authenticatedOAuths.contains(key)) {
+        unauthenticatedButtons.add(widget);
+      }
+    });
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 45, right: 45),
+      child: Column(
+        children: unauthenticatedButtons,
+      ),
     );
   }
-
-  Map<String, dynamic> oauth = {
-    "roblox": const RobloxLoginButton(),
-    "outlook": const OutlookLoginButton(),
-    "spotify": const SpotifyLoginButton(),
-    "github": const GithubLoginButton(),
-    "reddit": const RedditLoginButton(),
-  };
-
-  List<String> authenticatedOAuths = rep["oauths"];
-
-  List<Widget> unauthenticatedButtons = [];
-  oauth.forEach((key, widget) {
-    if (!authenticatedOAuths.contains(key)) {
-      unauthenticatedButtons.add(widget);
-    }
-  });
-
-  return Padding(
-    padding: const EdgeInsets.only(left: 45, right: 45),
-    child: Column(
-      children: unauthenticatedButtons,
-    ),
-  );
-}
-
 
   Future<void> _sendRequest(Map<String, dynamic> body) async {
     final token = Provider.of<UserState>(context, listen: false).token;
@@ -569,7 +568,9 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
                         child: const Text("Submit"),
                       ),
                     ),
-                    const SizedBox(height: 100,),
+                    const SizedBox(
+                      height: 100,
+                    ),
                     const Padding(
                       padding: EdgeInsets.only(left: 45, right: 45),
                       child: Column(

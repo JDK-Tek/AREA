@@ -6,15 +6,13 @@ import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:go_router/go_router.dart';
 
-class SpotifyLoginButton extends StatelessWidget {
-  const SpotifyLoginButton({super.key});
+class ZoomLoginButton extends StatelessWidget {
+  const ZoomLoginButton({super.key});
 
   Future<void> _launchURL(BuildContext context) async {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const SpotifyAuthPage(),
-      ),
+      MaterialPageRoute(builder: (context) => const ZoomAuthPage()),
     );
   }
 
@@ -22,39 +20,37 @@ class SpotifyLoginButton extends StatelessWidget {
   Widget build(BuildContext context) {
     var ip = Provider.of<IPState>(context, listen: false).ip;
     return ElevatedButton(
-      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xff1DB954)),
+      style: ElevatedButton.styleFrom(
+          backgroundColor: const Color.fromARGB(255, 0, 0, 0)),
       onPressed: () => _launchURL(context),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           SizedBox(
-            child: Image.network(
-              "https://$ip/assets/spotify.png",
-              errorBuilder:
-                  (BuildContext context, Object error, StackTrace? stackTrace) {
-                return const Icon(Icons.error, size: 40);
-              },
-              scale: 15,
-            ),
-          ),
-          const Text(
-            'Se connecter avec Spotify',
-            style: TextStyle(color: Colors.white),
-          ),
+              child: Image.network(
+            "https://$ip/assets/zoom.png",
+            errorBuilder:
+                (BuildContext context, Object error, StackTrace? stackTrace) {
+              return const Icon(Icons.error, size: 40);
+            },
+            scale: 25,
+          )),
+          const Text('Se connecter avec Zoom',
+              style: TextStyle(color: Colors.white)),
         ],
       ),
     );
   }
 }
 
-class SpotifyAuthPage extends StatefulWidget {
-  const SpotifyAuthPage({super.key});
+class ZoomAuthPage extends StatefulWidget {
+  const ZoomAuthPage({super.key});
 
   @override
-  State<SpotifyAuthPage> createState() => _SpotifyAuthPageState();
+  State<ZoomAuthPage> createState() => _ZoomAuthPageState();
 }
 
-class _SpotifyAuthPageState extends State<SpotifyAuthPage> {
+class _ZoomAuthPageState extends State<ZoomAuthPage> {
   bool _isWebViewInitialized = false;
   String url = "";
   late WebViewController _webViewController;
@@ -68,9 +64,10 @@ class _SpotifyAuthPageState extends State<SpotifyAuthPage> {
   }
 
   Future<void> _initialize() async {
-    await _makeDemand("api/oauth/spotify");
+    await _makeDemand("api/oauth/zoom");
     setState(() {
       _initializeWebView();
+
       _isWebViewInitialized = true;
     });
   }
@@ -88,7 +85,7 @@ class _SpotifyAuthPageState extends State<SpotifyAuthPage> {
     }
     if (rep.statusCode >= 500) {
       setState(() {
-        u = "error";
+        u = "pipi";
       });
       _errorMessage(rep.body);
       return;
@@ -97,7 +94,7 @@ class _SpotifyAuthPageState extends State<SpotifyAuthPage> {
     setState(() {
       _token = content;
       u = content;
-      url = content.trim();
+      url = content;
     });
   }
 
@@ -115,9 +112,9 @@ class _SpotifyAuthPageState extends State<SpotifyAuthPage> {
                 setState(() {
                   _authCode = code;
                   if (_authCode != "") {
-                    _makeRequest(_authCode, "api/oauth/spotify");
+                    _makeRequest(_authCode, "api/oauth/zoom");
                     if (!context.mounted) return;
-                    context.pop();
+                    context.go("/");
                   }
                 });
               }
@@ -158,7 +155,7 @@ class _SpotifyAuthPageState extends State<SpotifyAuthPage> {
   }
 
   void switchPage() {
-    context.pop();
+    context.go("/");
   }
 
   Future<void> _makeRequest(String a, String u) async {
@@ -175,14 +172,14 @@ class _SpotifyAuthPageState extends State<SpotifyAuthPage> {
       return _errorMessage("$e");
     }
     content = jsonDecode(rep.body) as Map<String, dynamic>;
-    switch ((rep.statusCode / 100)) {
+    switch ((rep.statusCode / 100) as int) {
       case 2:
         str = content['token']?.toString();
         if (str != null) {
           _token = str;
           if (mounted) {
             Provider.of<UserState>(context, listen: false).setToken(_token!);
-            context.pop();
+            context.go("/login");
           }
         } else {
           _errorMessage("Enter a valid email and password !");
@@ -204,7 +201,7 @@ class _SpotifyAuthPageState extends State<SpotifyAuthPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Spotify Authentication")),
+      appBar: AppBar(title: const Text("Zoom Authentication")),
       body: _isWebViewInitialized
           ? WebViewWidget(controller: _webViewController)
           : const Center(child: CircularProgressIndicator()),

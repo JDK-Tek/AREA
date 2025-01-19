@@ -7,13 +7,13 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 
-class AppletsPage extends StatefulWidget {
-  const AppletsPage({super.key});
+class MyAppletsPage extends StatefulWidget {
+  const MyAppletsPage({super.key});
   @override
-  State<AppletsPage> createState() => AppletPageState();
+  State<MyAppletsPage> createState() => MyAppletPageState();
 }
 
-class AppletPageState extends State<AppletsPage> {
+class MyAppletPageState extends State<MyAppletsPage> {
   int currentPageIndex = 0;
 
   @override
@@ -48,7 +48,7 @@ class AppletPageState extends State<AppletsPage> {
       body: const SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [HeaderSection(), AppletSection()],
+          children: [MiniHeaderSection(), AppletSection()],
         ),
       ),
     ));
@@ -241,10 +241,16 @@ class _AppletSectionState extends State<AppletSection> {
   Future<void> _makeDemand(String u) async {
     final Uri uri =
         Uri.https(Provider.of<IPState>(context, listen: false).ip, u);
+    final token = Provider.of<UserState>(context, listen: false).token;
     late final https.Response rep;
+    
+    final headers = {
+      "Authorization": "Bearer $token",
+      "Content-Type": "application/json",
+    };
 
     try {
-      rep = await https.get(uri);
+      rep = await https.get(uri, headers: headers);
     } catch (e) {
       if (mounted) {
         _showDialog("Error", "Could not make request: $e");
@@ -313,7 +319,7 @@ class _AppletSectionState extends State<AppletSection> {
           Container(
             margin: const EdgeInsets.only(top: 20),
             child: Text(
-              "Get started with any Applet",
+              "Your applets",
               textAlign: TextAlign.center,
               style: TextStyle(
                   fontSize: MediaQuery.of(context).size.width <

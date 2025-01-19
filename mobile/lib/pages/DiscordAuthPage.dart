@@ -18,7 +18,7 @@ class DiscordLoginButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var ip = Provider.of<IPState>(context, listen: false).ip;
-    return  ElevatedButton(
+    return ElevatedButton(
       style: ElevatedButton.styleFrom(backgroundColor: const Color(0xff5865F2)),
       onPressed: () => _launchURL(context),
       child: Row(
@@ -27,9 +27,14 @@ class DiscordLoginButton extends StatelessWidget {
           SizedBox(
               child: Image.network(
             "https://$ip/assets/discord.webp",
+            errorBuilder:
+                (BuildContext context, Object error, StackTrace? stackTrace) {
+              return const Icon(Icons.error, size: 40);
+            },
             scale: 10,
           )),
-          const Text('Se connecter avec Discord', style: TextStyle(color: Colors.white)),
+          const Text('Se connecter avec Discord',
+              style: TextStyle(color: Colors.white)),
         ],
       ),
     );
