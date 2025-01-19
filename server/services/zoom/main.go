@@ -89,13 +89,12 @@ func getOAUTHLink(w http.ResponseWriter, req *http.Request) {
 	redirectURI := url.QueryEscape(os.Getenv("REDIRECT"))
 	fmt.Println("Redirect URI = ", redirectURI)
 
-	scopes := "user:read " +
-		"meeting:write " +
-		"user:write " +
-		"account:read"
+	// scopes := "user:read " +
+	// 	"meeting:write " +
+	// 	"user:write " +
+	// 	"account:read"
 
 	str += "&response_type=code"
-	str += "&scope=" + url.QueryEscape(scopes)
 	str += "&state=some-state-value"
 	str += "client_id=" + os.Getenv("ZOOM_CLIENT_ID")
 	str += "&redirect_uri=" + redirectURI
