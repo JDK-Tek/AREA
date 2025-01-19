@@ -54,6 +54,15 @@ create table if not exists tokens (
     owner int default null
 );
 
+create table if not exists areaapplets (
+    id serial primary key,
+    name text not null,
+    users int not null,
+    action text not null,
+    reaction text not null,
+    constraint unique_action_reaction unique (action, reaction)
+);
+
 -- insert into users (tokenid) values (
 --     1
 -- );

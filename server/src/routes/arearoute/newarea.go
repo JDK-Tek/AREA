@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"area-backend/area"
 	"os"
+	"strings"
 )
 
 type AreaObject struct {
@@ -27,7 +28,7 @@ type ToSend struct {
 	Id int `json:"userid"`
 }
 
-func createActionReaction(a area.AreaRequest, bridge Bridge) int {
+func createActionReaction(a area.AreaRequest, bridge Bridge, userid int) int {
 	var actionid, reactionid, bridgeid int
 	querry := `select id from actions where service = $1
 		and name = $2 and spices = $3`
@@ -74,13 +75,95 @@ func createActionReaction(a area.AreaRequest, bridge Bridge) int {
 	err = a.Area.Database.QueryRow(querry,
 		actionid,
 		reactionid,
-		42,
+		userid,
 	).Scan(&bridgeid)
 	if err != nil {
 		a.Error(err, http.StatusInternalServerError)
 		return -1
 	}
 	return bridgeid
+}
+
+func find[T any](vec []T, f func(T) bool) *T {
+	for _, v := range vec {
+		if f(v) {
+			return &v
+		}
+	}
+	return nil
+}
+
+func removePerioooodSlaaay(s string) string {
+	slen := len(s)
+	last := slen - 1
+	if slen > 0 && s[last] == '.' {
+		return s[:last]
+	}
+	return s
+}
+
+func applyFuncToFirstLetter(s string, f func(string) string) string {
+	if len(s) == 0 {
+		return s
+	}
+	return f(string(s[0])) + s[1:]
+}
+
+
+func generateName(a area.AreaRequest, bridge Bridge) string {
+	aServ := find(a.Area.About.Server.Services, func(s area.AboutSevice) bool {
+		return s.Name == bridge.Action.Service
+	})
+	rServ := find(a.Area.About.Server.Services, func(s area.AboutSevice) bool {
+		return s.Name == bridge.Reaction.Service
+	})
+	if aServ == nil {
+		return "Unknown service for action."
+	}
+	if rServ == nil {
+		return "Unknown service for reaction."
+	}
+	aDesc := find(aServ.Actions, func(x area.AboutSomething) bool {
+		return x.Name == bridge.Action.Name
+	})
+	rDesc := find(rServ.Reactions, func(x area.AboutSomething) bool {
+		return x.Name == bridge.Reaction.Name
+	})
+	if aServ == nil {
+		return "Unknown action name."
+	}
+	if rServ == nil {
+		return "Unknown reaction name."
+	}
+	return fmt.Sprintf("In %s service, %s, %s on %s",
+		applyFuncToFirstLetter(aServ.Name, strings.ToUpper),
+		removePerioooodSlaaay(aDesc.Description),
+		applyFuncToFirstLetter(
+			removePerioooodSlaaay(rDesc.Description),
+			strings.ToLower,
+		),
+		applyFuncToFirstLetter(rServ.Name, strings.ToUpper),
+	)
+}
+
+func appletUpdate(a area.AreaRequest, bridge Bridge) error {
+	querry := `
+		insert into areaapplets (name, users, action, reaction)
+		values ($1, $2, $3, $4)
+		on conflict (action, reaction)
+		do update set users = areaapplets.users + 1
+	`
+	_, err := a.Area.Database.Exec(
+		querry,
+		generateName(a, bridge),
+		1,
+		bridge.Action.Service,
+		bridge.Reaction.Service,
+	)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func NewArea(a area.AreaRequest) {
@@ -97,8 +180,13 @@ func NewArea(a area.AreaRequest) {
 		a.Error(err, http.StatusBadRequest)
 		return
 	}
-	tosend.Bridge = createActionReaction(a, bridge)
+	tosend.Bridge = createActionReaction(a, bridge, id)
 	if tosend.Bridge == -1 {
+		return
+	}
+	err = appletUpdate(a, bridge)
+	if err != nil {
+		a.Error(err, http.StatusInternalServerError)
 		return
 	}
 	tosend.Spices = bridge.Action.Spices
