@@ -566,13 +566,11 @@ def webhook():
 					print(f"New weather detected: {weather} in {city}: {res.json()}", file=sys.stderr)
 
 			for (weather_data, path_comp) in WEATHER_DATA_COMP:
-				print(f"Checking data weather for {weather_data}", file=sys.stderr)
 		
 				cur.execute("SELECT userid, bridgeid, triggers, spices, last_weather FROM micro_openweather "
 				   "WHERE triggers = %s", (weather_data,))
 		
 				rows = cur.fetchall()
-				print(f"Checking weather for {len(rows)} users", file=sys.stderr)
 		
 				for row in rows:
 					userid, bridgeid, triggers, spices, last_weather = row
@@ -651,7 +649,11 @@ def webhook():
 							}
 						)
 						print(f"New weather detected: {value} in {city}: {res.json()}", file=sys.stderr)
-					elif (last_weather != "true"):
+					elif (last_weather == "true"
+					and not ((comparaison == "inferior" and value_to_compare < value)
+					or (comparaison == "superior" and value_to_compare > value)
+					or (comparaison == "inferior or equal" and value_to_compare <= value)
+					or (comparaison == "superior or equal" and value_to_compare >= value))):
 						# update the last weather
 						cur.execute("UPDATE micro_openweather "
 							"SET last_weather = %s "
