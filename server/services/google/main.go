@@ -200,7 +200,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		insert into tokens (service, token, refresh, userid, owner)
         values ($1, $2, $3, $4, $5)
 	`
-	_, err = db.Exec(query, "discord", tok.Token, tok.Refresh, user.ID, owner)
+	_, err = db.Exec(query, "google", tok.Token, tok.Refresh, user.ID, owner)
 	if err != nil {
 		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
 		return
