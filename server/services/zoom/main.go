@@ -289,10 +289,12 @@ func checkDeviceConnection(w http.ResponseWriter, req *http.Request, db *sql.DB)
         return
     }
 
+	fmt.Print("zoom token = ", zoomToken)
+
     go func() {
         client := &http.Client{}
-
-        userStatusURL := "https://api.zoom.us/v2/users/me/status"  // Utilisation de "me" pour l'utilisateur authentifié avec le token OAuth
+        
+        userStatusURL := "https://api.zoom.us/v2/users/me/status"
 
         for {
             reqStatus, err := http.NewRequest("GET", userStatusURL, nil)
@@ -317,6 +319,7 @@ func checkDeviceConnection(w http.ResponseWriter, req *http.Request, db *sql.DB)
 
             if respStatus.StatusCode != http.StatusOK {
                 fmt.Println("Failed to get user status:", respStatus.StatusCode)
+                fmt.Println("Response body:", string(bodyResp))
                 return
             }
 
@@ -375,6 +378,7 @@ func checkDeviceConnection(w http.ResponseWriter, req *http.Request, db *sql.DB)
     w.WriteHeader(http.StatusOK)
     fmt.Fprintf(w, "{ \"status\": \"ok !\" }\n")
 }
+
 
 func getRoutes(w http.ResponseWriter, req *http.Request) {
 	var list = []InfoRoute{
