@@ -2406,7 +2406,7 @@ func clearPlaylist(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     var requestBody struct {
         UserID int `json:"userid"`
         Spices struct {
-            PlaylistID string `json:"id"`
+            PlaylistName string `json:"name"` // Changement de 'id' à 'name'
         } `json:"spices"`
     }
 
@@ -2420,9 +2420,9 @@ func clearPlaylist(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     }
 
     userID := requestBody.UserID
-    playlistID := requestBody.Spices.PlaylistID
+    playlistName := requestBody.Spices.PlaylistName
     fmt.Println("Extracted userID:", userID)
-    fmt.Println("Playlist ID to clear:", playlistID)
+    fmt.Println("Playlist Name to clear:", playlistName)
 
     var spotifyToken string
     err = db.QueryRow("SELECT token FROM tokens WHERE owner = $1 AND service = 'spotify'", userID).Scan(&spotifyToken)
@@ -2446,6 +2446,70 @@ func clearPlaylist(w http.ResponseWriter, req *http.Request, db *sql.DB) {
         return
     }
 
+    // Rechercher l'ID de la playlist par son nom
+    searchURL := fmt.Sprintf("https://api.spotify.com/v1/search?q=%s&type=playlist", playlistName)
+    reqSearch, err := http.NewRequest("GET", searchURL, nil)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error creating Spotify search request:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+        return
+    }
+
+    reqSearch.Header.Set("Authorization", "Bearer "+spotifyToken)
+    reqSearch.Header.Set("Content-Type", "application/json")
+
+    client := &http.Client{}
+    respSearch, err := client.Do(reqSearch)
+    if err != nil {
+        w.WriteHeader(http.StatusBadGateway)
+        fmt.Println("Error searching for playlist:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+        return
+    }
+    defer respSearch.Body.Close()
+
+    bodySearch, err := io.ReadAll(respSearch.Body)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error reading Spotify search response body:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"Error reading Spotify search response body\" }\n")
+        return
+    }
+
+    if respSearch.StatusCode != http.StatusOK {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Failed to search for playlist. Status:", respSearch.StatusCode)
+        fmt.Fprintf(w, "{ \"error\": \"Failed to search for playlist\" }\n")
+        return
+    }
+
+    var searchResult struct {
+        Playlists struct {
+            Items []struct {
+                ID string `json:"id"`
+            } `json:"items"`
+        } `json:"playlists"`
+    }
+
+    if err := json.Unmarshal(bodySearch, &searchResult); err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error unmarshalling search result:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"Error unmarshalling search result\" }\n")
+        return
+    }
+
+    if len(searchResult.Playlists.Items) == 0 {
+        w.WriteHeader(http.StatusNotFound)
+        fmt.Println("No playlist found with the name:", playlistName)
+        fmt.Fprintf(w, "{ \"error\": \"No playlist found with the specified name\" }\n")
+        return
+    }
+
+    playlistID := searchResult.Playlists.Items[0].ID
+    fmt.Println("Found playlist ID:", playlistID)
+
+    // Utilisez maintenant playlistID pour récupérer et vider la playlist comme dans le code précédent
     spotifyURL := fmt.Sprintf("https://api.spotify.com/v1/playlists/%s/tracks", playlistID)
 
     reqSpotify, err := http.NewRequest("GET", spotifyURL, nil)
@@ -2459,7 +2523,6 @@ func clearPlaylist(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     reqSpotify.Header.Set("Authorization", "Bearer "+spotifyToken)
     reqSpotify.Header.Set("Content-Type", "application/json")
 
-    client := &http.Client{}
     respSpotify, err := client.Do(reqSpotify)
     if err != nil {
         w.WriteHeader(http.StatusBadGateway)
@@ -2554,6 +2617,7 @@ func clearPlaylist(w http.ResponseWriter, req *http.Request, db *sql.DB) {
         fmt.Fprintf(w, "{ \"error\": \"Failed to clear playlist\" }\n")
     }
 }
+
 
 func addToPlaylistByName(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     fmt.Println("Headers received:", req.Header)
