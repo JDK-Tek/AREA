@@ -278,7 +278,70 @@ def humidity_at_city():
 
 	return jsonify({"status": "ok"}), 200
 
+ACTION_TEMP_AT_CITY = "when-temp-at-city"
+oreo.create_area(
+	ACTION_TEMP_AT_CITY,
+	NewOreo.TYPE_ACTIONS,
+	"When a specific temp is detected in a city",
+	[
+		{
+			"name": "city",
+			"type": "input",
+			"title": "The name of the city"
+		},
+		{
+			"name": "data",
+			"type": "number",
+			"title": "The temp to compare to",
+		},
+		{
+			"name": "comparaison",
+			"type": "dropdown",
+			"title": "The comparaison",
+			"extra": ["inferior", "superior", "equal", "inferior or equal", "superior or equal"]
+		},
+		{
+			"name": "unit",
+			"type": "dropdown",
+			"title": "The weather unit",
+			"extra": ["kelvin", "imperial", "metric"]
+		}
+	]
+)
+@app.route(f'/{ACTION_TEMP_AT_CITY}', methods=["POST"])
+def temp_at_city():
+	app.logger.info(f"{ACTION_TEMP_AT_CITY} endpoint hit")
+
+	# get data
+	data = request.json
+	if not data:
+		return jsonify({"error": "Invalid JSON"}), 400
+
+	userid = data.get("userid")
+	bridge = data.get("bridge")
+	spices = data.get("spices", {})
+	if not userid or not bridge:
+		return jsonify({"error": f"Missing required fields: 'userid': {userid}, 'spices': {spices}, 'bridge': {bridge}"}), 400
+
+	with db.cursor() as cur:
+		cur.execute("INSERT INTO micro_openweather" \
+			  "(userid, bridgeid, triggers, spices, last_weather) " \
+			  "VALUES (%s, %s, %s, %s, %s)", (
+				  userid,
+				  bridge,
+				  ACTION_TEMP_AT_CITY,
+				  json.dumps(spices),
+				  ""
+			  )
+		)
+
+		db.commit()
+
+	return jsonify({"status": "ok"}), 200
+
+
 WEATHER_DATA_COMP = [
+	ACTION_TEMP_AT_CITY,
 	ACTION_HUMIDITY_AT_CITY,
 	ACTION_PRESSURE_AT_CITY
 ]
