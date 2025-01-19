@@ -27,8 +27,6 @@ const (
 const PERMISSIONS = 8
 const EXPIRATION = 60 * 30
 
-var db *sql.DB
-
 type InfoSpice struct {
 	Name  string   `json:"name"`
 	Type  string   `json:"type"`
@@ -308,10 +306,10 @@ func connectToDatabase() (*sql.DB, error) {
 }
 
 func main() {
-    // db, err := connectToDatabase()
-    // if err != nil {
-    //     os.Exit(84)
-    // }
+    db, err := connectToDatabase()
+	if err != nil {
+		os.Exit(84)
+	}
     fmt.Println("Zoom microservice container is running !")
     router := mux.NewRouter()
     godotenv.Load(".env")
