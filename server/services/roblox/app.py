@@ -1,12 +1,9 @@
 from flask import Flask, jsonify
 from flask import request as Request
 from dotenv import load_dotenv
-import random
 import requests
-import string
 import os
 import psycopg2
-import time
 import jwt
 import datetime as dt
 from sys import stderr
@@ -28,17 +25,17 @@ SERVICE_SCOPES = "openid+group:read+group:write+user.user-notification:write+pro
 AUTH_SCOPES = "profile:read+openid"
 
 while True:
-	try:
-		db = psycopg2.connect(
-			database=os.environ.get("DB_NAME"),
-			user=os.environ.get("DB_USER"),
-			password=os.environ.get("DB_PASSWORD"),
-			host=os.environ.get("DB_HOST"),
-			port=os.environ.get("DB_PORT")
-		)
-		break
-	except psycopg2.OperationalError:
-		continue
+    try:
+        db = psycopg2.connect(
+            database=os.environ.get("DB_NAME"),
+            user=os.environ.get("DB_USER"),
+            password=os.environ.get("DB_PASSWORD"),
+            host=os.environ.get("DB_HOST"),
+            port=os.environ.get("DB_PORT")
+        )
+        break
+    except psycopg2.OperationalError:
+        continue
 
 app = Flask(__name__)
 runtime_routes = []
@@ -280,6 +277,98 @@ def webhook():
     elif method == "trigger":
         return on_action(data)
     return jsonify({ "error": "invalid method" }), 400
+
+
+def myurlencode(x):
+    return "&".join("{}={}".format(*i) for i in x.items())
+
+@app.route('/oauth', methods=["GET", "POST"])
+def oauth():
+    if Request.method == "GET":
+        params = {
+            "client_id": CLIENT_ID,
+            "response_type": "code",
+            "redirect_uri": os.environ.get("REDIRECT"),
+            "scope": AUTH_SCOPES,
+            # "scope": MESSAGE_SCOPES,
+            "step": "accountConfirm"
+        }
+        return API_URL + "?" + myurlencode(params)
+
+    if Request.method == "POST":
+        req = Request.get_json()
+        if not "code" in req:
+            return jsonify({ "error": "missing code" }), 400
+        data = {
+            "client_id": CLIENT_ID,
+            "client_secret": CLIENT_SECRET,
+            "grant_type": "authorization_code",
+            "code": req["code"]
+        }
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded",
+        }
+        rep = requests.post(TOKEN_URL, headers=headers, data=data)
+        if rep.status_code != 200:
+            return rep.text, rep.status_code
+        token = rep.json().get("access_token")
+        refresh = rep.json().get("refresh_token")
+        headers = {
+            "Authorization": "Bearer " + token
+        }
+        rep = requests.get(ME_URL, headers=headers)
+        if rep.status_code != 200:
+            return rep.text, rep.status_code
+        robloxid = rep.json().get("sub")
+        
+        try:
+            with db.cursor() as cur:
+                tokenid, ownerid = -1, -1
+                cur.execute("select id, owner from tokens where userid = %s", (robloxid,))
+                rows = cur.fetchone()
+                if not rows:
+                    # create a token with everything in the 'tokens' table
+                    print(1, file=stderr)
+                    cur.execute("insert into tokens" \
+                        "(service, token, refresh, userid)" \
+                        "values (%s, %s, %s, %s)" \
+                        "returning id", \
+                            ("roblox", token, refresh, robloxid,)
+                    )
+                    r = cur.fetchone()
+                    print(2, file=stderr)
+                    if not r:
+                        raise Exception("could not fetch")
+                    tokenid = r[0]
+                    db.commit()
+                    print(3, file=stderr)
+
+                    # create a new user with the token id in the 'users'
+                    cur.execute("insert into users (tokenid) values (%s) returning id", (tokenid,))
+                    r = cur.fetchone()
+                    print(4, file=stderr)
+                    if not r:
+                        raise Exception("could not fetch")
+                    ownerid = r[0]
+                    print(5, file=stderr)
+                    print(ownerid, tokenid, file=stderr)
+
+                    # and then i just update the token owner in the 'tokens'
+                    # since i just got the owner id from the 'users' now
+                    cur.execute("update tokens set owner = (%s) where id = (%s)", (ownerid, tokenid,))
+                    print(6, file=stderr)
+                else:
+                    tokenid, ownerid = rows[0], rows[1]
+                db.commit()
+                data = jwt.encode({
+                    "id": ownerid,
+                    "exp": dt.datetime.now() + dt.timedelta(seconds=EXPIRATION)
+                }, BACKEND_KEY, algorithm="HS256")
+                return jsonify({ "token": data }), 200
+                
+        except (Exception, psycopg2.Error) as err:
+            return jsonify({ "error":  str(err)}), 400
+        return jsonify({ "error": "unexpected end of code"}), 400
 
 @app.route("/", methods=["GET"])
 def routes():
