@@ -153,7 +153,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     defer rep.Body.Close()
    
     body, err := io.ReadAll(rep.Body)
-	fmt.Println("body = ", body)
+	fmt.Println("body = ", string(body))
     if err != nil {
         fmt.Fprintln(w, "Erreur lors de la lecture du corps de la réponse:", err.Error())
         return
