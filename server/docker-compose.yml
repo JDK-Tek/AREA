@@ -44,6 +44,7 @@ services:
       - ./server/database/github.sql:/docker-entrypoint-initdb.d/github.sql
       - ./server/database/roblox.sql:/docker-entrypoint-initdb.d/roblox.sql
       - ./server/database/newsapi.sql:/docker-entrypoint-initdb.d/newsapi.sql
+      - ./server/database/openweather.sql:/docker-entrypoint-initdb.d/openweather.sql
     networks:
       - web
     
