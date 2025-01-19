@@ -5,14 +5,14 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	//"io"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
-	//"time"
+	"time"
 
-	//"github.com/dgrijalva/jwt-go"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	//_ "github.com/lib/pq"
@@ -103,6 +103,134 @@ func getOAUTHLink(w http.ResponseWriter, req *http.Request) {
 	fmt.Fprintln(w, str)
 }
 
+func miniproxy(f func(http.ResponseWriter, *http.Request, *sql.DB), c *sql.DB) func(http.ResponseWriter, *http.Request) {
+	return func(a http.ResponseWriter, b *http.Request) {
+		f(a, b, c)
+	}
+}
+
+type Result struct {
+    Code string `json:"code"`
+}
+
+type TokenResult struct {
+    Token string `json:"access_token"`
+    Refresh string `json:"refresh_token"`
+}
+
+type UserResult struct {
+    ID string `json:"id"`
+}
+
+func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
+    var res Result
+    var tok TokenResult
+    var user UserResult
+    var tokid int
+    var owner = -1
+    var responseData map[string]interface{}
+
+    clientID := os.Getenv("ZOOM_CLIENT_ID")
+    clientSecret := os.Getenv("ZOOM_CLIENT_SECRET")
+    redirectURI := os.Getenv("REDIRECT")
+    data := url.Values{}
+   
+    err := json.NewDecoder(req.Body).Decode(&res)
+    if err != nil {
+        fmt.Fprintln(w, "Erreur lors du décodage de la requête:", err.Error())
+        return
+    }
+
+    data.Set("client_id", clientID)
+    data.Set("client_secret", clientSecret)
+    data.Set("grant_type", "authorization_code")
+    data.Set("code", res.Code)
+    data.Set("redirect_uri", redirectURI)
+   
+    rep, err := http.PostForm("https://zoom.us/oauth/token", data)
+    if err != nil {
+        fmt.Fprintln(w, "Erreur lors de l'échange du code:", err.Error())
+        return
+    }
+    defer rep.Body.Close()
+   
+    body, err := io.ReadAll(rep.Body)
+    if err != nil {
+        fmt.Fprintln(w, "Erreur lors de la lecture du corps de la réponse:", err.Error())
+        return
+    }
+   
+    if err := json.Unmarshal(body, &responseData); err != nil {
+        fmt.Fprintln(w, "Erreur lors de l'analyse de la réponse JSON:", err.Error())
+        return
+    }
+
+    tok.Token = responseData["access_token"].(string)
+    tok.Refresh = responseData["refresh_token"].(string)
+
+    req, err = http.NewRequest("GET", "https://api.zoom.us/v2/users/me", nil)
+    if err != nil {
+        fmt.Fprintln(w, "Erreur lors de la création de la requête utilisateur:", err.Error())
+        return
+    }
+    req.Header.Set("Authorization", "Bearer "+tok.Token)
+   
+    client := &http.Client{}
+    rep, err = client.Do(req)
+    if err != nil {
+        fmt.Fprintln(w, "Erreur lors de l'appel à l'API Zoom:", err.Error())
+        return
+    }
+    defer rep.Body.Close()
+   
+    err = json.NewDecoder(rep.Body).Decode(&user)
+    if err != nil {
+        fmt.Fprintln(w, "Erreur lors du décodage des informations utilisateur:", err.Error())
+        return
+    }
+
+    if tok.Token == "" || tok.Refresh == "" {
+        fmt.Fprintln(w, "Erreur : token ou refresh token manquant")
+        return
+    }
+
+    err = db.QueryRow("SELECT id, owner FROM tokens WHERE userid = $1", user.ID).Scan(&tokid, &owner)
+    if err != nil {
+        err = db.QueryRow("INSERT INTO tokens (service, token, refresh, userid) VALUES ($1, $2, $3, $4) RETURNING id",
+            "zoom",
+            tok.Token,
+            tok.Refresh,
+            user.ID,
+        ).Scan(&tokid)
+        if err != nil {
+            fmt.Fprintln(w, "Erreur lors de l'insertion du token:", err.Error())
+            return
+        }
+
+        err = db.QueryRow("INSERT INTO users (tokenid) VALUES ($1) RETURNING id", tokid).Scan(&owner)
+        if err != nil {
+            fmt.Fprintln(w, "Erreur lors de l'insertion de l'utilisateur:", err.Error())
+            return
+        }
+        db.Exec("UPDATE tokens SET owner = $1 WHERE id = $2", owner, tokid)
+    }
+
+    secretBytes := []byte(os.Getenv("BACKEND_KEY"))
+    claims := jwt.MapClaims{
+        "id":  owner,
+        "exp": time.Now().Add(time.Second * EXPIRATION).Unix(),
+    }
+    token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+    tokenStr, err := token.SignedString(secretBytes)
+    if err != nil {
+        fmt.Fprintln(w, "Erreur lors de la signature du token:", err.Error())
+        return
+    }
+   
+    fmt.Println("Succès de l'authentification avec Zoom, token =", tokenStr)
+    fmt.Fprintf(w, "{\"token\": \"%s\"}\n", tokenStr)
+}
+
 func getRoutes(w http.ResponseWriter, req *http.Request) {
 	var list = []InfoRoute{
 		{
@@ -180,16 +308,16 @@ func connectToDatabase() (*sql.DB, error) {
 }
 
 func main() {
-	// db, err := connectToDatabase()
-	// if err != nil {
-	// 	os.Exit(84)
-	// }
+	db, err := connectToDatabase()
+	if err != nil {
+		os.Exit(84)
+	}
 	fmt.Println("Zoom microservice container is running !")
 	router := mux.NewRouter()
 	godotenv.Load(".env")
 
 	router.HandleFunc("/oauth", getOAUTHLink).Methods("GET")
-	//router.HandleFunc("/oauth", miniproxy(setOAUTHToken, db)).Methods("POST")
+	router.HandleFunc("/oauth", miniproxy(setOAUTHToken, db)).Methods("POST")
 	router.HandleFunc("/user", getUserInfo).Methods("GET")
 	router.HandleFunc("/", getRoutes).Methods("GET")
 	log.Fatal(http.ListenAndServe(":80", router))
