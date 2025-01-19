@@ -78,7 +78,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 
 	clientID := os.Getenv("GOOGLE_CLIENT_ID")
 	clientSecret := os.Getenv("GOOGLE_CLIENT_SECRET")
-	redirectURI := os.Getenv("REDIRECT_URI")
+	redirectURI := os.Getenv("REDIRECT")
 	data := url.Values{}
 	
 	err := json.NewDecoder(req.Body).Decode(&res)
