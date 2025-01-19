@@ -15,7 +15,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
-	//_ "github.com/lib/pq"
+	_ "github.com/lib/pq"
 )
 
 const (
