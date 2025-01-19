@@ -12,15 +12,33 @@ class SpotifyLoginButton extends StatelessWidget {
   Future<void> _launchURL(BuildContext context) async {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const SpotifyAuthPage()),
+      MaterialPageRoute(
+        builder: (context) => const SpotifyAuthPage(),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    var ip = Provider.of<IPState>(context, listen: false).ip;
     return ElevatedButton(
+      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xff1DB954)),
       onPressed: () => _launchURL(context),
-      child: const Text('Se connecter avec Spotify'),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          SizedBox(
+            child: Image.network(
+              "https://$ip/assets/spotify.png",
+              scale: 15,
+            ),
+          ),
+          const Text(
+            'Se connecter avec Spotify',
+            style: TextStyle(color: Colors.white),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -95,7 +113,7 @@ class _SpotifyAuthPageState extends State<SpotifyAuthPage> {
                   if (_authCode != "") {
                     _makeRequest(_authCode, "api/oauth/spotify");
                     if (!context.mounted) return;
-                    context.go("/");
+                    context.pop();
                   }
                 });
               }
@@ -136,7 +154,7 @@ class _SpotifyAuthPageState extends State<SpotifyAuthPage> {
   }
 
   void switchPage() {
-    context.go("/");
+    context.pop();
   }
 
   Future<void> _makeRequest(String a, String u) async {
@@ -160,7 +178,7 @@ class _SpotifyAuthPageState extends State<SpotifyAuthPage> {
           _token = str;
           if (mounted) {
             Provider.of<UserState>(context, listen: false).setToken(_token!);
-            context.go("/");
+            context.pop();
           }
         } else {
           _errorMessage("Enter a valid email and password !");
