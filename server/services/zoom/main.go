@@ -379,28 +379,10 @@ func checkDeviceConnection(w http.ResponseWriter, req *http.Request, db *sql.DB)
 func getRoutes(w http.ResponseWriter, req *http.Request) {
 	var list = []InfoRoute{
 		{
-			Name: "playMusic",
-			Type: "reaction",
-			Desc: "Chose a music to play !",
-			Spices: []InfoSpice{
-				{
-					Name:  "musique",
-					Type:  "text",
-					Title: "The message you want to send.",
-				},
-			},
-		},
-		{
-			Name: "pauseMusic",
-			Type: "reaction",
-			Desc: "Stop the current music !",
-			Spices: []InfoSpice{
-				{
-					Name:  "message",
-					Type:  "text",
-					Title: "The message you want to send.",
-				},
-			},
+			Name: "checkDeviceConnection",
+			Type: "action",
+			Desc: "Check if the user is in meating !",
+			Spices: []InfoSpice{},
 		},
 	}
 	var infos = Infos{
@@ -477,6 +459,7 @@ func main() {
 	
     router.HandleFunc("/oauth", getOAUTHLink).Methods("GET")
     router.HandleFunc("/oauth", miniproxy(setOAUTHToken, db)).Methods("POST")
+	router.HandleFunc("/checkDeviceConnection", miniproxy(checkDeviceConnection, db)).Methods("POST")
     router.HandleFunc("/user", getUserInfo).Methods("POST")
     router.HandleFunc("/", getRoutes).Methods("GET")
     log.Fatal(http.ListenAndServe(":80", router))
