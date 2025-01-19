@@ -275,25 +275,35 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 
 func connectToDatabase() (*sql.DB, error) {
 	dbPassword := os.Getenv("DB_PASSWORD")
+	fmt.Println("a")
 	if dbPassword == "" {
 		log.Fatal("DB_PASSWORD not found")
 	}
+	fmt.Println("b")
 	dbUser := os.Getenv("DB_USER")
+	fmt.Println("c")
 	if dbUser == "" {
 		log.Fatal("DB_USER not found")
 	}
+	fmt.Println("d")
+	fmt.Println("z")
 	dbHost := os.Getenv("DB_HOST")
 	if dbHost == "" {
 		log.Fatal("DB_HOST not found")
 	}
+	fmt.Println("e")
 	dbName := os.Getenv("DB_NAME")
+	fmt.Println("zizi")
 	if dbName == "" {
 		log.Fatal("DB_NAME not found")
 	}
+	fmt.Println("co")
 	dbPort := os.Getenv("DB_PORT")
+	fmt.Println("u")
 	if dbPort == "" {
 		log.Fatal("DB_PORT not found")
 	}
+	fmt.Println("wawa")
 	connectStr := fmt.Sprintf(
 		"postgresql://%s:%s@%s:%s/%s?sslmode=disable",
 		dbUser,
@@ -302,18 +312,19 @@ func connectToDatabase() (*sql.DB, error) {
 		dbPort,
 		dbName,
 	)
+	fmt.Println("coucou")
 	return sql.Open("postgres", connectStr)
 }
 
 func main() {
-	godotenv.Load(".env")
-    db, err := connectToDatabase()
+	db, err := connectToDatabase()
 	if err != nil {
 		os.Exit(84)
 	}
     fmt.Println("Zoom microservice container is running !")
     router := mux.NewRouter()
-
+	godotenv.Load(".env")
+	
     router.HandleFunc("/oauth", getOAUTHLink).Methods("GET")
     router.HandleFunc("/oauth", miniproxy(setOAUTHToken, db)).Methods("POST")
     router.HandleFunc("/user", getUserInfo).Methods("POST")
