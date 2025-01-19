@@ -39,31 +39,23 @@ func init() {
 }
 
 func getOAUTHLink(w http.ResponseWriter, req *http.Request) {
-    str := "https://accounts.spotify.com/authorize?"
-    x := url.QueryEscape(os.Getenv("REDIRECT"))
-    fmt.Println("redirect = ", x)
+	fmt.Println("test test")
+    str := "https://accounts.google.com/o/oauth2/v2/auth?"
     
-    str += "client_id=" + os.Getenv("SPOTIFY_CLIENT_ID")
+    redirectURI := url.QueryEscape(os.Getenv("REDIRECT"))
+    fmt.Println("Redirect URI = ", redirectURI)
+
+    scopes := "https://www.googleapis.com/auth/drive.file " +
+              "https://www.googleapis.com/auth/userinfo.profile " +
+              "https://www.googleapis.com/auth/userinfo.email " +
+              "https://www.googleapis.com/auth/gmail.send"
+
+    str += "client_id=" + os.Getenv("GOOGLE_CLIENT_ID")
     str += "&response_type=code"
-    str += "&redirect_uri=" + x
-    str += "&scope=" +
-        "user-library-read " +
-        "playlist-read-private " +
-        "playlist-read-collaborative " +
-        "user-read-playback-state " +
-        "user-read-currently-playing " +
-        "user-modify-playback-state " +
-        "app-remote-control " +
-        "user-top-read " +
-        "playlist-modify-public " +
-        "playlist-modify-private " +
-        "streaming " +
-        "user-follow-read " +
-        "user-follow-modify " +
-        "user-library-modify"
-
+    str += "&redirect_uri=" + redirectURI
+    str += "&scope=" + url.QueryEscape(scopes)
     str += "&state=some-state-value"
-
+    
     w.WriteHeader(http.StatusOK)
     fmt.Fprintln(w, str)
 }
@@ -428,7 +420,7 @@ func main() {
 	if err != nil {
 		os.Exit(84)
 	}
-	fmt.Println("Spotify microservice container is running !")
+	fmt.Println("Google microservice container is running !")
 	router := mux.NewRouter()
 	godotenv.Load(".env")
 
