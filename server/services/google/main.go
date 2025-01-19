@@ -128,19 +128,11 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
         return
     }
 
-    if tokenStr, ok := responseData["access_token"].(string); ok {
-        tok.Token = tokenStr
-    } else {
-        fmt.Fprintln(w, "Erreur : access_token manquant ou incorrect")
-        return
-    }
+    tok.Token = responseData["access_token"].(string)
+	tok.Refresh = responseData["refresh_token"].(string)
 
-    if refreshTokenStr, ok := responseData["refresh_token"].(string); ok {
-        tok.Refresh = refreshTokenStr
-    } else {
-        fmt.Fprintln(w, "Erreur : refresh_token manquant ou incorrect")
-        return
-    }
+    fmt.Println("acess token = ", tok.Token)
+	fmt.Println("refresk token = ", tok.Refresh)
 
     req, err = http.NewRequest("GET", "https://www.googleapis.com/oauth2/v2/userinfo", nil)
     if err != nil {
