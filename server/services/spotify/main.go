@@ -2299,7 +2299,7 @@ func createPlaylist(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 
     var requestBody struct {
         UserID    int    `json:"userid"`
-        PlaylistName string `json:"playlist_name"`
+        PlaylistName string `json:"name"`
     }
 
     decoder := json.NewDecoder(req.Body)
