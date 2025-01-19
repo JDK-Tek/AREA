@@ -1,12 +1,9 @@
 from flask import Flask, jsonify
 from flask import request as Request
 from dotenv import load_dotenv
-import random
 import requests
-import string
 import os
 import psycopg2
-import time
 import jwt
 import datetime as dt
 from sys import stderr
@@ -28,17 +25,17 @@ SERVICE_SCOPES = "openid+group:read+group:write+user.user-notification:write+pro
 AUTH_SCOPES = "profile:read+openid"
 
 while True:
-	try:
-		db = psycopg2.connect(
-			database=os.environ.get("DB_NAME"),
-			user=os.environ.get("DB_USER"),
-			password=os.environ.get("DB_PASSWORD"),
-			host=os.environ.get("DB_HOST"),
-			port=os.environ.get("DB_PORT")
-		)
-		break
-	except psycopg2.OperationalError:
-		continue
+    try:
+        db = psycopg2.connect(
+            database=os.environ.get("DB_NAME"),
+            user=os.environ.get("DB_USER"),
+            password=os.environ.get("DB_PASSWORD"),
+            host=os.environ.get("DB_HOST"),
+            port=os.environ.get("DB_PORT")
+        )
+        break
+    except psycopg2.OperationalError:
+        continue
 
 app = Flask(__name__)
 runtime_routes = []
@@ -138,9 +135,7 @@ def get_robloxid_from_areaid(areaid) -> str|None:
         return rows[0]
     return None
 
-@app.route("/onprompt", methods=["POST"])
-def general_action():
-    action_name = "onprompt"
+def general_action(action_name):
     json = Request.get_json()
     bridge = json.get("bridge")
     areaid = json.get("userid")
@@ -173,8 +168,37 @@ def general_action():
     except (Exception, psycopg2.Error) as err:
         return jsonify({ "error": str(err)}), 400
 
+@app.route("/onprompt", methods=["POST"])
+def action_onprompt():
+    return general_action("onprompt")
+
+@app.route("/onclick", methods=["POST"])
+def action_onclick():
+    return general_action("onclick")
+
+@app.route("/ontouch", methods=["POST"])
+def action_ontouch():
+    return general_action("ontouch")
+
+@app.route("/onplayeradded", methods=["POST"])
+def action_onplayeradded():
+    return general_action("onplayeradded")
+
+@app.route("/onplayerremoved", methods=["POST"])
+def action_onplayerremoved():
+    return general_action("onplayerremoved")
+
+@app.route("/onchat", methods=["POST"])
+def action_onchat():
+    return general_action("onchat")
+
+@app.route("/oninput", methods=["POST"])
+def action_oninput():
+    return general_action("oninput")
+
 def try_getting_informations(robloxid, gameid):
     if robloxid is None:
+        print(1, "no roblox id ?", file=stderr)
         return jsonify({"error": "robloxid is required"}), 400
     try:
         with db.cursor() as cur:
@@ -200,18 +224,20 @@ def try_getting_informations(robloxid, gameid):
             db.commit()
             return jsonify({ "list": command_list}), 200
     except (psycopg2.Error) as err:
-        return jsonify({ "error": "postgres says <(" + str(err) + ")"}), 400
+        print(2, str(err), file=stderr)
+        return jsonify({ "error": "postgres says <(" + str(err) + ")"}), 401
     except Exception as err:
-        return jsonify({ "error": str(err)}), 400
+        print(3, str(err), file=stderr)
+        return jsonify({ "error": str(err)}), 402
 
 def get_userid_bridge_from_action(gameid: str, action_name: str):
     with db.cursor() as cur:
         cur.execute("""
             select userid, bridge from micro_robloxactions
-            where gameid = %s and action = %s,
+            where gameid = %s and action = %s
         """, (str(gameid), str(action_name)))
         rows = cur.fetchone()
-        if len(rows) != 2:
+        if not rows or len(rows) != 2:
             return None, None
         return rows[0], rows[1]
     return None, None
@@ -222,7 +248,7 @@ def on_action(data):
     gameid = data["gameid"]
     action = data["action"]
     userid, bridge = get_userid_bridge_from_action(gameid, action)
-    if areaid is None:
+    if userid is None:
         return jsonify({"message": "data doesnt exists in database"}), 100
     ingredients = data.get("ingredients")
     requests.put(
@@ -233,6 +259,7 @@ def on_action(data):
             "ingredients": ingredients if ingredients is not None else {}
         }
     )
+    return jsonify({"status": "ok"}), 200
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
@@ -251,16 +278,115 @@ def webhook():
         return on_action(data)
     return jsonify({ "error": "invalid method" }), 400
 
+
+def myurlencode(x):
+    return "&".join("{}={}".format(*i) for i in x.items())
+
+@app.route('/oauth', methods=["GET", "POST"])
+def oauth():
+    if Request.method == "GET":
+        params = {
+            "client_id": CLIENT_ID,
+            "response_type": "code",
+            "redirect_uri": os.environ.get("REDIRECT"),
+            "scope": AUTH_SCOPES,
+            # "scope": MESSAGE_SCOPES,
+            "step": "accountConfirm"
+        }
+        return API_URL + "?" + myurlencode(params)
+
+    if Request.method == "POST":
+        req = Request.get_json()
+        if not "code" in req:
+            return jsonify({ "error": "missing code" }), 400
+        data = {
+            "client_id": CLIENT_ID,
+            "client_secret": CLIENT_SECRET,
+            "grant_type": "authorization_code",
+            "code": req["code"]
+        }
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded",
+        }
+        rep = requests.post(TOKEN_URL, headers=headers, data=data)
+        if rep.status_code != 200:
+            return rep.text, rep.status_code
+        token = rep.json().get("access_token")
+        refresh = rep.json().get("refresh_token")
+        headers = {
+            "Authorization": "Bearer " + token
+        }
+        rep = requests.get(ME_URL, headers=headers)
+        if rep.status_code != 200:
+            return rep.text, rep.status_code
+        robloxid = rep.json().get("sub")
+        
+        try:
+            with db.cursor() as cur:
+                tokenid, ownerid = -1, -1
+                cur.execute("select id, owner from tokens where userid = %s", (robloxid,))
+                rows = cur.fetchone()
+                if not rows:
+                    # create a token with everything in the 'tokens' table
+                    print(1, file=stderr)
+                    cur.execute("insert into tokens" \
+                        "(service, token, refresh, userid)" \
+                        "values (%s, %s, %s, %s)" \
+                        "returning id", \
+                            ("roblox", token, refresh, robloxid,)
+                    )
+                    r = cur.fetchone()
+                    print(2, file=stderr)
+                    if not r:
+                        raise Exception("could not fetch")
+                    tokenid = r[0]
+                    db.commit()
+                    print(3, file=stderr)
+
+                    # create a new user with the token id in the 'users'
+                    cur.execute("insert into users (tokenid) values (%s) returning id", (tokenid,))
+                    r = cur.fetchone()
+                    print(4, file=stderr)
+                    if not r:
+                        raise Exception("could not fetch")
+                    ownerid = r[0]
+                    print(5, file=stderr)
+                    print(ownerid, tokenid, file=stderr)
+
+                    # and then i just update the token owner in the 'tokens'
+                    # since i just got the owner id from the 'users' now
+                    cur.execute("update tokens set owner = (%s) where id = (%s)", (ownerid, tokenid,))
+                    print(6, file=stderr)
+                else:
+                    tokenid, ownerid = rows[0], rows[1]
+                db.commit()
+                data = jwt.encode({
+                    "id": ownerid,
+                    "exp": dt.datetime.now() + dt.timedelta(seconds=EXPIRATION)
+                }, BACKEND_KEY, algorithm="HS256")
+                return jsonify({ "token": data }), 200
+                
+        except (Exception, psycopg2.Error) as err:
+            return jsonify({ "error":  str(err)}), 400
+        return jsonify({ "error": "unexpected end of code"}), 400
+
 @app.route("/", methods=["GET"])
 def routes():
     x = {
         "color": "#000000",
         "image": "/assets/roblox.png",
+        "oauth": True,
         "areas": [
             {
                 "name": "newpart",
                 "description": "Creates a new part",
+                "type": "reaction",
                 "spices": [
+                    {
+                        "name": "gameid",
+                        "type": "text",
+                        "title": "The game ID."
+                    },
                     {
                         "name": "color",
                         "type": "text",
@@ -287,7 +413,13 @@ def routes():
             {
                 "name": "kill",
                 "description": "Kill a player",
+                "type": "reaction",
                 "spices": [
+                    {
+                        "name": "gameid",
+                        "type": "text",
+                        "title": "The game ID."
+                    },
                     {
                         "name": "userid",
                         "type": "text",
@@ -298,14 +430,273 @@ def routes():
             {
                 "name": "kick",
                 "description": "Kick a player",
+                "type": "reaction",
                 "spices": [
+                    {
+                        "name": "gameid",
+                        "type": "text",
+                        "title": "The game ID."
+                    },
+                    {
+                        "name": "message",
+                        "type": "text",
+                        "title": "The message you want to send. (optionnal)"
+                    },
                     {
                         "name": "userid",
                         "type": "text",
-                        "title": "The player userid you want to kill."
+                        "title": "The player userid you want to kick."
                     },
                 ]
-            }
+            },
+            {
+                "name": "insert",
+                "description": "Insert an asset from toolbox.",
+                "type": "reaction",
+                "spices": [
+                    {
+                        "name": "gameid",
+                        "type": "text",
+                        "title": "The game ID."
+                    },
+                    {
+                        "name": "parent",
+                        "type": "text",
+                        "title": "Where to insert it."
+                    },
+                    {
+                        "name": "id",
+                        "type": "text",
+                        "title": "The ID of the asset."
+                    },
+                ]
+            },
+            {
+                "name": "statupdate",
+                "description": "Update leaderstats.",
+                "type": "reaction",
+                "spices": [
+                    {
+                        "name": "gameid",
+                        "type": "text",
+                        "title": "The game ID."
+                    },
+                    {
+                        "name": "userid",
+                        "type": "text",
+                        "title": "The player userid you want to update."
+                    },
+                    {
+                        "name": "stat",
+                        "type": "text",
+                        "title": "The field to update."
+                    },
+                    {
+                        "name": "add",
+                        "type": "text",
+                        "title": "How much to add (optionnal)."
+                    },
+                    {
+                        "name": "dec",
+                        "type": "text",
+                        "title": "How much to decrement (optionnal)."
+                    },
+                ]
+            },
+            {
+                "name": "givebadge",
+                "description": "Give a badge to a user.",
+                "type": "reaction",
+                "spices": [
+                    {
+                        "name": "gameid",
+                        "type": "text",
+                        "title": "The game ID."
+                    },
+                    {
+                        "name": "badgeid",
+                        "type": "text",
+                        "title": "The badge id."
+                    },
+                    {
+                        "name": "userid",
+                        "type": "text",
+                        "title": "The player userid whom you want to give it."
+                    },
+                ]
+            },
+            {
+                "name": "giveitem",
+                "description": "Give an item to a player",
+                "type": "reaction",
+                "spices": [
+                    {
+                        "name": "gameid",
+                        "type": "text",
+                        "title": "The game ID."
+                    },
+                    {
+                        "name": "userid",
+                        "type": "text",
+                        "title": "The player userid whom you want to give it."
+                    },
+                    {
+                        "name": "id",
+                        "type": "text",
+                        "title": "The asset id of the tool."
+                    },
+                ]
+            },
+            {
+                "name": "changeprop",
+                "description": "Change an Instance property",
+                "type": "reaction",
+                "spices": [
+                    {
+                        "name": "gameid",
+                        "type": "text",
+                        "title": "The game ID."
+                    },
+                    {
+                        "name": "instance",
+                        "type": "text",
+                        "title": "The Instance path."
+                    },
+                    {
+                        "name": "property",
+                        "type": "text",
+                        "title": "The property you want to change."
+                    },
+                    {
+                        "name": "value",
+                        "type": "text",
+                        "title": "The new value."
+                    },
+                ]
+            },
+            {
+                "name": "copy",
+                "description": "Copy an instance.",
+                "type": "reaction",
+                "spices": [
+                    {
+                        "name": "gameid",
+                        "type": "text",
+                        "title": "The game ID."
+                    },
+                    {
+                        "name": "from",
+                        "type": "text",
+                        "title": "The source instance path."
+                    },
+                    {
+                        "name": "to",
+                        "type": "text",
+                        "title": "The parent instance path."
+                    },
+                ]
+            },
+            {
+                "name": "sendmessage",
+                "description": "Send a message",
+                "type": "reaction",
+                "spices": [
+                    {
+                        "name": "gameid",
+                        "type": "text",
+                        "title": "The game ID."
+                    },
+                    {
+                        "name": "message",
+                        "type": "text",
+                        "title": "The message you want to send."
+                    },
+                ]
+            },
+            {
+                "name": "onchat",
+                "description": "When a player chats.",
+                "type": "action",
+                "spices": [
+                    {
+                        "name": "gameid",
+                        "type": "text",
+                        "title": "The game ID."
+                    },
+                ]
+            },
+            {
+                "name": "onprompt",
+                "description": "When a prompt is triggered.",
+                "type": "action",
+                "spices": [
+                    {
+                        "name": "gameid",
+                        "type": "text",
+                        "title": "The game ID."
+                    },
+                ]
+            },
+            {
+                "name": "onclick",
+                "description": "When someone clicks on something.",
+                "type": "action",
+                "spices": [
+                    {
+                        "name": "gameid",
+                        "type": "text",
+                        "title": "The game ID."
+                    },
+                ]
+            },
+            {
+                "name": "ontouch",
+                "description": "When someone touches something.",
+                "type": "action",
+                "spices": [
+                    {
+                        "name": "gameid",
+                        "type": "text",
+                        "title": "The game ID."
+                    },
+                ]
+            },
+            {
+                "name": "onplayeradded",
+                "description": "When a player is added.",
+                "type": "action",
+                "spices": [
+                    {
+                        "name": "gameid",
+                        "type": "text",
+                        "title": "The game ID."
+                    },
+                ]
+            },
+            {
+                "name": "onplayerremoved",
+                "description": "When a player is removed.",
+                "type": "action",
+                "spices": [
+                    {
+                        "name": "gameid",
+                        "type": "text",
+                        "title": "The game ID."
+                    },
+                ]
+            },
+            {
+                "name": "oninput",
+                "description": "When a key is pressed.",
+                "type": "action",
+                "spices": [
+                    {
+                        "name": "gameid",
+                        "type": "text",
+                        "title": "The game ID."
+                    },
+                ]
+            },
         ]
     }
     return jsonify(x), 200

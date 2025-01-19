@@ -44,6 +44,8 @@ services:
       - ./server/database/github.sql:/docker-entrypoint-initdb.d/github.sql
       - ./server/database/roblox.sql:/docker-entrypoint-initdb.d/roblox.sql
       - ./server/database/newsapi.sql:/docker-entrypoint-initdb.d/newsapi.sql
+      - ./server/database/openweather.sql:/docker-entrypoint-initdb.d/openweather.sql
+      - ./server/database/twitch.sql:/docker-entrypoint-initdb.d/twitch.sql
     networks:
       - web
     
@@ -95,6 +97,7 @@ services:
     networks:
       - web
 
+
   service-zoom:
     env_file:
       - .env
@@ -108,6 +111,29 @@ services:
       - "traefik.http.routers.zoom.middlewares=stripprefix-service-zoom"
       - "traefik.http.middlewares.stripprefix-service-zoom.stripprefix.prefixes=/service/zoom"
     environment:
+        - BACKEND_KEY=${BACKEND_KEY}
+        - REDIRECT=${REDIRECT}
+        - DB_HOST=database
+        - DB_PORT=${DATABASE_PORT}
+        - DB_USER=${DATABASE_USER}
+        - DB_PASSWORD=${DATABASE_PASSWORD}
+        - DB_NAME=${DATABASE_NAME}
+      networks:
+        - web
+
+  service-google:
+    env_file:
+      - .env
+    container_name: area-service-google
+    build:
+      context: ./server/services/google
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.google.rule=PathPrefix(`/service/google/`)"
+      - "traefik.http.services.google.loadbalancer.server.port=80"
+      - "traefik.http.routers.google.middlewares=stripprefix-service-google"
+      - "traefik.http.middlewares.stripprefix-service-google.stripprefix.prefixes=/service/google"
+    environment:
       - BACKEND_KEY=${BACKEND_KEY}
       - REDIRECT=${REDIRECT}
       - DB_HOST=database
@@ -117,6 +143,31 @@ services:
       - DB_NAME=${DATABASE_NAME}
     networks:
       - web
+
+  service-twitch:
+    env_file:
+      - .env
+    container_name: area-service-twitch
+    build:
+      context: ./server/services/twitch
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.twitch.rule=PathPrefix(`/service/twitch/`)"
+      - "traefik.http.services.twitch.loadbalancer.server.port=80"
+      - "traefik.http.routers.twitch.middlewares=stripprefix-service-twitch"
+      - "traefik.http.middlewares.stripprefix-service-twitch.stripprefix.prefixes=/service/twitch"
+    environment:
+      - BACKEND_KEY=${BACKEND_KEY}
+      - REDIRECT=${REDIRECT}
+      - DB_HOST=database
+      - DB_PORT=${DATABASE_PORT}
+      - DB_USER=${DATABASE_USER}
+      - DB_PASSWORD=${DATABASE_PASSWORD}
+      - DB_NAME=${DATABASE_NAME}
+    networks:
+      - web
+    volumes:
+      - ./server/services/twitch/.env:/usr/mount.d/.env
 
   service-outlook:
     env_file:
@@ -255,6 +306,31 @@ services:
       - web
     volumes:
     - ./server/services/newsapi/.env:/usr/mount.d/.env
+
+  service-openweather:
+    env_file:
+      - .env
+    container_name: area-service-openweather
+    build:
+      context: ./server/services/openweather
+    depends_on:
+      - database
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.openweather.rule=PathPrefix(`/service/openweather/`)"
+      - "traefik.http.services.openweather.loadbalancer.server.port=80"
+      - "traefik.http.routers.openweather.middlewares=stripprefix-service-openweather"
+      - "traefik.http.middlewares.stripprefix-service-openweather.stripprefix.prefixes=/service/openweather"
+    environment:
+      - DB_HOST=database
+      - DB_PORT=${DATABASE_PORT}
+      - DB_USER=${DATABASE_USER}
+      - DB_PASSWORD=${DATABASE_PASSWORD}
+      - DB_NAME=${DATABASE_NAME}
+    networks:
+      - web
+    volumes:
+    - ./server/services/openweather/.env:/usr/mount.d/.env
 
   reverse-proxy:
     env_file:

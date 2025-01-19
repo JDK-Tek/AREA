@@ -235,7 +235,7 @@ class _AppletSectionState extends State<AppletSection> {
   @override
   void initState() {
     super.initState();
-    _makeDemand("/api/applets");
+    _makeDemand("/api/area");
   }
 
   Future<void> _makeDemand(String u) async {
@@ -260,7 +260,7 @@ class _AppletSectionState extends State<AppletSection> {
       return;
     }
 
-    Map<String, dynamic> responseBody;
+    List<dynamic> responseBody;
     try {
       responseBody = jsonDecode(rep.body);
     } catch (e) {
@@ -270,17 +270,15 @@ class _AppletSectionState extends State<AppletSection> {
       return;
     }
 
-    if (responseBody.containsKey('res')) {
-      final List<dynamic> appletsList = responseBody['res'];
+    if (responseBody.isNotEmpty) {
+      final List<dynamic> appletsList = responseBody;
       if (mounted) {
         setState(() {
           applets = List<Map<String, dynamic>>.from(appletsList);
         });
       }
     } else {
-      if (mounted) {
-        _showDialog("Error", "Key 'server.applets' not found in response.");
-      }
+      if (mounted) {}
     }
   }
 
@@ -335,11 +333,11 @@ class _AppletSectionState extends State<AppletSection> {
             alignment: WrapAlignment.center,
             children: applets
                 .map((applet) => _buildAppletCard(
-                    applet["service"]["name"],
+                    applet["action"]["service"],
                     applet["name"],
-                    applet["service"]["logo"],
-                    applet["service"]["logopartner"],
-                    applet["service"]["color"]["normal"]))
+                    applet["action"]["image"],
+                    applet["reaction"]["image"],
+                    applet["action"]["color"]))
                 .toList(),
           ),
         ],

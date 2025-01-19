@@ -12,6 +12,7 @@ import (
 	"os"
 	"strconv"
 	"time"
+	"strings"
 
 	// "io/ioutil"
 
@@ -64,6 +65,36 @@ type UserResult struct {
 	ID string `json:"id"`
 }
 
+func getIdFromToken(tokenString string) (int, error) {
+	if strings.HasPrefix(tokenString, "Bearer ") {
+		tokenString = tokenString[len("Bearer "):]
+	}
+	fmt.Println(tokenString)
+	secretKey := []byte(os.Getenv("BACKEND_KEY"))
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method %v", token.Header["alg"])
+		}
+		return secretKey, nil
+	})
+	if err != nil {
+		return -1, err
+	}
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		id, ok := claims["id"].(string)
+		if !ok {
+			return -1, fmt.Errorf("'id' field not found or not a string")
+		}
+		idInt, err := strconv.Atoi(id)
+		if err != nil {
+			return -1, fmt.Errorf("error converting id to int: %v", err)
+		}
+		return idInt, nil
+	} else {
+		return -1, fmt.Errorf("invalid token")
+	}
+}
+
 func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	var res Result
 	var tok TokenResult
@@ -71,6 +102,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	var tokid int
 	var owner = -1
 	var responseData map[string]interface{}
+	var atok = req.Header.Get("Authorization")
 
 	// make the request to discord api
 	clientid := os.Getenv("DISCORD_ID")
@@ -137,25 +169,32 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		return
 	}
 
-	// seelect the user id shit
-	err = db.QueryRow("select id, owner from tokens where userid = $1", user.ID).Scan(&tokid, &owner)
+	// inserting into database, first i get the 'users' token
+	if atok != "" {
+		// if the user is logged, i get the userid
+		tokid, err = getIdFromToken(tok.Token)
+		if err != nil {
+			fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+			return
+		}
+	} else {
+		// if the user is not logged, create an empty user
+		err = db.QueryRow("insert into users default values returning id").Scan(&tokid)
+		if err != nil {
+			fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+			return
+		}
+	}
+
+	// then i will insert it into yo mama
+	query := `
+		insert into tokens (service, token, refresh, userid, owner)
+        values ($1, $2, $3, $4, $5)
+	`
+	_, err = db.Exec(query, "discord", tok.Token, tok.Refresh, user.ID, tokid)
 	if err != nil {
-		err = db.QueryRow("insert into tokens (service, token, refresh, userid) values ($1, $2, $3, $4) returning id",
-			"discord",
-			tok.Token,
-			tok.Refresh,
-			user.ID,
-		).Scan(&tokid)
-		if err != nil {
-			fmt.Fprintln(w, "db insert", err.Error())
-			return
-		}
-		err = db.QueryRow("insert into users (tokenid) values ($1) returning id", tokid).Scan(&owner)
-		if err != nil {
-			fmt.Fprintln(w, "db insert", err.Error())
-			return
-		}
-		db.Exec("update tokens set owner = $1 where id = $2", owner, tokid)
+		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+		return
 	}
 
 	// create the token
@@ -274,6 +313,7 @@ type Infos struct {
 	Color  string      `json:"color"`
 	Image  string      `json:"image"`
 	Routes []InfoRoute `json:"areas"`
+	Oauth  bool        `json:"oauth"`
 }
 
 func getRoutes(w http.ResponseWriter, req *http.Request) {
@@ -300,6 +340,7 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 		Color:  "#5865F2",
 		Image:  "/assets/discord.webp",
 		Routes: list,
+		Oauth:  true,
 	}
 	var data []byte
 	var err error

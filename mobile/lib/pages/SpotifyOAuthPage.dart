@@ -30,6 +30,10 @@ class SpotifyLoginButton extends StatelessWidget {
           SizedBox(
             child: Image.network(
               "https://$ip/assets/spotify.png",
+              errorBuilder:
+                  (BuildContext context, Object error, StackTrace? stackTrace) {
+                return const Icon(Icons.error, size: 40);
+              },
               scale: 15,
             ),
           ),

@@ -52,7 +52,7 @@ export default function FindFeature({ dark, setFeature, service, action = null }
         }
 
         setFilteredFeature(fstmp);
-    }, [search, setFilteredFeature]);
+    }, [search, setFilteredFeature, service, action]);
 
 
     return (

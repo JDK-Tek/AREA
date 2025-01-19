@@ -27,9 +27,14 @@ class OutlookLoginButton extends StatelessWidget {
           SizedBox(
               child: Image.network(
             "https://$ip/assets/outlook.png",
+            errorBuilder:
+                (BuildContext context, Object error, StackTrace? stackTrace) {
+              return const Icon(Icons.error, size: 40);
+            },
             scale: 15,
           )),
-          const Text('Se connecter avec Outlook', style: TextStyle(color: Colors.white)),
+          const Text('Se connecter avec Outlook',
+              style: TextStyle(color: Colors.white)),
         ],
       ),
     );

@@ -107,10 +107,11 @@ class NewOreo:
 	TYPE_REACTIONS = "reaction"
 	TYPE_ACTIONS = "action"
 
-	def __init__(self, service, color, image):
+	def __init__(self, service, color, image, oauth):
 		self.service = service
 		self.color = color
 		self.image = image
+		self.oauth = oauth
 		self.areas = []
 	
 	def create_area(self, name, type, description, spices):
@@ -131,7 +132,8 @@ app = Flask(__name__)
 oreo = NewOreo(
 	service="reddit",
 	color="#ff4500",
-	image="/assets/reddit.webp"
+	image="/assets/reddit.webp",
+	oauth=True
 )
 
 PERMISSIONS_REQUIRED = [
@@ -656,6 +658,7 @@ def info():
 		"service": oreo.service,
 		"color": oreo.color,
 		"image": oreo.image,
+		"oauth": oreo.oauth,
 		"areas": oreo.areas
 	}
 	return jsonify(res), 200

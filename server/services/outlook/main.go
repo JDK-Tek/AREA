@@ -556,6 +556,7 @@ type InfoRoute struct {
 type Infos struct {
 	Color  string      `json:"color"`
 	Image  string      `json:"image"`
+	Oauth  bool        `json:"oauth"`
 	Routes []InfoRoute `json:"areas"`
 }
 
@@ -587,6 +588,7 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 	var infos = Infos{
 		Color:  "#0078d4",
 		Image:  "/assets/outlook.png",
+		Oauth:  true,
 		Routes: list,
 	}
 	var data []byte

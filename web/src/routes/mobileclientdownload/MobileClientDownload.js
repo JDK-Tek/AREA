@@ -20,7 +20,7 @@ export default function MobileClientDownload() {
                     rel="noreferrer"
                 >
                     <button>Download APK file</button>
-                </a>             
+                </a>
             </div>
         </div>
     )

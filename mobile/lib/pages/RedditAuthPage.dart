@@ -14,8 +14,7 @@ class RedditLoginButton extends StatelessWidget {
       MaterialPageRoute(builder: (context) => const RedditAuthPage()),
     );
   }
-
-
+ 
   @override
   Widget build(BuildContext context) {
     var ip = Provider.of<IPState>(context, listen: false).ip;
@@ -28,9 +27,14 @@ class RedditLoginButton extends StatelessWidget {
           SizedBox(
               child: Image.network(
             "https://$ip/assets/reddit.webp",
+            errorBuilder:
+                (BuildContext context, Object error, StackTrace? stackTrace) {
+              return const Icon(Icons.error, size: 40);
+            },
             scale: 10,
           )),
-          const Text('Se connecter avec Reddit', style: TextStyle(color: Colors.white)),
+          const Text('Se connecter avec Reddit',
+              style: TextStyle(color: Colors.white)),
         ],
       ),
     );

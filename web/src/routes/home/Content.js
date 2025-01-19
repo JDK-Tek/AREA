@@ -6,7 +6,7 @@
 */
 
 
-import { useEffect, useState } from "react";
+import { act, useEffect, useState } from "react";
 
 import axios from "axios";
 import Button from "../../components/Button";
@@ -22,7 +22,8 @@ export default function Content({ setError }) {
         const getServices = async () => {
             axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/services`, {headers: {"Content-Type": "application/json"}})
             .then((response) => {
-                setServices(response.data)
+                const res = response.data.slice(0, 5);
+                setServices(res)
             })
             .catch((error) => {
                 setError("Error when trying to get all services: " + error)
@@ -35,7 +36,27 @@ export default function Content({ setError }) {
         const getApplets = async () => {
             axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/applets`, {headers: {"Content-Type": "application/json"}})
             .then((response) => {
-                setApplets(response.data.res)
+                const applets = response.data.res;
+            
+                let res = [];
+                for (let i = 0; i < Math.min(5, applets.length); i++) {
+                    res.push({
+                        id: applets[i].id,
+                        name: applets[i].name,
+                        action: {
+                            service: applets[i].service.name,
+                            image: applets[i].service.logo,
+                            color: applets[i].service.color.normal,
+                        },
+                        reaction: {
+                            service: "",
+                            image: applets[i].service.logopartner,
+                            color: applets[i].service.color.hover,
+                        },
+                        users: applets[i].users,
+                    });
+                }
+                setApplets(res);
             })
             .catch((error) => {
                 setError("Error when trying to get all applets: " + error)
@@ -55,6 +76,7 @@ export default function Content({ setError }) {
             <AppletKit
                 title={"Get started with any Applet"}
                 applets={applets}
+                onClick={() => console.log("clicked")}
             />
             <ServiceKit
                 title={"or choose from 900+ services"}
