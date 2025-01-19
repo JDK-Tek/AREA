@@ -93,7 +93,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
         return
     }
 
-	decodedCode, err := url.QueryUnescape(strings.TrimSpace(url.QueryEscape(res.Code)))
+	decodedCode, err := url.QueryUnescape(res.Code)
 	if err != nil {
         return
     }
