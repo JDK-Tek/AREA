@@ -110,11 +110,31 @@ export default function RegisterBox ( {setToken, setError} ) {
             </div>
             <div className="text-center pt-4 flex flex-col items-center">
                 <LRButton color={"#ffffffff"} text="Register" handleClick={handleSubmit} />
-                <div className="flex flex-wrap justify-center">
-                    <LRButton color="#5865F2" img="/assets/services/discord.webp" text="Connect with Discord" handleClick={() => handleOauth("discord")} />
-                    <LRButton color="#ff4500" img="/assets/services/reddit.webp" text="Connect with Reddit" handleClick={() => handleOauth("reddit")} />
-                    <LRButton color="#24292e" img="/assets/services/github.webp" text="Connect with Github" handleClick={() => handleOauth("github")} />
-                    <LRButton color="#1DB954" img="/assets/services/spotify.png" text="Connect with Spotify" handleClick={() => handleOauth("spotify")} />
+                <div className="flex flex-wrap justify-center mt-[50px]">
+                    <LRButton
+                        color="#5865F2"
+                        img="/assets/services/discord.webp"
+                        text="Connect with Discord"
+                        handleClick={() => handleOauth("discord")}
+                    />
+                    <LRButton
+                        color="#ff4500"
+                        img="/assets/services/reddit.webp" 
+                        text="Connect with Reddit" 
+                        handleClick={() => handleOauth("reddit")}
+                    />
+                    <LRButton
+                        color="#24292e"
+                        img="/assets/services/github.webp" 
+                        text="Connect with Github" 
+                        handleClick={() => handleOauth("github")}
+                    />
+                    <LRButton
+                        color="#1DB954"
+                        img="/assets/services/spotify.png" 
+                        text="Connect with Spotify"
+                        handleClick={() => handleOauth("spotify")}
+                    />
                 </div>
             </div>
 

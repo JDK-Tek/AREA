@@ -40,7 +40,7 @@ function Triger({title, color, spices, onClick}) {
     )
 }
 
-export default function CreateArea() {
+export default function CreateArea({setToken}) {
     const [open, setOpen] = useState(false);
     const [configAction, setConfigAction] = useState(true);
     const [name, setName] = useState("");
@@ -58,7 +58,7 @@ export default function CreateArea() {
     const [area, setArea] = useState(sessionStorage.getItem("area") === null ? defaultArea : JSON.parse(sessionStorage.getItem("area")));
     sessionStorage.setItem("area", JSON.stringify(area));
 
-    useEffect(() => {
+    const checkConnection = () => {
         axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/doctor`, {
             headers: {
                 "Content-Type": "application/json",
@@ -76,6 +76,10 @@ export default function CreateArea() {
         .catch((err) => {
             setError("Impossible to check the authentification: " + err.data);
         });
+    }
+
+    useEffect(() => {
+        checkConnection();
     }, [setLoggedServices]);
 
 
@@ -92,6 +96,8 @@ export default function CreateArea() {
                 open={open} 
                 setArea={setArea}
                 loggedServices={loggedServices}
+                refresh={checkConnection}
+                setToken={setToken}
             />
             <div className="relative">
                 <label 

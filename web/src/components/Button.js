@@ -6,8 +6,6 @@
 */
 
 
-import axios from 'axios';
-import { useEffect, useState } from 'react';
 import { MoveUpRight } from 'lucide-react';
 
 export default function Button({ text, redirect, onClick, styleClolor, icon }) {
@@ -35,7 +33,7 @@ export function LRButton( {text, handleClick, img, color} ) {
                  text-white shadow-md flex
                  justify-center items-center cursor-pointer
                  transition-transform duration-200
-                 rounded-full p-2 m-5
+                 rounded-full p-2 m-2
                  lg:w-[400px] md:w-[300px] sm:w-[200px]
                 `}
             onClick={(e) => handleClick(e)}

@@ -12,11 +12,50 @@ import FindService from "./Service/FindService";
 import FindFeature from "./Feature/FindFeature";
 import ServiceFeatureConfiguration from "./ServiceFeatureConfiguration";
 import Notification from "./Notification";
+import { LRButton } from "./Button";
 
 import Button from "./Button";
 import { Undo2 } from 'lucide-react';
 
-export default function SidePannel({ action, open, setOpen, setArea, loggedServices }) {
+function handleOauth(service, setToken) {
+    axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/oauth/${service}`)
+        .then((response) => {
+            const oauthWindow = window.open(response.data, "_blank");
+
+            const handleMessage = (event) => {
+                if (event.origin !== window.location.origin) {
+                    return;
+                }
+                const code = event.data;
+                if (code !== null) {
+                    oauthWindow.close();
+                    window.removeEventListener('message', handleMessage);
+                    axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/oauth/${service}`, {
+                        code: code
+                    }, {
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${sessionStorage.getItem("token")}`,
+                        }
+                    })
+                    .then((response) => {
+                        setToken(response.data.token);
+                        window.location.reload();
+                    })
+                    .catch((error) => {
+                        console.error('Error:', error);
+                    });
+                }
+            };
+
+            window.addEventListener('message', handleMessage);
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+}
+
+export default function SidePannel({ action, open, setOpen, setArea, loggedServices, refresh, setToken }) {
     const panelRef = useRef(null);
     const [width, setWidth] = useState(540);
     const [service, setService] = useState(null);
@@ -41,7 +80,7 @@ export default function SidePannel({ action, open, setOpen, setArea, loggedServi
         };
         getAboutJson();
 
-    }, [aboutjson]);
+    }, [aboutjson, setAboutjson, setError, setErrorMsg]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -78,15 +117,23 @@ export default function SidePannel({ action, open, setOpen, setArea, loggedServi
             document.removeEventListener("mousemove", handleMouseMove);
             document.removeEventListener("mouseup", handleMouseUp);
         };
-    }, []);
+    }, [setWidth, isResizing]);
 
     useEffect(() => {
         if (feature) {
             if (service.oauth && !loggedServices.some(s => s === service.name)) {
                  setContent(
-                    <label className="text-white text-center">
-                        You need to be connected to {service.name} to use this feature
-                    </label>
+                    <div className="flex flex-col items-center">
+                        <LRButton
+                            color={service.color}
+                            img={`${process.env.REACT_APP_BACKEND_URL}${service.image}`}
+                            text={"Connect to " + service.name}
+                            handleClick={() => {
+                                handleOauth(service.name, setToken);
+                                refresh();
+                            }}
+                        />
+                    </div>
                 );
             } else {
                 setContent(
@@ -126,7 +173,17 @@ export default function SidePannel({ action, open, setOpen, setArea, loggedServi
                 />
             );
         }
-    }, [feature, service, action, aboutjson]);
+    }, [
+        feature,
+        service,
+        action,
+        aboutjson,
+        loggedServices,
+        setArea,
+        setOpen,
+        refresh,
+        setToken
+    ]);
 
     return (
         <div
