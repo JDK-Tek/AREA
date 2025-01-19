@@ -235,7 +235,7 @@ class _AppletSectionState extends State<AppletSection> {
   @override
   void initState() {
     super.initState();
-    _makeDemand("/api/applets");
+    _makeDemand("/api/area");
   }
 
   Future<void> _makeDemand(String u) async {
@@ -335,11 +335,11 @@ class _AppletSectionState extends State<AppletSection> {
             alignment: WrapAlignment.center,
             children: applets
                 .map((applet) => _buildAppletCard(
-                    applet["service"]["name"],
+                    applet["action"]["service"],
                     applet["name"],
-                    applet["service"]["logo"],
-                    applet["service"]["logopartner"],
-                    applet["service"]["color"]["normal"]))
+                    applet["action"]["image"],
+                    applet["reaction"]["image"],
+                    applet["action"]["color"]))
                 .toList(),
           ),
         ],

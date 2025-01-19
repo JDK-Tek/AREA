@@ -1,6 +1,8 @@
 import 'package:area/pages/GithubOAuthPage.dart';
+import 'package:area/pages/GoogleAuthPage.dart';
 import 'package:area/pages/OutlookOAuthPage.dart';
 import 'package:area/pages/SpotifyOAuthPage.dart';
+import 'package:area/pages/ZoomAuthPage.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:area/tools/user_ouput.dart';
@@ -202,6 +204,8 @@ class _LoginPage extends State<LoginPage> {
               const OutlookLoginButton(),
               const SpotifyLoginButton(),
               const GithubLoginButton(),
+              const GoogleLoginButton(),
+              const ZoomLoginButton(),
             ])
           ],
         ),
