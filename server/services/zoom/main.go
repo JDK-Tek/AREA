@@ -318,6 +318,8 @@ func connectToDatabase() (*sql.DB, error) {
 }
 
 func main() {
+	godotenv.Load(".env")
+	godotenv.Load("/usr/mount.d/.env")
 	db, err := connectToDatabase()
 	if err != nil {
 		os.Exit(84)
