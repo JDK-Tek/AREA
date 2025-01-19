@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
-	"strconv"
+	//"strconv"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -80,34 +80,25 @@ type UserResult struct {
 	ID string `json:"id"`
 }
 
-func getIdFromToken(tokenString string) (int, error) {
-	if strings.HasPrefix(tokenString, "Bearer ") {
-		tokenString = tokenString[len("Bearer "):]
-	}
-	fmt.Println("tokenString = ", tokenString)
-	secretKey := []byte(os.Getenv("BACKEND_KEY"))
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+func getIdFromToken(str string) (int, error) {
+	str = strings.TrimPrefix(str, "Bearer ")
+	var token, err = jwt.Parse(str, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method %v", token.Header["alg"])
+			return nil, fmt.Errorf("bad method")
 		}
-		return secretKey, nil
+		return []byte(os.Getenv("BACKEND_KEY")), nil
 	})
+	var ok bool
+	var claims jwt.MapClaims
+
 	if err != nil {
 		return -1, err
 	}
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		id, ok := claims["id"].(string)
-		if !ok {
-			return -1, fmt.Errorf("'id' field not found or not a string")
-		}
-		idInt, err := strconv.Atoi(id)
-		if err != nil {
-			return -1, fmt.Errorf("error converting id to int: %v", err)
-		}
-		return idInt, nil
-	} else {
-		return -1, fmt.Errorf("invalid token")
+	if claims, ok = token.Claims.(jwt.MapClaims); ok && token.Valid {
+		var id = claims["id"].(float64)
+		return int(id), nil
 	}
+	return -1, fmt.Errorf("invalid token or expired")
 }
 
 func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
@@ -115,9 +106,9 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	var res Result
 	var tok TokenResult
 	var user UserResult
-	var tokid int
+	//var tokid int
 	var owner = -1
-	var responseData map[string]interface{}
+	//var responseData map[string]interface{}
 	var atok = req.Header.Get("Authorization")
 
 	clientID := os.Getenv("GOOGLE_CLIENT_ID")
@@ -152,21 +143,11 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	}
 	defer rep.Body.Close()
 
-	body, err := io.ReadAll(rep.Body)
-	fmt.Println("rep = ", string(body))
-	fmt.Println("status = ", rep.StatusCode)
+	err = json.NewDecoder(rep.Body).Decode(&tok)
 	if err != nil {
-		fmt.Fprintln(w, "Erreur lors de la lecture du corps de la réponse:", err.Error())
-		fmt.Println("error: ", err.Error())
+		fmt.Fprintln(w, "decode", err.Error())
 		return
 	}
-
-	if err := json.Unmarshal(body, &responseData); err != nil {
-		fmt.Fprintln(w, "Erreur lors de l'analyse de la réponse JSON:", err.Error())
-		return
-	}
-
-	tok.Token = responseData["access_token"].(string)
 
 	fmt.Println("acess token = ", tok.Token)
 	fmt.Println("refresk token = ", "")
@@ -200,14 +181,14 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	// inserting into database, first i get the 'users' token
 	if atok != "" {
 		// if the user is logged, i get the userid
-		tokid, err = getIdFromToken(atok)
+		owner, err = getIdFromToken(atok)
 		if err != nil {
 			fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
 			return
 		}
 	} else {
 		// if the user is not logged, create an empty user
-		err = db.QueryRow("insert into users default values returning id").Scan(&tokid)
+		err = db.QueryRow("insert into users default values returning id").Scan(&owner)
 		if err != nil {
 			fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
 			return
@@ -219,7 +200,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		insert into tokens (service, token, refresh, userid, owner)
         values ($1, $2, $3, $4, $5)
 	`
-	_, err = db.Exec(query, "discord", tok.Token, tok.Refresh, user.ID, tokid)
+	_, err = db.Exec(query, "google", tok.Token, tok.Refresh, user.ID, owner)
 	if err != nil {
 		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
 		return
