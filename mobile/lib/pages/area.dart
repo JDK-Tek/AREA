@@ -1,8 +1,10 @@
 import 'package:area/pages/GithubOAuthPage.dart';
+import 'package:area/pages/GoogleAuthPage.dart';
 import 'package:area/pages/OAuthRoblox.dart';
 import 'package:area/pages/OutlookOAuthPage.dart';
 import 'package:area/pages/RedditAuthPage.dart';
 import 'package:area/pages/SpotifyOAuthPage.dart';
+import 'package:area/pages/ZoomAuthPage.dart';
 import 'package:area/pages/home_page.dart';
 import 'package:area/tools/dynamic.dart';
 import 'package:area/tools/providers.dart';
@@ -580,6 +582,8 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
                           SpotifyLoginButton(),
                           GithubLoginButton(),
                           RedditLoginButton(),
+                          GoogleLoginButton(),
+                          ZoomLoginButton(),
                         ],
                       ),
                     ),
