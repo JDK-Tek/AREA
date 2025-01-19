@@ -15,7 +15,7 @@ import Button from "../../components/Button";
 import InputBox from "../../components/spices/InputBox";
 import Notification from "../../components/Notification";
 
-function Triger({title, color, spices, onClick}) {
+function Triger({title, color, spices, onClickTrash, onClickPencil}) {
     return (
         <div
             className="flex items-center justify-between w-full border-b-2 shadow-sm pl-4 pr-4 p-1"
@@ -28,12 +28,12 @@ function Triger({title, color, spices, onClick}) {
                 <Button
                     styleClolor={`bg-chartpurple-200 hover:bg-chartpurple-100 text-white`}
                     icon={<PencilLine />}
-                    onClick={onClick}
+                    onClick={onClickPencil}
                 />
                 <Button
                     styleClolor={`bg-chartpurple-200 hover:bg-chartpurple-100 text-white`}
                     icon={<Trash2 />}
-                    onClick={onClick}
+                    onClick={onClickTrash}
                 />
             </div>
         </div>
@@ -83,7 +83,6 @@ export default function CreateArea({setToken}) {
     }, [setLoggedServices]);
 
 
-    console.log(loggedServices);
     return (
         <div className="relative">
             <HeaderBar activeBackground={true} />
@@ -92,8 +91,8 @@ export default function CreateArea({setToken}) {
 
             <SidePannel 
                 action={configAction} 
-                setOpen={setOpen} 
-                open={open} 
+                setOpen={setOpen}
+                open={open}
                 setArea={setArea}
                 loggedServices={loggedServices}
                 refresh={checkConnection}
@@ -133,11 +132,15 @@ export default function CreateArea({setToken}) {
                                     title={action.title}
                                     color={action.color}
                                     spices={action.spices}
-                                    onClick={() => {
+                                    onClickTrash={() => {
                                         setArea((prevArea) => ({
                                             ...prevArea,
-                                            actions: prevArea.actions.filter((a, i) => index !== i),
+                                            actions: []
                                         }));
+                                    }}
+                                    onClickPencil={() => {
+                                        setOpen(true);
+                                        setConfigAction(true);
                                     }}
                                 />)
                             }
@@ -161,11 +164,12 @@ export default function CreateArea({setToken}) {
                                     title={reaction.title}
                                     color={reaction.color}
                                     spices={reaction.spices}
-                                    onClick={() => {
-                                        setArea((prevArea) => ({
-                                            ...prevArea,
-                                            reactions: prevArea.reactions.filter((a) => a.title !== reaction.title),
-                                        }));
+                                    onClickTrash={() => {
+                                        setArea(defaultArea);
+                                    }}
+                                    onClickPencil={() => {
+                                        setOpen(true);
+                                        setConfigAction(false);
                                     }}
                                 />)
                             }
