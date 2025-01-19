@@ -96,7 +96,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     data.Set("client_id", clientID)
     data.Set("client_secret", clientSecret)
     data.Set("grant_type", "authorization_code")
-    data.Set("access_token", res.Code)
+    data.Set("code", res.Code)
     data.Set("redirect_uri", redirectURI)
     
     rep, err := http.PostForm("https://oauth2.googleapis.com/token", data)
@@ -108,6 +108,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     
     body, err := io.ReadAll(rep.Body)
 	fmt.Println("rep = ", body)
+	fmt.Println("status = ", rep.StatusCode)
     if err != nil {
         fmt.Fprintln(w, "Erreur lors de la lecture du corps de la réponse:", err.Error())
 		fmt.Println("error: ", err.Error())
