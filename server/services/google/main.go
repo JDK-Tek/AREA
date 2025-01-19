@@ -2,27 +2,29 @@ package main
 
 import (
 	"bytes"
-	"database/sql"
 	"context"
-	"encoding/json"
-	"google.golang.org/api/gmail/v1"
-	"google.golang.org/api/option"
-	"golang.org/x/oauth2"
+	"database/sql"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
-	"time"
 	"strings"
-	"io"
+	"time"
+
+	"golang.org/x/oauth2"
+	"google.golang.org/api/gmail/v1"
+	"google.golang.org/api/option"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
+
 const (
 	API_OAUTH_SPOTIFY = "https://accounts.spotify.com/api/token"
 	API_USER_SPOTIFY  = "https://api.spotify.com/v1/me"
@@ -30,7 +32,6 @@ const (
 
 const PERMISSIONS = 8
 const EXPIRATION = 60 * 30
-
 
 var db *sql.DB
 
@@ -45,24 +46,24 @@ func init() {
 
 func getOAUTHLink(w http.ResponseWriter, req *http.Request) {
 	fmt.Println("test test")
-    str := "https://accounts.google.com/o/oauth2/v2/auth?"
-    
-    redirectURI := url.QueryEscape(os.Getenv("REDIRECT"))
-    fmt.Println("Redirect URI = ", redirectURI)
+	str := "https://accounts.google.com/o/oauth2/v2/auth?"
 
-    scopes := "https://www.googleapis.com/auth/drive.file " +
-              "https://www.googleapis.com/auth/userinfo.profile " +
-              "https://www.googleapis.com/auth/userinfo.email " +
-              "https://www.googleapis.com/auth/gmail.send"
+	redirectURI := url.QueryEscape(os.Getenv("REDIRECT"))
+	fmt.Println("Redirect URI = ", redirectURI)
 
-    str += "client_id=" + os.Getenv("GOOGLE_CLIENT_ID")
-    str += "&response_type=code"
-    str += "&redirect_uri=" + redirectURI
-    str += "&scope=" + url.QueryEscape(scopes)
-    str += "&state=some-state-value"
-    
-    w.WriteHeader(http.StatusOK)
-    fmt.Fprintln(w, str)
+	scopes := "https://www.googleapis.com/auth/drive.file " +
+		"https://www.googleapis.com/auth/userinfo.profile " +
+		"https://www.googleapis.com/auth/userinfo.email " +
+		"https://www.googleapis.com/auth/gmail.send"
+
+	str += "client_id=" + os.Getenv("GOOGLE_CLIENT_ID")
+	str += "&response_type=code"
+	str += "&redirect_uri=" + redirectURI
+	str += "&scope=" + url.QueryEscape(scopes)
+	str += "&state=some-state-value"
+
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintln(w, str)
 }
 
 type Result struct {
@@ -70,7 +71,7 @@ type Result struct {
 }
 
 type TokenResult struct {
-	Token string `json:"access_token"`
+	Token   string `json:"access_token"`
 	Refresh string `json:"refresh_token"`
 }
 
@@ -80,231 +81,230 @@ type UserResult struct {
 
 func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	fmt.Println("i m here")
-    var res Result
-    var tok TokenResult
-    var user UserResult
-    var tokid int
-    var owner = -1
-    var responseData map[string]interface{}
+	var res Result
+	var tok TokenResult
+	var user UserResult
+	var tokid int
+	var owner = -1
+	var responseData map[string]interface{}
 
-    clientID := os.Getenv("GOOGLE_CLIENT_ID")
-    clientSecret := os.Getenv("GOOGLE_CLIENT_SECRET")
-    redirectURI := os.Getenv("REDIRECT")
-    data := url.Values{}
-    
-    err := json.NewDecoder(req.Body).Decode(&res)
-    if err != nil {
-        fmt.Fprintln(w, "Erreur lors du décodage de la requête:", err.Error())
-        return
-    }
+	clientID := os.Getenv("GOOGLE_CLIENT_ID")
+	clientSecret := os.Getenv("GOOGLE_CLIENT_SECRET")
+	redirectURI := os.Getenv("REDIRECT")
+	data := url.Values{}
+
+	err := json.NewDecoder(req.Body).Decode(&res)
+	if err != nil {
+		fmt.Fprintln(w, "Erreur lors du décodage de la requête:", err.Error())
+		return
+	}
 
 	decodedCode, err := url.QueryUnescape(res.Code)
 	if err != nil {
-        return
-    }
-    data.Set("client_id", strings.TrimSpace(clientID))
-    data.Set("client_secret", strings.TrimSpace(clientSecret))
-    data.Set("grant_type", "authorization_code")
-    data.Set("code", decodedCode)
-    data.Set("redirect_uri", strings.TrimSpace(redirectURI))
-    
+		return
+	}
+	data.Set("client_id", strings.TrimSpace(clientID))
+	data.Set("client_secret", strings.TrimSpace(clientSecret))
+	data.Set("grant_type", "authorization_code")
+	data.Set("code", decodedCode)
+	data.Set("redirect_uri", strings.TrimSpace(redirectURI))
+
 	fmt.Println("code = ", decodedCode)
 	fmt.Println("client secret = ", strings.TrimSpace(clientSecret))
 	fmt.Println("so redirect = ", strings.TrimSpace(redirectURI))
 
-    rep, err := http.PostForm("https://oauth2.googleapis.com/token", data)
-    if err != nil {
-        fmt.Fprintln(w, "Erreur lors de l'échange du code:", err.Error())
-        return
-    }
-    defer rep.Body.Close()
-    
-    body, err := io.ReadAll(rep.Body)
+	rep, err := http.PostForm("https://oauth2.googleapis.com/token", data)
+	if err != nil {
+		fmt.Fprintln(w, "Erreur lors de l'échange du code:", err.Error())
+		return
+	}
+	defer rep.Body.Close()
+
+	body, err := io.ReadAll(rep.Body)
 	fmt.Println("rep = ", string(body))
 	fmt.Println("status = ", rep.StatusCode)
-    if err != nil {
-        fmt.Fprintln(w, "Erreur lors de la lecture du corps de la réponse:", err.Error())
+	if err != nil {
+		fmt.Fprintln(w, "Erreur lors de la lecture du corps de la réponse:", err.Error())
 		fmt.Println("error: ", err.Error())
-        return
-    }
-    
-    if err := json.Unmarshal(body, &responseData); err != nil {
-        fmt.Fprintln(w, "Erreur lors de l'analyse de la réponse JSON:", err.Error())
-        return
-    }
+		return
+	}
 
-    tok.Token = responseData["access_token"].(string)
+	if err := json.Unmarshal(body, &responseData); err != nil {
+		fmt.Fprintln(w, "Erreur lors de l'analyse de la réponse JSON:", err.Error())
+		return
+	}
 
-    fmt.Println("acess token = ", tok.Token)
+	tok.Token = responseData["access_token"].(string)
+
+	fmt.Println("acess token = ", tok.Token)
 	fmt.Println("refresk token = ", "")
 
-    req, err = http.NewRequest("GET", "https://www.googleapis.com/oauth2/v2/userinfo", nil)
-    if err != nil {
-        fmt.Fprintln(w, "Erreur lors de la création de la requête utilisateur:", err.Error())
-        return
-    }
-    req.Header.Set("Authorization", "Bearer "+tok.Token)
-    
-    client := &http.Client{}
-    rep, err = client.Do(req)
-    if err != nil {
-        fmt.Fprintln(w, "Erreur lors de l'appel à l'API Google:", err.Error())
-        return
-    }
-    defer rep.Body.Close()
-    
-    err = json.NewDecoder(rep.Body).Decode(&user)
-    if err != nil {
-        fmt.Fprintln(w, "Erreur lors du décodage des informations utilisateur:", err.Error())
-        return
-    }
+	req, err = http.NewRequest("GET", "https://www.googleapis.com/oauth2/v2/userinfo", nil)
+	if err != nil {
+		fmt.Fprintln(w, "Erreur lors de la création de la requête utilisateur:", err.Error())
+		return
+	}
+	req.Header.Set("Authorization", "Bearer "+tok.Token)
 
-    if tok.Token == "" {
-        fmt.Fprintln(w, "Erreur : token ou refresh token manquant")
-        return
-    }
+	client := &http.Client{}
+	rep, err = client.Do(req)
+	if err != nil {
+		fmt.Fprintln(w, "Erreur lors de l'appel à l'API Google:", err.Error())
+		return
+	}
+	defer rep.Body.Close()
 
-    err = db.QueryRow("SELECT id, owner FROM tokens WHERE userid = $1", user.ID).Scan(&tokid, &owner)
-    if err != nil {
-        err = db.QueryRow("INSERT INTO tokens (service, token, refresh, userid) VALUES ($1, $2, $3, $4) RETURNING id",
-            "google", tok.Token, tok.Refresh, user.ID).Scan(&tokid)
-        if err != nil {
-            fmt.Fprintln(w, "Erreur lors de l'insertion du token:", err.Error())
-            return
-        }
+	err = json.NewDecoder(rep.Body).Decode(&user)
+	if err != nil {
+		fmt.Fprintln(w, "Erreur lors du décodage des informations utilisateur:", err.Error())
+		return
+	}
 
-        err = db.QueryRow("INSERT INTO users (tokenid) VALUES ($1) RETURNING id", tokid).Scan(&owner)
-        if err != nil {
-            fmt.Fprintln(w, "Erreur lors de l'insertion de l'utilisateur:", err.Error())
-            return
-        }
-        db.Exec("UPDATE tokens SET owner = $1 WHERE id = $2", owner, tokid)
-    }
+	if tok.Token == "" {
+		fmt.Fprintln(w, "Erreur : token ou refresh token manquant")
+		return
+	}
 
-    secretBytes := []byte(os.Getenv("BACKEND_KEY"))
-    claims := jwt.MapClaims{
-        "id":  owner,
-        "exp": time.Now().Add(time.Second * EXPIRATION).Unix(),
-    }
-    token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-    tokenStr, err := token.SignedString(secretBytes)
-    if err != nil {
-        fmt.Fprintln(w, "Erreur lors de la signature du token:", err.Error())
-        return
-    }
-    
-    fmt.Println("Succès de l'authentification avec Google, token =", tokenStr)
-    fmt.Fprintf(w, "{\"token\": \"%s\"}\n", tokenStr)
+	err = db.QueryRow("SELECT id, owner FROM tokens WHERE userid = $1", user.ID).Scan(&tokid, &owner)
+	if err != nil {
+		err = db.QueryRow("INSERT INTO tokens (service, token, refresh, userid) VALUES ($1, $2, $3, $4) RETURNING id",
+			"google", tok.Token, tok.Refresh, user.ID).Scan(&tokid)
+		if err != nil {
+			fmt.Fprintln(w, "Erreur lors de l'insertion du token:", err.Error())
+			return
+		}
+
+		err = db.QueryRow("INSERT INTO users (tokenid) VALUES ($1) RETURNING id", tokid).Scan(&owner)
+		if err != nil {
+			fmt.Fprintln(w, "Erreur lors de l'insertion de l'utilisateur:", err.Error())
+			return
+		}
+		db.Exec("UPDATE tokens SET owner = $1 WHERE id = $2", owner, tokid)
+	}
+
+	secretBytes := []byte(os.Getenv("BACKEND_KEY"))
+	claims := jwt.MapClaims{
+		"id":  owner,
+		"exp": time.Now().Add(time.Second * EXPIRATION).Unix(),
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenStr, err := token.SignedString(secretBytes)
+	if err != nil {
+		fmt.Fprintln(w, "Erreur lors de la signature du token:", err.Error())
+		return
+	}
+
+	fmt.Println("Succès de l'authentification avec Google, token =", tokenStr)
+	fmt.Fprintf(w, "{\"token\": \"%s\"}\n", tokenStr)
 }
 
-
 func sendEmail(gmailToken, recipientEmail, subject, body string) error {
-    ctx := context.Background()
-    token := &oauth2.Token{
-        AccessToken: gmailToken,
-    }
-    tokenSource := oauth2.StaticTokenSource(token)
-    srv, err := gmail.NewService(ctx, option.WithTokenSource(tokenSource))
-    if err != nil {
-        return fmt.Errorf("Unable to create Gmail service: %v", err)
-    }
+	ctx := context.Background()
+	token := &oauth2.Token{
+		AccessToken: gmailToken,
+	}
+	tokenSource := oauth2.StaticTokenSource(token)
+	srv, err := gmail.NewService(ctx, option.WithTokenSource(tokenSource))
+	if err != nil {
+		return fmt.Errorf("Unable to create Gmail service: %v", err)
+	}
 
-    message := gmail.Message{}
-    msgBody := "From: 'me'\r\n" +
-        "To: " + recipientEmail + "\r\n" +
-        "Subject: " + subject + "\r\n" +
-        "\r\n" +
-        body
-    message.Raw = base64.URLEncoding.EncodeToString([]byte(msgBody))
+	message := gmail.Message{}
+	msgBody := "From: 'me'\r\n" +
+		"To: " + recipientEmail + "\r\n" +
+		"Subject: " + subject + "\r\n" +
+		"\r\n" +
+		body
+	message.Raw = base64.URLEncoding.EncodeToString([]byte(msgBody))
 
-    _, err = srv.Users.Messages.Send("me", &message).Do()
-    if err != nil {
-        return fmt.Errorf("Unable to send email: %v", err)
-    }
+	_, err = srv.Users.Messages.Send("me", &message).Do()
+	if err != nil {
+		return fmt.Errorf("Unable to send email: %v", err)
+	}
 
-    return nil
+	return nil
 }
 
 func sendEmailNotification(w http.ResponseWriter, req *http.Request, db *sql.DB) {
-    fmt.Println("Headers received:", req.Header)
+	fmt.Println("Headers received:", req.Header)
 
-    bodyBytes, err := io.ReadAll(req.Body)
-    if err != nil {
-        w.WriteHeader(http.StatusInternalServerError)
-        fmt.Println("Error reading request body:", err.Error())
-        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
-        return
-    }
-    fmt.Println("Request Body:", string(bodyBytes))
+	bodyBytes, err := io.ReadAll(req.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Println("Error reading request body:", err.Error())
+		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+		return
+	}
+	fmt.Println("Request Body:", string(bodyBytes))
 
-    req.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+	req.Body = io.NopCloser(bytes.NewReader(bodyBytes))
 
-    var requestBody struct {
-        UserID int `json:"userid"`
-        Spices struct { 
-            Subject string `json:"subject"`
-            Email   string `json:"email"`
-            Body    string `json:"body"`
-        } `json:"spices"`
-    }
+	var requestBody struct {
+		UserID int `json:"userid"`
+		Spices struct {
+			Subject string `json:"subject"`
+			Email   string `json:"email"`
+			Body    string `json:"body"`
+		} `json:"spices"`
+	}
 
-    decoder := json.NewDecoder(req.Body)
-    err = decoder.Decode(&requestBody)
-    if err != nil {
-        w.WriteHeader(http.StatusInternalServerError)
-        fmt.Println("Error decoding JSON:", err.Error())
-        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
-        return
-    }
+	decoder := json.NewDecoder(req.Body)
+	err = decoder.Decode(&requestBody)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Println("Error decoding JSON:", err.Error())
+		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+		return
+	}
 
-    userID := requestBody.UserID
-    fmt.Println("Extracted userID:", userID)
+	userID := requestBody.UserID
+	fmt.Println("Extracted userID:", userID)
 
-    var gmailToken string
-    err = db.QueryRow("SELECT token FROM tokens WHERE owner = $1 AND service = 'google'", userID).Scan(&gmailToken)
-    if err != nil {
-        if err == sql.ErrNoRows {
-            w.WriteHeader(http.StatusNotFound)
-            fmt.Println("No Google token found for user:", userID)
-            fmt.Fprintf(w, "{ \"error\": \"No Google token found for user\" }\n")
-        } else {
-            w.WriteHeader(http.StatusInternalServerError)
-            fmt.Println("Database error:", err.Error())
-            fmt.Fprintf(w, "{ \"error\": \"Database error: %s\" }\n", err.Error())
-        }
-        return
-    }
+	var gmailToken string
+	err = db.QueryRow("SELECT token FROM tokens WHERE owner = $1 AND service = 'google'", userID).Scan(&gmailToken)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Println("No Google token found for user:", userID)
+			fmt.Fprintf(w, "{ \"error\": \"No Google token found for user\" }\n")
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Println("Database error:", err.Error())
+			fmt.Fprintf(w, "{ \"error\": \"Database error: %s\" }\n", err.Error())
+		}
+		return
+	}
 
-    if gmailToken == "" {
-        w.WriteHeader(http.StatusUnauthorized)
-        fmt.Println("No Gmail token available for user:", userID)
-        fmt.Fprintf(w, "{ \"error\": \"No Gmail token available\" }\n")
-        return
-    }
+	if gmailToken == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		fmt.Println("No Gmail token available for user:", userID)
+		fmt.Fprintf(w, "{ \"error\": \"No Gmail token available\" }\n")
+		return
+	}
 
-    spice := requestBody.Spices
+	spice := requestBody.Spices
 
-    subject := spice.Subject
-    recipientEmail := spice.Email
-    body := spice.Body
+	subject := spice.Subject
+	recipientEmail := spice.Email
+	body := spice.Body
 
-    if recipientEmail == "" || subject == "" || body == "" {
-        w.WriteHeader(http.StatusBadRequest)
-        fmt.Println("Missing email field (subject, email, or body) in spices")
-        fmt.Fprintf(w, "{ \"error\": \"Missing one or more fields: subject, email, body\" }\n")
-        return
-    }
+	if recipientEmail == "" || subject == "" || body == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Println("Missing email field (subject, email, or body) in spices")
+		fmt.Fprintf(w, "{ \"error\": \"Missing one or more fields: subject, email, body\" }\n")
+		return
+	}
 
-    err = sendEmail(gmailToken, recipientEmail, subject, body)
-    if err != nil {
-        w.WriteHeader(http.StatusInternalServerError)
-        fmt.Println("Error sending email:", err.Error())
-        fmt.Fprintf(w, "{ \"error\": \"Failed to send email\" }\n")
-        return
-    }
+	err = sendEmail(gmailToken, recipientEmail, subject, body)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Println("Error sending email:", err.Error())
+		fmt.Fprintf(w, "{ \"error\": \"Failed to send email\" }\n")
+		return
+	}
 
-    w.WriteHeader(http.StatusOK)
-    fmt.Fprintf(w, "{ \"status\": \"Email sent successfully!\" }\n")
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "{ \"status\": \"Email sent successfully!\" }\n")
 }
 
 func getUserInfo(w http.ResponseWriter, req *http.Request) {
@@ -378,33 +378,31 @@ func connectToDatabase() (*sql.DB, error) {
 	return sql.Open("postgres", connectStr)
 }
 
-
 type InfoSpice struct {
-	Name string `json:"name"`
-	Type string `json:"type"`
-	Title string `json:"title"`
+	Name  string   `json:"name"`
+	Type  string   `json:"type"`
+	Title string   `json:"title"`
 	Extra []string `json:"extra"`
 }
 
 type InfoRoute struct {
-	Type string `json:"type"`
-	Name string `json:"name"`
-	Desc string `json:"description"`
+	Type   string      `json:"type"`
+	Name   string      `json:"name"`
+	Desc   string      `json:"description"`
 	Spices []InfoSpice `json:"spices"`
 }
 
 type Infos struct {
-	Color string `json:"color"`
-	Image string `json:"image"`
+	Color  string      `json:"color"`
+	Image  string      `json:"image"`
 	Routes []InfoRoute `json:"areas"`
 }
 
 type Message struct {
-    Bridge int `json:"bridge"`
-    UserId int `json:"userid"`
-    Ingredients map[string]string `json:"ingredients"`
+	Bridge      int               `json:"bridge"`
+	UserId      int               `json:"userid"`
+	Ingredients map[string]string `json:"ingredients"`
 }
-
 
 func getRoutes(w http.ResponseWriter, req *http.Request) {
 	var list = []InfoRoute{
@@ -414,26 +412,26 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 			Desc: "send an email",
 			Spices: []InfoSpice{
 				{
-					Name: "email",
-					Type: "text",
+					Name:  "email",
+					Type:  "text",
 					Title: "The email.",
 				},
 				{
-					Name: "subject",
-					Type: "text",
+					Name:  "subject",
+					Type:  "text",
 					Title: "The subject",
 				},
 				{
-					Name: "body",
-					Type: "text",
+					Name:  "body",
+					Type:  "text",
 					Title: "The body you want to send.",
 				},
 			},
 		},
 	}
 	var infos = Infos{
-		Color: "#1DB954",
-		Image: "https://m.media-amazon.com/images/I/51rttY7a+9L.png",
+		Color:  "#4272db",
+		Image:  "/assets/google.png",
 		Routes: list,
 	}
 	var data []byte
@@ -445,7 +443,7 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-    fmt.Fprintln(w, string(data))
+	fmt.Fprintln(w, string(data))
 }
 
 func main() {

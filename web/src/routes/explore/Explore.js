@@ -35,7 +35,7 @@ export default function Explore() {
 
     useEffect(() => {
         if (service) {
-            window.location.href = `/services/${service.id}`;
+            window.location.href = `/service/${service.name}`;
         }
     }, [service]);
 

@@ -92,16 +92,16 @@ CREATE TABLE IF NOT EXISTS services (
 
 INSERT INTO services (name, logo, link, colorN, colorH)
 VALUES
-    ('Spotify', 'assets/services/spotify.png', '/service/spotify', '#05b348', '#038a2b'),
-    ('Netflix', 'assets/services/netflix.png', '/service/netflix', '#e50914', '#b2070f'),
-    ('Weather Underground', 'assets/services/weather-underground.webp', '/service/weather-underground', '#222222', '#000000'),
-    ('Instagram', 'assets/services/instagram.webp', '/service/instagram', '#f56040', '#d84a2f'),
-    ('Twitter', 'assets/services/x.webp', '/service/twitter', '#222222', '#000000'),
-    ('Notification', 'assets/services/notification.webp', '/service/notification', '#222222', '#000000'),
-    ('Android', 'assets/services/android.webp', '/service/android', '#3ddc84', '#2dbb6a'),
-    ('Time', 'assets/services/time.webp', '/service/time', '#222222', '#000000'),
-    ('Discord', 'assets/services/discord.webp', '/service/discord', '#7289da', '#5865f2'),
-    ('Nasa', 'assets/services/nasa.webp', '/service/nasa', '#3d1f5e', '#2b1444');
+    ('Spotify', '/assets/spotify.png', '/service/spotify', '#05b348', '#038a2b'),
+    ('Netflix', '/assets/netflix.png', '/service/netflix', '#e50914', '#b2070f'),
+    ('Weather Underground', '/assets/weather-underground.webp', '/service/weather-underground', '#222222', '#000000'),
+    ('Instagram', '/assets/instagram.webp', '/service/instagram', '#f56040', '#d84a2f'),
+    ('Twitter', '/assets/x.webp', '/service/twitter', '#222222', '#000000'),
+    ('Notification', '/assets/notification.webp', '/service/notification', '#222222', '#000000'),
+    ('Android', '/assets/android.webp', '/service/android', '#3ddc84', '#2dbb6a'),
+    ('Time', '/assets/time.webp', '/service/time', '#222222', '#000000'),
+    ('Discord', '/assets/discord.webp', '/service/discord', '#7289da', '#5865f2'),
+    ('Nasa', '/assets/nasa.webp', '/service/nasa', '#3d1f5e', '#2b1444');
 
 CREATE TABLE IF NOT EXISTS applets (
     id SERIAL PRIMARY KEY,

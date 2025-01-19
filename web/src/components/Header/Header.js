@@ -12,6 +12,7 @@ import Button from "./../Button"
 import BackgroundAsset from "./../../assets/effect.png"
 
 export default function Header() {
+    const isLogged = sessionStorage.getItem("token") === "" ? false : true;
 
     return (
         <div className="relative bg-gradient-to-l from-chartpurple-200 via-chartpurple-300 to-chartgray-300 mb-10 overflow-hidden">
@@ -32,12 +33,12 @@ export default function Header() {
 
             <div className="flex flex-col items-center justify-center pb-5 relative z-10">
                 <Title />
-                <Button
+                {!isLogged && <Button
                     text={"Get started"}
                     redirect={true}
                     onClick={() => window.open("/register")}
                     styleClolor={"bg-white text-chartgray-300 hover:bg-gray-200 text-xl"}
-                />
+                />}
             </div>
         </div>
     );
