@@ -290,7 +290,7 @@ type MessageWithIDAndOauths struct {
 	Authentificated bool     		`json:"authentificated"`
 	ID              int      		`json:"id"`
 	Oauths          []string 		`json:"oauths"`
-	Email 			sql.NullString 	`json:"email"`
+	Email 			string 			`json:"email"`
 }
 
 func doctor(a area.AreaRequest) {
@@ -313,14 +313,19 @@ func doctor(a area.AreaRequest) {
 	x := MessageWithIDAndOauths{
 		Message: "i'm ok thanks",
 		Authentificated: true,
-		ID: id, Oauths: []string{},
+		ID: id,
+		Oauths: []string{},
 	}
+	var email sql.NullString
 	err = a.Area.Database.
 		QueryRow("select email from users where id = $1", id).
-		Scan(&x.Email)
+		Scan(&email)
 	if err != nil {
 		a.Reply(Message{Message: "i'm ill: " + err.Error(), Authentificated: true}, http.StatusOK)
 		return
+	}
+	if email.Valid {
+		x.Email = email.String
 	}
 
 	// check for oauths
@@ -469,6 +474,7 @@ func main() {
 	router.HandleFunc("/api/login", newProxy(&a, auth.DoSomeLogin)).Methods("POST")
 	router.HandleFunc("/api/register", newProxy(&a, auth.DoSomeRegister)).Methods("POST")
 	router.HandleFunc("/api/area", newProxy(&a, arearoute.NewArea)).Methods("POST")
+	router.HandleFunc("/api/area", newProxy(&a, arearoute.GetApplets)).Methods("GET")
 	router.HandleFunc("/api/v2/services", newProxy(&a, service.GetServices)).Methods("GET")
 	router.HandleFunc("/api/v2/service/{id}", newProxy(&a, service.GetServiceApplets)).Methods("GET")
 	router.HandleFunc("/api/oauth/{service}", newProxy(&a, oauthGetter)).Methods("GET")
