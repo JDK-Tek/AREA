@@ -505,7 +505,7 @@ def routes():
             },
             {
                 "name": "givebadge",
-                "description": "Gives a badge to a user.",
+                "description": "Give a badge to a user.",
                 "type": "reaction",
                 "spices": [
                     {
@@ -639,7 +639,7 @@ def routes():
             },
             {
                 "name": "onclick",
-                "description": "When a stuff is clicked.",
+                "description": "When someone clicks on something.",
                 "type": "action",
                 "spices": [
                     {
@@ -651,7 +651,7 @@ def routes():
             },
             {
                 "name": "ontouch",
-                "description": "When a basepart is touched.",
+                "description": "When someone touches something.",
                 "type": "action",
                 "spices": [
                     {
