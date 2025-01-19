@@ -19,7 +19,7 @@ import Explore from "./routes/explore/Explore";
 import NotFound from "./routes/notfound/NotFound";
 import MobileClientDownload from './routes/mobileclientdownload/MobileClientDownload';
 import Connected from './routes/connected/Connected';
-
+import ServiceInfo from "./routes/serivce/ServiceInfo";
 
 function App() {
   const [token, setToken] = useState(sessionStorage.getItem("token") === null ? "" : sessionStorage.getItem("token"));
@@ -35,6 +35,7 @@ function App() {
         <Route path={listRoutes.explore} element={<Explore />} />
         <Route path={listRoutes.clientapk} element={<MobileClientDownload />} />
         <Route path={listRoutes.connected} element={<Connected />} />
+        <Route path={listRoutes.service} element={<ServiceInfo />} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>
