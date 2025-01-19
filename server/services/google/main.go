@@ -104,6 +104,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	fmt.Print("rep = ", body)
     if err != nil {
         fmt.Fprintln(w, "Erreur lors de la lecture du corps de la réponse:", err.Error())
+		fmt.Println("error: ", err.Error())
         return
     }
     
