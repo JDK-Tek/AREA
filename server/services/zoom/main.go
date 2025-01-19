@@ -318,6 +318,7 @@ func checkDeviceConnection(w http.ResponseWriter, req *http.Request, db *sql.DB)
 
         if respUserInfo.StatusCode != http.StatusOK {
             fmt.Println("Failed to get user info:", respUserInfo.StatusCode)
+            fmt.Println("Response body:", string(bodyResp))
             return
         }
 
@@ -360,6 +361,7 @@ func checkDeviceConnection(w http.ResponseWriter, req *http.Request, db *sql.DB)
 
             if respMeetings.StatusCode != http.StatusOK {
                 fmt.Println("Failed to get meetings:", respMeetings.StatusCode)
+                fmt.Println("Response body:", string(bodyResp)) // Added to show error details
                 return
             }
 
