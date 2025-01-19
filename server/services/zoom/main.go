@@ -84,7 +84,7 @@ func getUserInfo(w http.ResponseWriter, req *http.Request) {
 
 func getOAUTHLink(w http.ResponseWriter, req *http.Request) {
     fmt.Println("test test")
-    str := "https://zoom.us/oauth/authorize"
+    str := "https://zoom.us/oauth/authorize?"
 
     redirectURI := url.QueryEscape(os.Getenv("REDIRECT"))
     fmt.Println("Redirect URI = ", redirectURI)
