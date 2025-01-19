@@ -7,19 +7,20 @@
 
 import React, { useState } from "react"
 import axios from "axios"
+import logo from "../../assets/logo.png"
 
 // Login/Register components
 import { LRTextFieldsBox } from "../TextFields/TextFields"
 import { LRButton } from "../Button"
-import LRBox from "../Box/Box"
 
 function LoginTexts() {
     return (
         <div className="text-center">
-            <p className="text-white text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-spartan font-bold">
+            <img src={logo} alt="logo" className="w-20 h-20 mx-auto mb-5"/>
+            <p className="text-white lg:text-5xl md:text-3xl text-xl font-spartan font-bold">
                 LOGIN
             </p>
-            <p className="text-violet-600 font-bold text-xl sm:text-2xl md:text-3xl">
+            <p className="text-violet-600 font-bold lg:text-3xl md:text-xl text-lg">
                 Nice to see you again
             </p>
         </div>
@@ -99,20 +100,43 @@ export default function LoginBox ( {setToken, setError} ) {
     };
 
     return (
-        <LRBox>
+        <div className="bg-chartgray-200 rounded-md
+            p-6 pt-20 pb-20 lg:max-w-[700px] md:max-w-[500px] max-w-[300px]">
             <LoginTexts />
             <LRTextFieldsBox text1="Email" text2="Password" handleChangeField={handleChange}/>
-            <div className="text-center pt-8 sm:pt-10 text-white text-sm sm:text-base md:text-lg">
+            <div className="text-center pt-8 sm:pt-10 text-white lg:text-lg md:text-md text-sm">
                 You don't have an account ? 
                 <a href="/register" className="font-bold text-white dark:text-white hover:underline"> Register here!</a>
             </div>
-            <LRButton text="Login" handleClick={handleSubmit}/>
-            <div className="flex flex-row space-x-4 justify-center pt-4">
-                <LRButton text="Connect with Discord" handleClick={() => handleOauth("discord")} /> 
-                <LRButton text="Connect with Reddit" handleClick={() => handleOauth("reddit")} /> 
-                <LRButton text="Connect with Github" handleClick={() => handleOauth("github")} />
-                <LRButton text="Connect with Spotify" handleClick={() => handleOauth("spotify")} />
+            <div className="text-center pt-4 flex flex-col items-center">
+                <LRButton color={"#ffffffff"} text="Login" handleClick={handleSubmit} />
+                    <div className="flex flex-wrap justify-center mt-[50px]">
+                        <LRButton
+                            color="#5865F2"
+                            img="/assets/services/discord.webp"
+                            text="Connect with Discord"
+                            handleClick={() => handleOauth("discord")}
+                        />
+                        <LRButton
+                            color="#ff4500"
+                            img="/assets/services/reddit.webp"
+                            text="Connect with Reddit"
+                            handleClick={() => handleOauth("reddit")}
+                        />
+                        <LRButton 
+                            color="#24292e"
+                            img="/assets/services/github.webp"
+                            text="Connect with Github"
+                            handleClick={() => handleOauth("github")}
+                        />
+                        <LRButton 
+                            color="#1DB954"
+                            img="/assets/services/spotify.png"
+                            text="Connect with Spotify"
+                            handleClick={() => handleOauth("spotify")}
+                        />
+                    </div>
             </div>
-        </LRBox>
+        </div>
     )
 }

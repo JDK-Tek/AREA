@@ -123,7 +123,7 @@ export default function ServiceFeatureConfiguration({ action, feature, service, 
                             let msg = "";
                             
                             setError(true);
-                            requestCheck.map((error) => {
+                            requestCheck.forEach((error) => {
                                 msg += error + "\n";
                             });
                             setErrorMsg(msg);

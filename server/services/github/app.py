@@ -114,10 +114,11 @@ class NewOreo:
 	TYPE_ACTIONS = "action"
 
 
-	def __init__(self, service, color, image):
+	def __init__(self, service, color, image, oauth):
 		self.service = service
 		self.color = color
 		self.image = image
+		self.oauth = oauth
 		self.areas = []
 	
 	def create_area(self, name, type, title, spices):
@@ -140,7 +141,8 @@ app = Flask(__name__)
 oreo = NewOreo(
 	service="github",
 	color="#24292e",
-	image="/assets/github.webp"
+	image="/assets/github.webp",
+	oauth=True
 )
 
 
@@ -1462,7 +1464,8 @@ def info():
 	res = {
 		"color": oreo.color,
 		"image": oreo.image,
-		"areas": oreo.areas
+		"oauth": oreo.oauth,
+		"areas": oreo.areas,
 	}
 	return jsonify(res), 200
 

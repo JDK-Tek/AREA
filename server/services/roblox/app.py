@@ -375,6 +375,7 @@ def routes():
     x = {
         "color": "#000000",
         "image": "/assets/roblox.png",
+        "oauth": True,
         "areas": [
             {
                 "name": "newpart",

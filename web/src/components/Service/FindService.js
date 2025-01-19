@@ -49,7 +49,7 @@ export default function FindService({ aboutjson, dark, setService, filtre = null
             }
         });
         setFilteredServices(fstmp);
-    }, [search, setFilteredServices, aboutjson]);
+    }, [search, setFilteredServices, aboutjson, filtre]);
 
     return (
         <div className="h-full flex flex-col justify-start">

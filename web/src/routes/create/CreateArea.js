@@ -6,9 +6,8 @@
 */
 
 import axios from "axios";
-import { useState } from "react";
-import { Plus } from "lucide-react";
-import { Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Plus, PencilLine, Trash2 } from "lucide-react";
 
 import HeaderBar from "../../components/Header/HeaderBar"
 import SidePannel from "../../components/SidePannel"
@@ -25,21 +24,30 @@ function Triger({title, color, spices, onClick}) {
             <div className="flex items-center">
                 <label className="block text-2xl font-bold font-spartan text-white">{title}</label>
             </div>
-            <Button
-                styleClolor={`bg-chartpurple-200 hover:bg-chartpurple-100 text-white`}
-                icon={<Trash2 />}
-                onClick={onClick}
-            />
+            <div>
+                <Button
+                    styleClolor={`bg-chartpurple-200 hover:bg-chartpurple-100 text-white`}
+                    icon={<PencilLine />}
+                    onClick={onClick}
+                />
+                <Button
+                    styleClolor={`bg-chartpurple-200 hover:bg-chartpurple-100 text-white`}
+                    icon={<Trash2 />}
+                    onClick={onClick}
+                />
+            </div>
         </div>
     )
 }
 
-export default function CreateArea() {
+export default function CreateArea({setToken}) {
     const [open, setOpen] = useState(false);
     const [configAction, setConfigAction] = useState(true);
     const [name, setName] = useState("");
     const [error, setError] = useState(false);
     const [success, setSuccess] = useState(false);
+
+    const [loggedServices, setLoggedServices] = useState([]);
 
     const defaultArea = {
         name: "",
@@ -50,15 +58,47 @@ export default function CreateArea() {
     const [area, setArea] = useState(sessionStorage.getItem("area") === null ? defaultArea : JSON.parse(sessionStorage.getItem("area")));
     sessionStorage.setItem("area", JSON.stringify(area));
 
-    console.log(sessionStorage.getItem("token"));
+    const checkConnection = () => {
+        axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/doctor`, {
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${sessionStorage.getItem("token")}`,
+            }
+        })
+        .then((res) => {
+            if (res.data.authentificated) {
+                setLoggedServices(res.data.oauths);
+            } else {
+                window.location.href = "/login";
+                sessionStorage.removeItem("token");
+            }
+        })
+        .catch((err) => {
+            setError("Impossible to check the authentification: " + err.data);
+        });
+    }
 
+    useEffect(() => {
+        checkConnection();
+    }, [setLoggedServices]);
+
+
+    console.log(loggedServices);
     return (
         <div className="relative">
             <HeaderBar activeBackground={true} />
             {error && <Notification error={error} setError={setError} msg={error} />}
             {success && <Notification success={success} setError={setSuccess} msg={success} />}
 
-            <SidePannel action={configAction} setOpen={setOpen} open={open} setArea={setArea}/>
+            <SidePannel 
+                action={configAction} 
+                setOpen={setOpen} 
+                open={open} 
+                setArea={setArea}
+                loggedServices={loggedServices}
+                refresh={checkConnection}
+                setToken={setToken}
+            />
             <div className="relative">
                 <label 
                     className="block text-4xl font-bold font-spartan text-chartgray-300 text-center p-5 mt-10"

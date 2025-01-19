@@ -25,14 +25,35 @@ export default function Button({ text, redirect, onClick, styleClolor, icon }) {
     );
 }
 
-export function LRButton( {text, handleClick} ) {
+export function LRButton( {text, handleClick, img, color} ) {
     return(
-        <div className="flex justify-center pt-10">
-            <button className="bg-white hover:bg-gray-300 text-black 
-                              text-base sm:text-lg md:text-xl lg:text-2xl 
-                              font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-full" onClick={handleClick}>
+        <div
+            className={`
+                select-none relative
+                 text-white shadow-md flex
+                 justify-center items-center cursor-pointer
+                 transition-transform duration-200
+                 rounded-full p-2 m-2
+                 lg:w-[400px] md:w-[300px] sm:w-[200px]
+                `}
+            onClick={(e) => handleClick(e)}
+            style={{ backgroundColor: color }}
+            onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.05)";}}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
+            tabIndex={0}    
+        >
+            {img && <img className="lg:w-10 lg:h-10
+                                    md:w-5 md:h-5
+                                    w-4 h-4"
+                src={img}
+                alt={text}
+            />}
+            <label className={`${color === "#ffffffff" ? "text-black" : "text-white"}
+                text-base sm:text-sm md:text-lg lg:text-xl 
+                font-bold font-spartan ml-2`}
+            >
                 {text}
-            </button>
+            </label>
         </div>
     )
 }
