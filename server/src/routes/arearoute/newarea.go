@@ -1,13 +1,14 @@
 package arearoute
 
 import (
+	"area-backend/area"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
-	"area-backend/area"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -109,7 +110,6 @@ func applyFuncToFirstLetter(s string, f func(string) string) string {
 	return f(string(s[0])) + s[1:]
 }
 
-
 func generateName(a area.AreaRequest, bridge Bridge) string {
 	aServ := find(a.Area.About.Server.Services, func(s area.AboutSevice) bool {
 		return s.Name == bridge.Action.Service
@@ -164,6 +164,165 @@ func appletUpdate(a area.AreaRequest, bridge Bridge) error {
 		return err
 	}
 	return nil
+}
+
+type ExampleArea struct {
+	Service string `json:"service"`
+	Image string `json:"image"`
+	Color string `json:"color"`
+}
+
+type ExampleApplet struct {
+	Name string `json:"name"`
+	Users int `json:"users"`
+	Action ExampleArea `json:"action"`
+	Reaction ExampleArea `json:"reaction"`
+}
+
+func getTheExampleApplet(a area.AreaRequest) {
+	// select into the database
+	const querry = `
+		select name, action, reaction, users
+		from areaapplets
+		order by users desc
+		limit $1
+	`
+	limitStr := a.Request.URL.Query().Get("limit")
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limitStr == "" {
+		limit = 5
+	}
+	rows, err := a.Area.Database.Query(querry, limit)
+	if err != nil {
+		a.Error(err, http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	// then loop into the rows
+	var applets = []ExampleApplet{}
+	var tmp ExampleApplet
+	for rows.Next() {
+		if err := rows.Scan(
+			&tmp.Name,
+			&tmp.Action.Service,
+			&tmp.Reaction.Service,
+			&tmp.Users,
+		); err != nil {
+			a.Error(err, http.StatusInternalServerError)
+			return
+		}
+		aServ := find(a.Area.About.Server.Services, func(s area.AboutSevice) bool {
+			return s.Name == tmp.Action.Service
+		})
+		rServ := find(a.Area.About.Server.Services, func(s area.AboutSevice) bool {
+			return s.Name == tmp.Reaction.Service
+		})
+		if aServ != nil && rServ != nil {
+			tmp.Action.Color = aServ.Color
+			tmp.Action.Image = aServ.Icon
+			tmp.Reaction.Color = rServ.Color
+			tmp.Reaction.Image = rServ.Icon
+		}
+		applets = append(applets, tmp)
+	}
+	if err := rows.Err(); err != nil {
+		a.Error(err, http.StatusInternalServerError)
+		return
+	}
+	a.Reply(applets, http.StatusOK)
+}
+
+type YourApplet struct {
+	Id int `json:"id"`
+	Name string `json:"name"`
+	Action ExampleArea `json:"action"`
+	Reaction ExampleArea `json:"reaction"`
+}
+
+func getYourApplets(a area.AreaRequest, userid int) {
+	// get the actions and reactions id from bridge
+	querry := `
+		select action, reaction, id
+		from bridge
+		where userid = $1
+	`
+	rows, err := a.Area.Database.Query(querry, userid)
+	if err != nil {
+		a.Error(err, http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	// then loop into the rows
+	var applets = []YourApplet{}
+	var tmp YourApplet
+	var aId, rId int
+	var bridge Bridge
+
+	for rows.Next() {
+		// get the actions & reactions in bridge
+		if err := rows.Scan(&aId, &rId, &tmp.Id); err != nil {
+			a.Error(err, http.StatusInternalServerError)
+			return
+		}
+		err = a.Area.Database.
+			QueryRow("select service, name from actions where id = $1", aId).
+			Scan(&bridge.Action.Service, &bridge.Action.Name)
+		if err != nil {
+			a.Error(err, http.StatusInternalServerError)
+			return
+		}
+		err = a.Area.Database.
+			QueryRow("select service, name from reactions where id = $1", rId).
+			Scan(&bridge.Reaction.Service, &bridge.Reaction.Name)
+		if err != nil {
+			a.Error(err, http.StatusInternalServerError)
+			return
+		}
+
+		// generate name & set the action and reaction service name
+		tmp.Name = generateName(a, bridge)
+		tmp.Action.Service = bridge.Action.Service
+		tmp.Reaction.Service = bridge.Reaction.Service
+
+		// finish with other settings
+		aServ := find(a.Area.About.Server.Services, func(s area.AboutSevice) bool {
+			return s.Name == tmp.Action.Service
+		})
+		rServ := find(a.Area.About.Server.Services, func(s area.AboutSevice) bool {
+			return s.Name == tmp.Reaction.Service
+		})
+		if aServ != nil && rServ != nil {
+			tmp.Action.Color = aServ.Color
+			tmp.Action.Image = aServ.Icon
+			tmp.Reaction.Color = rServ.Color
+			tmp.Reaction.Image = rServ.Icon
+		}
+		applets = append(applets, tmp)
+	}
+	if err := rows.Err(); err != nil {
+		a.Error(err, http.StatusInternalServerError)
+		return
+	}
+	a.Reply(applets, http.StatusOK)
+}
+
+func GetApplets(a area.AreaRequest) {
+	token := a.Request.Header.Get("Authorization")
+	if token == "" {
+		getTheExampleApplet(a)
+		return
+	}
+	userid, err := a.AssertToken()
+	if err != nil {
+		a.Error(err, http.StatusUnauthorized)
+		return
+	}
+	getYourApplets(a, userid)
+	// a.Reply(map[string]string{
+	// 	"status": "ok",
+	// }, http.StatusOK)
 }
 
 func NewArea(a area.AreaRequest) {
