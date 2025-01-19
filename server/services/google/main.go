@@ -106,7 +106,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	var res Result
 	var tok TokenResult
 	var user UserResult
-	var tokid int
+	//var tokid int
 	var owner = -1
 	var responseData map[string]interface{}
 	var atok = req.Header.Get("Authorization")
@@ -191,14 +191,14 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	// inserting into database, first i get the 'users' token
 	if atok != "" {
 		// if the user is logged, i get the userid
-		tokid, err = getIdFromToken(atok)
+		owner, err = getIdFromToken(atok)
 		if err != nil {
 			fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
 			return
 		}
 	} else {
 		// if the user is not logged, create an empty user
-		err = db.QueryRow("insert into users default values returning id").Scan(&tokid)
+		err = db.QueryRow("insert into users default values returning id").Scan(&owner)
 		if err != nil {
 			fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
 			return
@@ -210,7 +210,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 		insert into tokens (service, token, refresh, userid, owner)
         values ($1, $2, $3, $4, $5)
 	`
-	_, err = db.Exec(query, "discord", tok.Token, tok.Refresh, user.ID, tokid)
+	_, err = db.Exec(query, "discord", tok.Token, tok.Refresh, user.ID, owner)
 	if err != nil {
 		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
 		return
