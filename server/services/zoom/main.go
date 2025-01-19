@@ -267,6 +267,9 @@ func checkDeviceConnection(w http.ResponseWriter, req *http.Request, db *sql.DB)
     userID := requestBody.UserID
     bridgeID := requestBody.Bridge
 
+    fmt.Println("UserID:", userID)
+    fmt.Println("BridgeID:", bridgeID)
+
     var zoomToken string
     err = db.QueryRow("SELECT token FROM tokens WHERE owner = $1 AND service = 'zoom'", userID).Scan(&zoomToken)
     if err != nil {
@@ -286,28 +289,35 @@ func checkDeviceConnection(w http.ResponseWriter, req *http.Request, db *sql.DB)
         return
     }
 
+    fmt.Println("Zoom token retrieved successfully")
+
     go func() {
         client := &http.Client{}
 
         userInfoURL := "https://api.zoom.us/v2/users/me"
         reqUserInfo, err := http.NewRequest("GET", userInfoURL, nil)
         if err != nil {
+            fmt.Println("Error creating request:", err.Error())
             return
         }
         reqUserInfo.Header.Set("Authorization", "Bearer "+zoomToken)
 
+        fmt.Println("Fetching Zoom user info...")
         respUserInfo, err := client.Do(reqUserInfo)
         if err != nil {
+            fmt.Println("Error fetching user info:", err.Error())
             return
         }
         defer respUserInfo.Body.Close()
 
         bodyResp, err := io.ReadAll(respUserInfo.Body)
         if err != nil {
+            fmt.Println("Error reading response body:", err.Error())
             return
         }
 
         if respUserInfo.StatusCode != http.StatusOK {
+            fmt.Println("Failed to get user info:", respUserInfo.StatusCode)
             return
         }
 
@@ -317,32 +327,39 @@ func checkDeviceConnection(w http.ResponseWriter, req *http.Request, db *sql.DB)
         }
 
         if err := json.Unmarshal(bodyResp, &userInfoResponse); err != nil {
+            fmt.Println("Error unmarshalling response:", err.Error())
             return
         }
 
         zoomUserID := userInfoResponse.ID
+        fmt.Println("Zoom UserID:", zoomUserID)
 
         userMeetingsURL := fmt.Sprintf("https://api.zoom.us/v2/users/%s/meetings", zoomUserID)
+        fmt.Println("Fetching Zoom meetings for user...")
 
         for {
             reqMeetings, err := http.NewRequest("GET", userMeetingsURL, nil)
             if err != nil {
+                fmt.Println("Error creating request for meetings:", err.Error())
                 return
             }
             reqMeetings.Header.Set("Authorization", "Bearer "+zoomToken)
 
             respMeetings, err := client.Do(reqMeetings)
             if err != nil {
+                fmt.Println("Error fetching meetings:", err.Error())
                 return
             }
             defer respMeetings.Body.Close()
 
             bodyResp, err := io.ReadAll(respMeetings.Body)
             if err != nil {
+                fmt.Println("Error reading response body:", err.Error())
                 return
             }
 
             if respMeetings.StatusCode != http.StatusOK {
+                fmt.Println("Failed to get meetings:", respMeetings.StatusCode)
                 return
             }
 
@@ -356,6 +373,7 @@ func checkDeviceConnection(w http.ResponseWriter, req *http.Request, db *sql.DB)
             }
 
             if err := json.Unmarshal(bodyResp, &meetingsResponse); err != nil {
+                fmt.Println("Error unmarshalling meetings response:", err.Error())
                 return
             }
 
@@ -374,6 +392,8 @@ func checkDeviceConnection(w http.ResponseWriter, req *http.Request, db *sql.DB)
             }
 
             if activeMeeting != nil {
+                fmt.Println("User is in an active meeting:", activeMeeting.Topic)
+
                 url := fmt.Sprintf("http://backend:%s/api/orchestrator", backendPort)
                 var requestBody Message
 
@@ -384,11 +404,13 @@ func checkDeviceConnection(w http.ResponseWriter, req *http.Request, db *sql.DB)
 
                 jsonData, err := json.Marshal(requestBody)
                 if err != nil {
+                    fmt.Println("Error marshaling JSON:", err.Error())
                     return
                 }
 
                 reqPut, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonData))
                 if err != nil {
+                    fmt.Println("Error creating PUT request:", err.Error())
                     return
                 }
 
@@ -396,17 +418,21 @@ func checkDeviceConnection(w http.ResponseWriter, req *http.Request, db *sql.DB)
 
                 respPut, err := client.Do(reqPut)
                 if err != nil {
+                    fmt.Println("Error sending PUT request:", err.Error())
                     return
                 }
                 defer respPut.Body.Close()
 
                 if respPut.StatusCode != http.StatusOK {
+                    fmt.Println("Failed to send PUT request:", respPut.StatusCode)
                     return
                 }
 
+                fmt.Println("User meeting information updated successfully")
                 return
             }
 
+            fmt.Println("User is not in a meeting, retrying...")
             time.Sleep(1 * time.Second)
         }
     }()
