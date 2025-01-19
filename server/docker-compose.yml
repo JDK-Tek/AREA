@@ -97,6 +97,30 @@ services:
     networks:
       - web
 
+
+  service-zoom:
+    env_file:
+      - .env
+    container_name: area-service-zoom
+    build:
+      context: ./server/services/zoom
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.zoom.rule=PathPrefix(`/service/zoom/`)"
+      - "traefik.http.services.zoom.loadbalancer.server.port=80"
+      - "traefik.http.routers.zoom.middlewares=stripprefix-service-zoom"
+      - "traefik.http.middlewares.stripprefix-service-zoom.stripprefix.prefixes=/service/zoom"
+    environment:
+        - BACKEND_KEY=${BACKEND_KEY}
+        - REDIRECT=${REDIRECT}
+        - DB_HOST=database
+        - DB_PORT=${DATABASE_PORT}
+        - DB_USER=${DATABASE_USER}
+        - DB_PASSWORD=${DATABASE_PASSWORD}
+        - DB_NAME=${DATABASE_NAME}
+      networks:
+        - web
+
   service-google:
     env_file:
       - .env
