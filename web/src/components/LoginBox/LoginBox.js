@@ -135,6 +135,12 @@ export default function LoginBox ( {setToken, setError} ) {
                             text="Connect with Spotify"
                             handleClick={() => handleOauth("spotify")}
                         />
+                        <LRButton 
+                            color="#4272db"
+                            img="/assets/services/google.png"
+                            text="Connect with Google"
+                            handleClick={() => handleOauth("google")}
+                        />
                     </div>
             </div>
         </div>
