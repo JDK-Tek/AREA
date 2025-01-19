@@ -154,7 +154,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
         return
     }
 
-    if tok.Token == "" || tok.Refresh == "" {
+    if tok.Token == "" {
         fmt.Fprintln(w, "Erreur : token ou refresh token manquant")
         return
     }
