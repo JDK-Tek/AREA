@@ -81,15 +81,15 @@ func getIdFromToken(tokenString string) (int, error) {
 		return -1, err
 	}
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		id, ok := claims["id"].(string)
+		id, ok := claims["id"].(int)
 		if !ok {
 			return -1, fmt.Errorf("'id' field not found or not a string")
 		}
-		idInt, err := strconv.Atoi(id)
-		if err != nil {
-			return -1, fmt.Errorf("error converting id to int: %v", err)
-		}
-		return idInt, nil
+		// idInt, err := strconv.Atoi(id)
+		// if err != nil {
+		// 	return -1, fmt.Errorf("error converting id to int: %v", err)
+		// }
+		return id, nil
 	} else {
 		return -1, fmt.Errorf("invalid token")
 	}
