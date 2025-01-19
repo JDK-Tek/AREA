@@ -2872,6 +2872,7 @@ type Infos struct {
 	Color  string      `json:"color"`
 	Image  string      `json:"image"`
 	Routes []InfoRoute `json:"areas"`
+	Oauth  bool `json:"oauth"`
 }
 
 type Message struct {
@@ -3001,6 +3002,7 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 		Color:  "#1DB954",
 		Image:  "/assets/spotify.png",
 		Routes: list,
+		Oauth:  true,
 	}
 	var data []byte
 	var err error
