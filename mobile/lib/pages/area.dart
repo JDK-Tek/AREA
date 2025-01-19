@@ -1,3 +1,8 @@
+import 'package:area/pages/GithubOAuthPage.dart';
+import 'package:area/pages/OAuthRoblox.dart';
+import 'package:area/pages/OutlookOAuthPage.dart';
+import 'package:area/pages/RedditAuthPage.dart';
+import 'package:area/pages/SpotifyOAuthPage.dart';
 import 'package:area/pages/home_page.dart';
 import 'package:area/tools/dynamic.dart';
 import 'package:area/tools/providers.dart';
@@ -171,7 +176,7 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
                 },
                 errorBuilder: (BuildContext context, Object error,
                     StackTrace? stackTrace) {
-                  return const Icon(Icons.broken_image, size: 40);
+                  return const Icon(Icons.error, size: 40);
                 },
                 "https://$ip" + item['image'],
                 width: 40,
@@ -276,6 +281,78 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
     };
     _sendRequest(automation);
   }
+
+  Future<Map<String, dynamic>> _makeDemandOauths(String u) async {
+    final Uri uri =
+        Uri.https(Provider.of<IPState>(context, listen: false).ip, u);
+    late final https.Response rep;
+
+    try {
+      rep = await https.get(uri);
+    } catch (e) {
+      if (mounted) {
+        _showDialog("Error", "Could not make request: $e");
+      }
+      return {};
+    }
+
+    if (rep.statusCode >= 500) {
+      if (mounted) {
+        _showDialog("Error",
+            "Failed with status: ${rep.statusCode}. ${rep.reasonPhrase ?? 'Unknown error'}");
+      }
+      return {};
+    }
+
+    Map<String, dynamic> responseBody;
+    try {
+      responseBody = jsonDecode(rep.body);
+      return responseBody;
+    } catch (e) {
+      if (mounted) {
+        _showDialog("Error", "Invalid JSON format: $e");
+      }
+      return {};
+    }
+  }
+
+  Widget listOAuths() {
+  Map<String, dynamic> rep =
+      _makeDemandOauths("/api/doctor") as Map<String, dynamic>;
+
+  if (rep["authentificated"] == false) {
+    return const Text(
+      "You need to be logged in first...",
+      style: TextStyle(color: Colors.white, fontSize: 50),
+      textAlign: TextAlign.center,
+    );
+  }
+
+  Map<String, dynamic> oauth = {
+    "roblox": const RobloxLoginButton(),
+    "outlook": const OutlookLoginButton(),
+    "spotify": const SpotifyLoginButton(),
+    "github": const GithubLoginButton(),
+    "reddit": const RedditLoginButton(),
+  };
+
+  List<String> authenticatedOAuths = rep["oauths"];
+
+  List<Widget> unauthenticatedButtons = [];
+  oauth.forEach((key, widget) {
+    if (!authenticatedOAuths.contains(key)) {
+      unauthenticatedButtons.add(widget);
+    }
+  });
+
+  return Padding(
+    padding: const EdgeInsets.only(left: 45, right: 45),
+    child: Column(
+      children: unauthenticatedButtons,
+    ),
+  );
+}
+
 
   Future<void> _sendRequest(Map<String, dynamic> body) async {
     final token = Provider.of<UserState>(context, listen: false).token;
@@ -470,7 +547,7 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
                             },
                             errorBuilder: (BuildContext context, Object error,
                                 StackTrace? stackTrace) {
-                              return const Icon(Icons.broken_image, size: 40);
+                              return const Icon(Icons.error, size: 40);
                             },
                           ),
                           tileColor:
@@ -490,6 +567,19 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
                       child: ElevatedButton(
                         onPressed: _submitAutomation,
                         child: const Text("Submit"),
+                      ),
+                    ),
+                    const SizedBox(height: 100,),
+                    const Padding(
+                      padding: EdgeInsets.only(left: 45, right: 45),
+                      child: Column(
+                        children: [
+                          RobloxLoginButton(),
+                          OutlookLoginButton(),
+                          SpotifyLoginButton(),
+                          GithubLoginButton(),
+                          RedditLoginButton(),
+                        ],
                       ),
                     ),
                   ],

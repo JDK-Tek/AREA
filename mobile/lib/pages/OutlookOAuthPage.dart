@@ -17,9 +17,21 @@ class OutlookLoginButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var ip = Provider.of<IPState>(context, listen: false).ip;
     return ElevatedButton(
+      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xff0078d4)),
       onPressed: () => _launchURL(context),
-      child: const Text('Se connecter avec outlook'),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          SizedBox(
+              child: Image.network(
+            "https://$ip/assets/outlook.png",
+            scale: 15,
+          )),
+          const Text('Se connecter avec Outlook', style: TextStyle(color: Colors.white)),
+        ],
+      ),
     );
   }
 }

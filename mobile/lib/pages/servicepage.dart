@@ -125,7 +125,6 @@ class Service extends StatelessWidget {
               },
               errorBuilder:
                   (BuildContext context, Object error, StackTrace? stackTrace) {
-                print(icon);
                 return const Icon(Icons.broken_image, size: 40);
               },
               "https://$ip" + icon,
