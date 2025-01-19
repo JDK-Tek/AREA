@@ -84,7 +84,7 @@ func getIdFromToken(tokenString string) (int, error) {
 	if strings.HasPrefix(tokenString, "Bearer ") {
 		tokenString = tokenString[len("Bearer "):]
 	}
-	fmt.Println(tokenString)
+	fmt.Println("tokenString = ", tokenString)
 	secretKey := []byte(os.Getenv("BACKEND_KEY"))
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -200,7 +200,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 	// inserting into database, first i get the 'users' token
 	if atok != "" {
 		// if the user is logged, i get the userid
-		tokid, err = getIdFromToken(tok.Token)
+		tokid, err = getIdFromToken(atok)
 		if err != nil {
 			fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
 			return
