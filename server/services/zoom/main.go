@@ -274,6 +274,7 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 }
 
 func connectToDatabase() (*sql.DB, error) {
+	fmt.Println("p")
 	dbPassword := os.Getenv("DB_PASSWORD")
 	fmt.Println("a")
 	if dbPassword == "" {
