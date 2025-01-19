@@ -103,14 +103,6 @@ export default function CreateArea({setToken}) {
                     className="block text-4xl font-bold font-spartan text-chartgray-300 text-center p-5 mt-10"
                 >Create a new AREA</label>
 
-                <div className="flex justify-center">
-                    <InputBox
-                        value={name}
-                        setValue={setName}
-                        placeholder={"Enter the name of the new AREA"}
-                        full={false}
-                    />
-                </div>
 
                 <div className="p-10 overflow-y-auto max-h-[calc(100vh-4rem-64px)]">
                     <div className="mb-10">
@@ -180,10 +172,6 @@ export default function CreateArea({setToken}) {
                         text="Create the new AREA"
                         styleClolor="bg-chartpurple-200 hover:bg-chartpurple-100 text-white"
                         onClick={() => {
-                            if (name === "") {
-                                setError("Missing the name of the AREA");
-                                return;
-                            }
 
                             if (area.actions.length === 0) {
                                 setError("Missing at least one action");
@@ -213,8 +201,6 @@ export default function CreateArea({setToken}) {
                                     "Authorization": `Bearer ${token}`,
                             };
 
-                            console.log(header);
-                            console.log(body);
                             axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/area`, body, {
                                 headers: header
                             })
