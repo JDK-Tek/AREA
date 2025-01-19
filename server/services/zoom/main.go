@@ -130,8 +130,8 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     var owner = -1
     var responseData map[string]interface{}
 
-    clientID := os.Getenv("ZOOM_CLIENT_ID")
-    clientSecret := os.Getenv("ZOOM_CLIENT_SECRET")
+    clientID := os.Getenv("SPOTIFY_CLIENT_ID")
+    clientSecret := os.Getenv("SPOTIFY_CLIENT_SECRET")
     redirectURI := os.Getenv("REDIRECT")
     data := url.Values{}
    
@@ -147,7 +147,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     data.Set("code", res.Code)
     data.Set("redirect_uri", redirectURI)
    
-    rep, err := http.PostForm("https://zoom.us/oauth/token", data)
+    rep, err := http.PostForm("https://accounts.spotify.com/api/token", data)
     if err != nil {
         fmt.Fprintln(w, "Erreur lors de l'échange du code:", err.Error())
         return
@@ -168,7 +168,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     tok.Token = responseData["access_token"].(string)
     tok.Refresh = responseData["refresh_token"].(string)
 
-    req, err = http.NewRequest("GET", "https://api.zoom.us/v2/users/me", nil)
+    req, err = http.NewRequest("GET", "https://api.spotify.com/v1/me", nil)
     if err != nil {
         fmt.Fprintln(w, "Erreur lors de la création de la requête utilisateur:", err.Error())
         return
@@ -178,7 +178,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     client := &http.Client{}
     rep, err = client.Do(req)
     if err != nil {
-        fmt.Fprintln(w, "Erreur lors de l'appel à l'API Zoom:", err.Error())
+        fmt.Fprintln(w, "Erreur lors de l'appel à l'API Spotify:", err.Error())
         return
     }
     defer rep.Body.Close()
@@ -197,7 +197,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     err = db.QueryRow("SELECT id, owner FROM tokens WHERE userid = $1", user.ID).Scan(&tokid, &owner)
     if err != nil {
         err = db.QueryRow("INSERT INTO tokens (service, token, refresh, userid) VALUES ($1, $2, $3, $4) RETURNING id",
-            "zoom",
+            "spotify",
             tok.Token,
             tok.Refresh,
             user.ID,
@@ -227,7 +227,7 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
         return
     }
    
-    fmt.Println("Succès de l'authentification avec Zoom, token =", tokenStr)
+    fmt.Println("Succès de l'authentification avec Spotify, token =", tokenStr)
     fmt.Fprintf(w, "{\"token\": \"%s\"}\n", tokenStr)
 }
 
