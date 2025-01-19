@@ -121,7 +121,7 @@ export default function SidePannel({ action, open, setOpen, setArea, loggedServi
 
     useEffect(() => {
         if (feature) {
-            if (service.oauth && !loggedServices.some(s => s === service.name)) {
+            if (service.oauth && loggedServices && !loggedServices.some(s => s === service.name)) {
                  setContent(
                     <div className="flex flex-col items-center">
                         <LRButton
