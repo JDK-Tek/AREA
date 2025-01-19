@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"time"
+	"strings"
 	"io"
 
 	"github.com/dgrijalva/jwt-go"
@@ -2388,7 +2389,7 @@ func createPlaylist(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     }
 }
 
-func deletePlaylist(w http.ResponseWriter, req *http.Request, db *sql.DB) {
+func clearPlaylist(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     fmt.Println("Headers received:", req.Header)
 
     bodyBytes, err := io.ReadAll(req.Body)
@@ -2403,9 +2404,9 @@ func deletePlaylist(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     req.Body = io.NopCloser(bytes.NewReader(bodyBytes))
 
     var requestBody struct {
-        UserID    int    `json:"userid"`
-        Spices    struct {
-            PlaylistID string `json:"name"`
+        UserID int `json:"userid"`
+        Spices struct {
+            PlaylistID string `json:"id"`
         } `json:"spices"`
     }
 
@@ -2421,7 +2422,7 @@ func deletePlaylist(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     userID := requestBody.UserID
     playlistID := requestBody.Spices.PlaylistID
     fmt.Println("Extracted userID:", userID)
-    fmt.Println("Playlist ID to delete:", playlistID)
+    fmt.Println("Playlist ID to clear:", playlistID)
 
     var spotifyToken string
     err = db.QueryRow("SELECT token FROM tokens WHERE owner = $1 AND service = 'spotify'", userID).Scan(&spotifyToken)
@@ -2445,9 +2446,9 @@ func deletePlaylist(w http.ResponseWriter, req *http.Request, db *sql.DB) {
         return
     }
 
-    spotifyURL := fmt.Sprintf("https://api.spotify.com/v1/playlists/%s", playlistID)
+    spotifyURL := fmt.Sprintf("https://api.spotify.com/v1/playlists/%s/tracks", playlistID)
 
-    reqSpotify, err := http.NewRequest("DELETE", spotifyURL, nil)
+    reqSpotify, err := http.NewRequest("GET", spotifyURL, nil)
     if err != nil {
         w.WriteHeader(http.StatusInternalServerError)
         fmt.Println("Error creating Spotify request:", err.Error())
@@ -2462,7 +2463,7 @@ func deletePlaylist(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     respSpotify, err := client.Do(reqSpotify)
     if err != nil {
         w.WriteHeader(http.StatusBadGateway)
-        fmt.Println("Error deleting playlist:", err.Error())
+        fmt.Println("Error fetching playlist tracks:", err.Error())
         fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
         return
     }
@@ -2477,17 +2478,289 @@ func deletePlaylist(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     }
     fmt.Println("Spotify Response Body:", string(bodyResp))
 
-    if respSpotify.StatusCode == http.StatusNoContent {
-        fmt.Println("Playlist successfully deleted!")
+    if respSpotify.StatusCode != http.StatusOK {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Failed to fetch playlist tracks. Status:", respSpotify.StatusCode)
+        fmt.Fprintf(w, "{ \"error\": \"Failed to fetch playlist tracks\" }\n")
+        return
+    }
+
+    var playlistTracks struct {
+        Items []struct {
+            Track struct {
+                ID string `json:"id"`
+            } `json:"track"`
+        } `json:"items"`
+    }
+
+    if err := json.Unmarshal(bodyResp, &playlistTracks); err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error unmarshalling playlist tracks:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"Error unmarshalling playlist tracks\" }\n")
+        return
+    }
+
+    if len(playlistTracks.Items) == 0 {
         w.WriteHeader(http.StatusOK)
-        fmt.Fprintf(w, "{ \"status\": \"Playlist successfully deleted!\" }\n")
+        fmt.Fprintf(w, "{ \"status\": \"Playlist is already empty\" }\n")
+        return
+    }
+
+    trackIDs := []string{}
+    for _, item := range playlistTracks.Items {
+        trackIDs = append(trackIDs, item.Track.ID)
+    }
+
+    removeTracksPayload := fmt.Sprintf(`{
+        "tracks": [%s]
+    }`, strings.Join(trackIDs, ","))
+
+    reqSpotifyRemove, err := http.NewRequest("DELETE", spotifyURL, bytes.NewBuffer([]byte(removeTracksPayload)))
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error creating delete request:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+        return
+    }
+
+    reqSpotifyRemove.Header.Set("Authorization", "Bearer "+spotifyToken)
+    reqSpotifyRemove.Header.Set("Content-Type", "application/json")
+
+    respSpotifyRemove, err := client.Do(reqSpotifyRemove)
+    if err != nil {
+        w.WriteHeader(http.StatusBadGateway)
+        fmt.Println("Error clearing playlist:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+        return
+    }
+    defer respSpotifyRemove.Body.Close()
+
+    bodyRespRemove, err := io.ReadAll(respSpotifyRemove.Body)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error reading Spotify response body:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"Error reading Spotify response body\" }\n")
+        return
+    }
+    fmt.Println("Spotify Response Body after removal:", string(bodyRespRemove))
+
+    if respSpotifyRemove.StatusCode == http.StatusOK {
+        fmt.Println("Playlist successfully cleared!")
+        w.WriteHeader(http.StatusOK)
+        fmt.Fprintf(w, "{ \"status\": \"Playlist successfully cleared!\" }\n")
     } else {
         w.WriteHeader(http.StatusInternalServerError)
-        fmt.Println("Failed to delete playlist. Status:", respSpotify.StatusCode)
-        fmt.Fprintf(w, "{ \"error\": \"Failed to delete playlist\" }\n")
+        fmt.Println("Failed to clear playlist. Status:", respSpotifyRemove.StatusCode)
+        fmt.Fprintf(w, "{ \"error\": \"Failed to clear playlist\" }\n")
     }
 }
 
+func addToPlaylistByName(w http.ResponseWriter, req *http.Request, db *sql.DB) {
+    fmt.Println("Headers received:", req.Header)
+
+    bodyBytes, err := io.ReadAll(req.Body)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error reading request body:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+        return
+    }
+    fmt.Println("Request Body:", string(bodyBytes))
+
+    req.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+
+    var requestBody struct {
+        UserID int    `json:"userid"`
+        Spices struct {
+            Name string `json:"name"`
+        } `json:"spices"`
+    }
+
+    decoder := json.NewDecoder(req.Body)
+    err = decoder.Decode(&requestBody)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error decoding JSON:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+        return
+    }
+
+    userID := requestBody.UserID
+    playlistName := requestBody.Spices.Name
+    fmt.Println("Extracted userID:", userID)
+    fmt.Println("Playlist Name:", playlistName)
+
+    var spotifyToken string
+    err = db.QueryRow("SELECT token FROM tokens WHERE owner = $1 AND service = 'spotify'", userID).Scan(&spotifyToken)
+    if err != nil {
+        if err == sql.ErrNoRows {
+            w.WriteHeader(http.StatusNotFound)
+            fmt.Println("No Spotify token found for user:", userID)
+            fmt.Fprintf(w, "{ \"error\": \"No Spotify token found for user\" }\n")
+        } else {
+            w.WriteHeader(http.StatusInternalServerError)
+            fmt.Println("Database error:", err.Error())
+            fmt.Fprintf(w, "{ \"error\": \"Database error: %s\" }\n", err.Error())
+        }
+        return
+    }
+
+    if spotifyToken == "" {
+        w.WriteHeader(http.StatusUnauthorized)
+        fmt.Println("No Spotify token available for user:", userID)
+        fmt.Fprintf(w, "{ \"error\": \"No Spotify token available\" }\n")
+        return
+    }
+
+    spotifyURL := "https://api.spotify.com/v1/me/player/currently-playing"
+    reqSpotify, err := http.NewRequest("GET", spotifyURL, nil)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error creating Spotify request:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+        return
+    }
+
+    reqSpotify.Header.Set("Authorization", "Bearer "+spotifyToken)
+    client := &http.Client{}
+    respSpotify, err := client.Do(reqSpotify)
+    if err != nil {
+        w.WriteHeader(http.StatusBadGateway)
+        fmt.Println("Error fetching currently playing music:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+        return
+    }
+    defer respSpotify.Body.Close()
+
+    bodyResp, err := io.ReadAll(respSpotify.Body)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error reading Spotify response body:", err.Error())
+        fmt.Fprintf(w, "{ \"error\": \"Error reading Spotify response body\" }\n")
+        return
+    }
+    fmt.Println("Spotify Response Body:", string(bodyResp))
+
+    if respSpotify.StatusCode == http.StatusOK {
+        var playbackResponse struct {
+            Item struct {
+                Name     string `json:"name"`
+                ID       string `json:"id"`
+                Artists []struct {
+                    Name string `json:"name"`
+                } `json:"artists"`
+            } `json:"item"`
+        }
+
+        if err := json.Unmarshal(bodyResp, &playbackResponse); err != nil {
+            w.WriteHeader(http.StatusInternalServerError)
+            fmt.Println("Error unmarshalling playback response:", err.Error())
+            fmt.Fprintf(w, "{ \"error\": \"Error unmarshalling playback response\" }\n")
+            return
+        }
+
+        if playbackResponse.Item.Name != "" {
+            trackID := playbackResponse.Item.ID
+            trackName := playbackResponse.Item.Name
+            artistName := playbackResponse.Item.Artists[0].Name
+
+            fmt.Printf("Currently playing: %s by %s\n", trackName, artistName)
+
+            playlistsURL := "https://api.spotify.com/v1/me/playlists"
+            reqPlaylists, err := http.NewRequest("GET", playlistsURL, nil)
+            if err != nil {
+                w.WriteHeader(http.StatusInternalServerError)
+                fmt.Println("Error creating playlists request:", err.Error())
+                fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+                return
+            }
+
+            reqPlaylists.Header.Set("Authorization", "Bearer "+spotifyToken)
+            respPlaylists, err := client.Do(reqPlaylists)
+            if err != nil {
+                w.WriteHeader(http.StatusBadGateway)
+                fmt.Println("Error fetching playlists:", err.Error())
+                fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+                return
+            }
+            defer respPlaylists.Body.Close()
+
+            bodyPlaylists, err := io.ReadAll(respPlaylists.Body)
+            if err != nil {
+                w.WriteHeader(http.StatusInternalServerError)
+                fmt.Println("Error reading playlists response body:", err.Error())
+                fmt.Fprintf(w, "{ \"error\": \"Error reading playlists response body\" }\n")
+                return
+            }
+
+            var playlistsResponse struct {
+                Items []struct {
+                    ID   string `json:"id"`
+                    Name string `json:"name"`
+                } `json:"items"`
+            }
+
+            if err := json.Unmarshal(bodyPlaylists, &playlistsResponse); err != nil {
+                w.WriteHeader(http.StatusInternalServerError)
+                fmt.Println("Error unmarshalling playlists response:", err.Error())
+                fmt.Fprintf(w, "{ \"error\": \"Error unmarshalling playlists response\" }\n")
+                return
+            }
+
+            var playlistID string
+            for _, playlist := range playlistsResponse.Items {
+                if playlist.Name == playlistName {
+                    playlistID = playlist.ID
+                    break
+                }
+            }
+
+            if playlistID == "" {
+                w.WriteHeader(http.StatusNotFound)
+                fmt.Println("Playlist not found:", playlistName)
+                fmt.Fprintf(w, "{ \"error\": \"Playlist not found\" }\n")
+                return
+            }
+
+            addTrackURL := fmt.Sprintf("https://api.spotify.com/v1/playlists/%s/tracks", playlistID)
+            addTrackPayload := fmt.Sprintf(`{"uris":["spotify:track:%s"]}`, trackID)
+            reqAddTrack, err := http.NewRequest("POST", addTrackURL, bytes.NewBuffer([]byte(addTrackPayload)))
+            if err != nil {
+                w.WriteHeader(http.StatusInternalServerError)
+                fmt.Println("Error creating add track request:", err.Error())
+                fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+                return
+            }
+
+            reqAddTrack.Header.Set("Authorization", "Bearer "+spotifyToken)
+            respAddTrack, err := client.Do(reqAddTrack)
+            if err != nil {
+                w.WriteHeader(http.StatusBadGateway)
+                fmt.Println("Error adding track to playlist:", err.Error())
+                fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+                return
+            }
+            defer respAddTrack.Body.Close()
+
+            if respAddTrack.StatusCode == http.StatusOK {
+                fmt.Println("Successfully added track to the playlist")
+                w.WriteHeader(http.StatusOK)
+                fmt.Fprintf(w, "{ \"status\": \"Track added to the playlist\" }\n")
+            } else {
+                w.WriteHeader(http.StatusInternalServerError)
+                fmt.Println("Failed to add track to playlist. Status:", respAddTrack.StatusCode)
+                fmt.Fprintf(w, "{ \"error\": \"Failed to add track to playlist\" }\n")
+            }
+        } else {
+            w.WriteHeader(http.StatusNotFound)
+            fmt.Fprintf(w, "{ \"error\": \"No track is currently playing\" }\n")
+        }
+    } else {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Println("Error fetching currently playing track. Status:", respSpotify.StatusCode)
+        fmt.Fprintf(w, "{ \"error\": \"Failed to get currently playing track\" }\n")
+    }
+}
 
 
 func connectToDatabase() (*sql.DB, error) {
@@ -2641,9 +2914,21 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 			},
 		},
 		{
-			Name: "deletePlaylist",
+			Name: "clearPlaylist",
 			Type: "reaction",
-			Desc: "delete une playlist",
+			Desc: "clear une playlist",
+			Spices: []InfoSpice{
+				{
+					Name: "name",
+					Type: "text",
+					Title: "The title of the playlist",
+				},
+			},
+		},
+		{
+			Name: "addToPlaylistByName",
+			Type: "reaction",
+			Desc: "add the current song listening to the playlist selected",
 			Spices: []InfoSpice{
 				{
 					Name: "name",
@@ -2694,7 +2979,8 @@ func main() {
 	router.HandleFunc("/removeFromPlaylistIfPresent", miniproxy(removeFromPlaylistIfPresent, db)).Methods("POST")
 	router.HandleFunc("/addToPlaylistIfNotPresent", miniproxy(addToPlaylistIfNotPresent, db)).Methods("POST")
 	router.HandleFunc("/createPlaylist", miniproxy(createPlaylist, db)).Methods("POST")
-	router.HandleFunc("/deletePlaylist", miniproxy(deletePlaylist, db)).Methods("POST")
+	router.HandleFunc("/clearPlaylist", miniproxy(clearPlaylist, db)).Methods("POST")
+	router.HandleFunc("/addToPlaylistByName", miniproxy(addToPlaylistByName, db)).Methods("POST")
 	router.HandleFunc("/user", getUserInfo).Methods("GET")
 	router.HandleFunc("/", getRoutes).Methods("GET")
 	log.Fatal(http.ListenAndServe(":80", router))
