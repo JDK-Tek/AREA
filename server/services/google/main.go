@@ -94,13 +94,16 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     }
 
 	decodedCode, err := url.QueryUnescape(strings.TrimSpace(url.QueryEscape(res.Code)))
+	if err != nil {
+        return
+    }
     data.Set("client_id", strings.TrimSpace(clientID))
     data.Set("client_secret", strings.TrimSpace(clientSecret))
     data.Set("grant_type", "authorization_code")
     data.Set("code", decodedCode)
     data.Set("redirect_uri", strings.TrimSpace(redirectURI))
     
-	fmt.Println("code = ", res.Code)
+	fmt.Println("code = ", decodedCode)
 	fmt.Println("client secret = ", strings.TrimSpace(clientSecret))
 	fmt.Println("so redirect = ", strings.TrimSpace(redirectURI))
 
