@@ -99,6 +99,8 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
     data.Set("code", res.Code)
     data.Set("redirect_uri", redirectURI)
     
+	fmt.Println("code = ", res.Code)
+
     rep, err := http.PostForm("https://oauth2.googleapis.com/token", data)
     if err != nil {
         fmt.Fprintln(w, "Erreur lors de l'échange du code:", err.Error())
