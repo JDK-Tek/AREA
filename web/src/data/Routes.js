@@ -14,6 +14,7 @@ const listRoutes = {
     explore: "/explore",
     connected: "/connected",
     clientapk: "/client.apk",
+    privacy: "/privacy",
 }
 
 export default listRoutes;
