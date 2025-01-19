@@ -308,16 +308,16 @@ func connectToDatabase() (*sql.DB, error) {
 }
 
 func main() {
-		// db, err := connectToDatabase()
-		// if err != nil {
-		// 	os.Exit(84)
-		// }
+	db, err := connectToDatabase()
+	if err != nil {
+		os.Exit(84)
+	}
 	fmt.Println("Zoom microservice container is running !")
 	router := mux.NewRouter()
 	godotenv.Load(".env")
 
 	router.HandleFunc("/oauth", getOAUTHLink).Methods("GET")
-	// router.HandleFunc("/oauth", miniproxy(setOAUTHToken, db)).Methods("POST")
+	router.HandleFunc("/oauth", miniproxy(setOAUTHToken, db)).Methods("POST")
 	router.HandleFunc("/user", getUserInfo).Methods("GET")
 	router.HandleFunc("/", getRoutes).Methods("GET")
 	log.Fatal(http.ListenAndServe(":80", router))
