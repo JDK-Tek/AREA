@@ -1,7 +1,7 @@
 # AREA Routes
 
 ## `POST` register
-> http://localhost:42000/api/register
+> /api/register
 
 ### Body
 ```json
@@ -12,7 +12,7 @@
 ```
 
 ## `POST` login
-> http://localhost:42000/api/login
+> /api/login
 
 ### Body
 ```json
@@ -23,7 +23,7 @@
 ```
 
 ## `POST` new area
-> http://localhost:42000/api/area
+> /api/area
 
 ### Request Headers
 | Key | Value |
@@ -72,33 +72,13 @@
 }
 ```
 
-## `PUT` orchestrator
-> http://localhost:42000/api/orchestrator
-
->[!NOTE]
-> This shouldnt be call manually
-
-### Body
-```json
-{
-    "bridge": <number>
-}
-```
-
 ## `GET` oauth getter
-> http://localhost:42000/api/oauth/[service]
+> /api/oauth/[service]
 
 Get the oauth for a service.
 
-## Query Params
-| Key | Value |
-|-----|-------|
-| redirect | <link> |
-
-It returns the link for you to do the OAUTH.
-
 ## `POST` oauth setter
-> http://localhost:42000/api/oauth/[service]
+> /api/oauth/[service]
 
 Set the oauth result (token, code to get token...)
 
@@ -111,38 +91,52 @@ Set the oauth result (token, code to get token...)
 
 It returns a session token if it succeed, or anything if its an error.
 
----
+## `GET` applets
+> /api/area
 
->[!NOTE]
-> All the following bellow are the microservices, and should not be call manually
+Get the user applets, or the example applets.
 
-## `POST` discord send
-> http://localhost:42002/service/discord/send
+If you put a token, it should return your applets.
 
-```json
-{
-    "spices": {
-        ...
-    }
-}
-```
+However, if no token is found, it will 
 
-## `POST` time in
-> http://localhost:42002/service/time/in
-
-```json
-{
-    "spices": {
-        ...
-    },
-    "bridge": <number>
-}
-```
-
-## `GET` discord oauth
-> http://localhost:42002/service/discord/oauth
-
-## Query Params
+### Request Headers (optional)
 | Key | Value |
 |-----|-------|
-| redirect | <link>|
+| Authorization | Bearer `<token>` |
+
+### Query Params (optional)
+| Key | Type |
+|-----|-------|
+| limit | `<number>` |
+
+## `GET` doctor
+
+> /api/doctor
+
+Gives you usefull inform
+
+### Request Headers (optional)
+| Key | Value |
+|-----|-------|
+| Authorization | Bearer `<token>` |
+
+---
+
+## `PUT` orchestrator
+> /api/orchestrator
+
+>[!NOTE]
+> This shouldnt be call manually
+
+### Body
+```json
+{
+    "bridge": <number>,
+    "userid": <number>,
+    "userid": {
+        <string>: <string>
+    },
+}
+```
+
