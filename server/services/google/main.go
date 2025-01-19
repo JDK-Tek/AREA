@@ -240,13 +240,13 @@ func sendEmailNotification(w http.ResponseWriter, req *http.Request, db *sql.DB)
     req.Body = io.NopCloser(bytes.NewReader(bodyBytes))
 
     var requestBody struct {
-		UserID int `json:"userid"`
-		Spices struct { 
-			Subject string `json:"subject"`
-			Email   string `json:"email"`
-			Body    string `json:"body"`
-		} `json:"spices"`
-	}
+        UserID int `json:"userid"`
+        Spices struct { 
+            Subject string `json:"subject"`
+            Email   string `json:"email"`
+            Body    string `json:"body"`
+        } `json:"spices"`
+    }
 
     decoder := json.NewDecoder(req.Body)
     err = decoder.Decode(&requestBody)
@@ -282,14 +282,7 @@ func sendEmailNotification(w http.ResponseWriter, req *http.Request, db *sql.DB)
         return
     }
 
-    if len(requestBody.Spices) == 0 {
-        w.WriteHeader(http.StatusBadRequest)
-        fmt.Println("Missing email information in spices")
-        fmt.Fprintf(w, "{ \"error\": \"Missing email information\" }\n")
-        return
-    }
-
-    spice := requestBody.Spices[0]
+    spice := requestBody.Spices
 
     subject := spice.Subject
     recipientEmail := spice.Email
