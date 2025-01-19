@@ -16,12 +16,28 @@ class GithubLoginButton extends StatelessWidget {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
+    var ip = Provider.of<IPState>(context, listen: false).ip;
     return ElevatedButton(
+      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xff24292e)),
       onPressed: () => _launchURL(context),
-      child: const Text('Se connecter avec Github'),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          SizedBox(
+              child: Image.network(
+            "https://$ip/assets/github.webp",
+            errorBuilder:
+                (BuildContext context, Object error, StackTrace? stackTrace) {
+              return const Icon(Icons.error, size: 40);
+            },
+            scale: 10,
+          )),
+          const Text('Se connecter avec Github',
+              style: TextStyle(color: Colors.white)),
+        ],
+      ),
     );
   }
 }

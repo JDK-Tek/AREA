@@ -6,55 +6,49 @@ import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:go_router/go_router.dart';
 
-class SpotifyLoginButton extends StatelessWidget {
-  const SpotifyLoginButton({super.key});
-
+class RedditLoginButton extends StatelessWidget {
+  const RedditLoginButton({super.key});
   Future<void> _launchURL(BuildContext context) async {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const SpotifyAuthPage(),
-      ),
+      MaterialPageRoute(builder: (context) => const RedditAuthPage()),
     );
   }
-
+ 
   @override
   Widget build(BuildContext context) {
     var ip = Provider.of<IPState>(context, listen: false).ip;
     return ElevatedButton(
-      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xff1DB954)),
+      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xffff4500)),
       onPressed: () => _launchURL(context),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           SizedBox(
-            child: Image.network(
-              "https://$ip/assets/spotify.png",
-              errorBuilder:
-                  (BuildContext context, Object error, StackTrace? stackTrace) {
-                return const Icon(Icons.error, size: 40);
-              },
-              scale: 15,
-            ),
-          ),
-          const Text(
-            'Se connecter avec Spotify',
-            style: TextStyle(color: Colors.white),
-          ),
+              child: Image.network(
+            "https://$ip/assets/reddit.webp",
+            errorBuilder:
+                (BuildContext context, Object error, StackTrace? stackTrace) {
+              return const Icon(Icons.error, size: 40);
+            },
+            scale: 10,
+          )),
+          const Text('Se connecter avec Reddit',
+              style: TextStyle(color: Colors.white)),
         ],
       ),
     );
   }
 }
 
-class SpotifyAuthPage extends StatefulWidget {
-  const SpotifyAuthPage({super.key});
+class RedditAuthPage extends StatefulWidget {
+  const RedditAuthPage({super.key});
 
   @override
-  State<SpotifyAuthPage> createState() => _SpotifyAuthPageState();
+  State<RedditAuthPage> createState() => _RedditAuthPageState();
 }
 
-class _SpotifyAuthPageState extends State<SpotifyAuthPage> {
+class _RedditAuthPageState extends State<RedditAuthPage> {
   bool _isWebViewInitialized = false;
   String url = "";
   late WebViewController _webViewController;
@@ -68,9 +62,10 @@ class _SpotifyAuthPageState extends State<SpotifyAuthPage> {
   }
 
   Future<void> _initialize() async {
-    await _makeDemand("api/oauth/spotify");
+    await _makeDemand("api/oauth/reddit");
     setState(() {
       _initializeWebView();
+
       _isWebViewInitialized = true;
     });
   }
@@ -88,7 +83,7 @@ class _SpotifyAuthPageState extends State<SpotifyAuthPage> {
     }
     if (rep.statusCode >= 500) {
       setState(() {
-        u = "error";
+        u = "pipi";
       });
       _errorMessage(rep.body);
       return;
@@ -97,7 +92,7 @@ class _SpotifyAuthPageState extends State<SpotifyAuthPage> {
     setState(() {
       _token = content;
       u = content;
-      url = content.trim();
+      url = content;
     });
   }
 
@@ -115,9 +110,9 @@ class _SpotifyAuthPageState extends State<SpotifyAuthPage> {
                 setState(() {
                   _authCode = code;
                   if (_authCode != "") {
-                    _makeRequest(_authCode, "api/oauth/spotify");
+                    _makeRequest(_authCode, "api/oauth/reddit");
                     if (!context.mounted) return;
-                    context.pop();
+                    context.go("/");
                   }
                 });
               }
@@ -158,7 +153,7 @@ class _SpotifyAuthPageState extends State<SpotifyAuthPage> {
   }
 
   void switchPage() {
-    context.pop();
+    context.go("/");
   }
 
   Future<void> _makeRequest(String a, String u) async {
@@ -175,15 +170,13 @@ class _SpotifyAuthPageState extends State<SpotifyAuthPage> {
       return _errorMessage("$e");
     }
     content = jsonDecode(rep.body) as Map<String, dynamic>;
-    switch ((rep.statusCode / 100)) {
+    switch ((rep.statusCode / 100) as int) {
       case 2:
         str = content['token']?.toString();
         if (str != null) {
+          if (!mounted) return;
+          Provider.of<UserState>(context, listen: false).setToken(_token!);
           _token = str;
-          if (mounted) {
-            Provider.of<UserState>(context, listen: false).setToken(_token!);
-            context.pop();
-          }
         } else {
           _errorMessage("Enter a valid email and password !");
         }
@@ -204,7 +197,7 @@ class _SpotifyAuthPageState extends State<SpotifyAuthPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Spotify Authentication")),
+      appBar: AppBar(title: const Text("Reddit Authentication")),
       body: _isWebViewInitialized
           ? WebViewWidget(controller: _webViewController)
           : const Center(child: CircularProgressIndicator()),

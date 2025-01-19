@@ -132,7 +132,7 @@ export default function ServiceFeatureConfiguration({ action, feature, service, 
                             if (action) {
                                 setArea((prevArea) => ({
                                     ...prevArea,
-                                    actions: [...prevArea.actions, {
+                                    actions: [{
                                         service: service.name,
                                         name: feature.name,
                                         title: feature.description,
@@ -143,7 +143,7 @@ export default function ServiceFeatureConfiguration({ action, feature, service, 
                             } else {
                                 setArea((prevArea) => ({
                                     ...prevArea,
-                                    reactions: [...prevArea.reactions, {
+                                    reactions: [{
                                         service: service.name,
                                         name: feature.name,
                                         title: feature.description,

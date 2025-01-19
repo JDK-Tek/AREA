@@ -29,14 +29,8 @@ export default function Service({ service, rounded, setService }) {
             style={{
                 backgroundColor: serviceColor
             }}
-            onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = serviceColor;
-                e.currentTarget.style.transform = "scale(1.05)";
-            }}
-            onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = serviceColor;
-                e.currentTarget.style.transform = "scale(1)";
-            }}
+            onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.05)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
         >
             <img 
                 className="w-[50px] h-[50px]" 

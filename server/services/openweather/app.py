@@ -485,7 +485,7 @@ def webhook():
 	print("Starting newsapi webhook", file=sys.stderr)
 
 	while True:
-		print("Checking for new weather", file=sys.stderr)
+		# print("Checking for new weather", file=sys.stderr)
 		time.sleep(10)
 
 		with db.cursor() as cur:
@@ -493,7 +493,7 @@ def webhook():
 			   "WHERE triggers = %s", (ACTION_WEATHER_AT_CITY,))
 	
 			rows = cur.fetchall()
-			print(f"Checking weather for {len(rows)} users", file=sys.stderr)
+			# print(f"Checking weather for {len(rows)} users", file=sys.stderr)
 	
 			for row in rows:
 				userid, bridgeid, triggers, spices, last_weather = row
