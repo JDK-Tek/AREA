@@ -1,9 +1,7 @@
 package main
 
 import (
-	"bytes"
 	"database/sql"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -178,93 +176,93 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
 }
 
 
-func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
-	var emailContent EmailContent
-	var tok TokenResult
+// func sendEmail(w http.ResponseWriter, req *http.Request, db *sql.DB) {
+// 	var emailContent EmailContent
+// 	var tok TokenResult
 
-	decoder := json.NewDecoder(req.Body)
-	err := decoder.Decode(&emailContent)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
-		return
-	}
+// 	decoder := json.NewDecoder(req.Body)
+// 	err := decoder.Decode(&emailContent)
+// 	if err != nil {
+// 		w.WriteHeader(http.StatusInternalServerError)
+// 		fmt.Fprintf(w, "{ \"error\": \"%s\" }\n", err.Error())
+// 		return
+// 	}
 
-	userID := emailContent.UserID
-	tokenStr := emailContent.Token
+// 	userID := emailContent.UserID
+// 	tokenStr := emailContent.Token
 
-	if tokenStr == "" {
-		w.WriteHeader(http.StatusUnauthorized)
-		fmt.Fprintf(w, "{ \"error\": \"Token is missing\" }\n")
-		return
-	}
+// 	if tokenStr == "" {
+// 		w.WriteHeader(http.StatusUnauthorized)
+// 		fmt.Fprintf(w, "{ \"error\": \"Token is missing\" }\n")
+// 		return
+// 	}
 
-	secretBytes := []byte(os.Getenv("BACKEND_KEY"))
-	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return secretBytes, nil
-	})
+// 	secretBytes := []byte(os.Getenv("BACKEND_KEY"))
+// 	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
+// 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+// 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+// 		}
+// 		return secretBytes, nil
+// 	})
 
-	if err != nil || !token.Valid {
-		w.WriteHeader(http.StatusUnauthorized)
-		fmt.Fprintf(w, "{ \"error\": \"Invalid token\" }\n")
-		return
-	}
+// 	if err != nil || !token.Valid {
+// 		w.WriteHeader(http.StatusUnauthorized)
+// 		fmt.Fprintf(w, "{ \"error\": \"Invalid token\" }\n")
+// 		return
+// 	}
 
-	err = db.QueryRow("SELECT token, refresh FROM tokens WHERE userid = $1", userID).Scan(&tok.Token, &tok.Refresh)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			w.WriteHeader(http.StatusUnauthorized)
-			fmt.Fprintf(w, "{ \"error\": \"Token not found for the user\" }\n")
-		} else {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(w, "{ \"error\": \"Database query error: %s\" }\n", err.Error())
-		}
-		return
-	}
+// 	err = db.QueryRow("SELECT token, refresh FROM tokens WHERE userid = $1", userID).Scan(&tok.Token, &tok.Refresh)
+// 	if err != nil {
+// 		if err == sql.ErrNoRows {
+// 			w.WriteHeader(http.StatusUnauthorized)
+// 			fmt.Fprintf(w, "{ \"error\": \"Token not found for the user\" }\n")
+// 		} else {
+// 			w.WriteHeader(http.StatusInternalServerError)
+// 			fmt.Fprintf(w, "{ \"error\": \"Database query error: %s\" }\n", err.Error())
+// 		}
+// 		return
+// 	}
 
-	emailData := map[string]interface{}{
-		"raw": encodeWeb64(emailContent.Subject, emailContent.Body, emailContent.To),
-	}
+// 	emailData := map[string]interface{}{
+// 		"raw": encodeWeb64(emailContent.Subject, emailContent.Body, emailContent.To),
+// 	}
 
-	emailBytes, err := json.Marshal(emailData)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "{ \"error\": \"Error marshalling email data: %s\" }\n", err.Error())
-		return
-	}
+// 	emailBytes, err := json.Marshal(emailData)
+// 	if err != nil {
+// 		w.WriteHeader(http.StatusInternalServerError)
+// 		fmt.Fprintf(w, "{ \"error\": \"Error marshalling email data: %s\" }\n", err.Error())
+// 		return
+// 	}
 
-	reqEmail, err := http.NewRequest("POST", API_SEND_GOOGLE, bytes.NewBuffer(emailBytes))
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "{ \"error\": \"Error creating request: %s\" }\n", err.Error())
-		return
-	}
-	reqEmail.Header.Set("Authorization", "Bearer " + tok.Token)
-	client := &http.Client{}
-	rep, err := client.Do(reqEmail)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "{ \"error\": \"Error sending email: %s\" }\n", err.Error())
-		return
-	}
-	defer rep.Body.Close()
+// 	reqEmail, err := http.NewRequest("POST", API_SEND_GOOGLE, bytes.NewBuffer(emailBytes))
+// 	if err != nil {
+// 		w.WriteHeader(http.StatusInternalServerError)
+// 		fmt.Fprintf(w, "{ \"error\": \"Error creating request: %s\" }\n", err.Error())
+// 		return
+// 	}
+// 	reqEmail.Header.Set("Authorization", "Bearer " + tok.Token)
+// 	client := &http.Client{}
+// 	rep, err := client.Do(reqEmail)
+// 	if err != nil {
+// 		w.WriteHeader(http.StatusInternalServerError)
+// 		fmt.Fprintf(w, "{ \"error\": \"Error sending email: %s\" }\n", err.Error())
+// 		return
+// 	}
+// 	defer rep.Body.Close()
 
-	if rep.StatusCode == http.StatusOK {
-		fmt.Fprintf(w, `{ "message": "Email sent successfully" }\n`)
-	} else {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "{ \"error\": \"Failed to send email\" }\n")
-	}
-}
+// 	if rep.StatusCode == http.StatusOK {
+// 		fmt.Fprintf(w, `{ "message": "Email sent successfully" }\n`)
+// 	} else {
+// 		w.WriteHeader(http.StatusInternalServerError)
+// 		fmt.Fprintf(w, "{ \"error\": \"Failed to send email\" }\n")
+// 	}
+// }
 
-func encodeWeb64(subject, body, to string) string {
-	message := fmt.Sprintf("Subject: %s\nTo: %s\n\n%s", subject, to, body)
-	encoded := base64.URLEncoding.EncodeToString([]byte(message))
-	return encoded
-}
+// func encodeWeb64(subject, body, to string) string {
+// 	message := fmt.Sprintf("Subject: %s\nTo: %s\n\n%s", subject, to, body)
+// 	encoded := base64.URLEncoding.EncodeToString([]byte(message))
+// 	return encoded
+// }
 
 func connectToDatabase() (*sql.DB, error) {
 	dbPassword := os.Getenv("DB_PASSWORD")
