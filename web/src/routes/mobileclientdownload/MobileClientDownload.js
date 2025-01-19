@@ -6,13 +6,13 @@
 */
 
 import React from 'react';
-import Apk from '../../apk/area_jepgo.apk';
+// import Apk from '../../apk/area_jepgo.apk';
 
 
 export default function MobileClientDownload() {
     return (
         <div>
-            <div className="flex justify-center items-center mt-8">
+            {/* <div className="flex justify-center items-center mt-8">
                 <a
                     href={Apk}
                     download="area_jepgo"
@@ -21,7 +21,7 @@ export default function MobileClientDownload() {
                 >
                     <button>Download APK file</button>
                 </a>
-            </div>
+            </div> */}
         </div>
     )
 }

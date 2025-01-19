@@ -58,6 +58,7 @@ export default function CreateArea({setToken}) {
     const [area, setArea] = useState(sessionStorage.getItem("area") === null ? defaultArea : JSON.parse(sessionStorage.getItem("area")));
     sessionStorage.setItem("area", JSON.stringify(area));
     
+    console.log(sessionStorage.getItem("token"));
     const checkConnection = () => {
         axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/doctor`, {
             headers: {
@@ -66,11 +67,13 @@ export default function CreateArea({setToken}) {
             }
         })
         .then((res) => {
-            if (res.data.authentificated) {
+            if (res.data.authentificated && res.data.oauths) {
                 setLoggedServices(res.data.oauths);
             } else {
-                window.location.href = "/login";
-                sessionStorage.removeItem("token");
+                console.log("Not authentificated");
+                console.log(res.data);
+                // window.location.href = "/login";
+                // sessionStorage.removeItem("token");
             }
         })
         .catch((err) => {
