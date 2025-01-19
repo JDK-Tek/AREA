@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"os"
 	"time"
-	//"strings"
+	"strings"
 	"io"
 
 	"github.com/dgrijalva/jwt-go"
@@ -93,11 +93,11 @@ func setOAUTHToken(w http.ResponseWriter, req *http.Request, db *sql.DB) {
         return
     }
 
-    data.Set("client_id", clientID)
-    data.Set("client_secret", clientSecret)
+    data.Set("client_id", strings.TrimSpace(clientID))
+    data.Set("client_secret", strings.TrimSpace(clientSecret))
     data.Set("grant_type", "authorization_code")
-    data.Set("code", url.QueryEscape(res.Code))
-    data.Set("redirect_uri", redirectURI)
+    data.Set("code", strings.TrimSpace(url.QueryEscape(res.Code)))
+    data.Set("redirect_uri", strings.TrimSpace(redirectURI))
     
 	fmt.Println("code = ", res.Code)
 	fmt.Println("client secret = ", clientSecret)
