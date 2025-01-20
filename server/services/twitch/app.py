@@ -64,12 +64,13 @@ def create_empty_user() -> tuple[bool, any]:
     return False, "couldnt get the cursor"
 
 def retrieve_id_from_atok(atok: str):
-	try:
-		return jwt.decode(atok, BACKEND_KEY, algorithms=["HS256"])
-	except jwt.ExpiredSignatureError:
-		return None
-	except jwt.InvalidTokenError:
-		return None
+    atok = atok.removeprefix("Bearer ")
+    try:
+        return jwt.decode(atok, BACKEND_KEY, algorithms=["HS256"]).get("id")
+    except jwt.ExpiredSignatureError:
+        return None
+    except jwt.InvalidTokenError:
+        return None
 
 def push_token_in_database(tok: str, refreshtok: str, userid: str, areaid: int):
     with db.cursor() as cur:
@@ -121,9 +122,9 @@ def get_access_tokens(code: str) -> tuple[bool, str, str]:
 
 def create_area_token(id: int):
     return jwt.encode({
-		"id": id,
-		"exp": dt.datetime.now() + dt.timedelta(seconds=EXPIRATION)
-	}, BACKEND_KEY, algorithm="HS256")
+        "id": id,
+        "exp": dt.datetime.now() + dt.timedelta(seconds=EXPIRATION)
+    }, BACKEND_KEY, algorithm="HS256")
 
 # everything that touches oauth
 
@@ -234,7 +235,7 @@ def call_bridge(bridge: int, areaid: int):
         f"http://backend:{BACKEND_PORT}/api/orchestrator",
         json = {
             "bridge": bridge,
-			"userid": areaid,
+            "userid": areaid,
             "ingredients": {}
         }
     )
