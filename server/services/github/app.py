@@ -1116,13 +1116,13 @@ def webhook():
 								"bridge": bridge,
 								"userid": userid,
 								"ingredients": {
-									"id": quote(str(data.get("issue", {}).get("number"))),
-									"owner": quote(str(data.get("repository", {}).get("owner", {}).get("login"))),
-									"repo": quote(str(data.get("repository", {}).get("name"))),
-									"title": quote(str(data.get("issue", {}).get("title"))),
-									"createdby": quote(str(data.get("issue", {}).get("user", {}).get("login"))),
-									"when": quote(str(data.get("issue", {}).get("created_at"))),
-									"body": quote(str(data.get("issue", {}).get("body")))
+									"id": str(data.get("issue", {}).get("number")),
+									"owner": str(data.get("repository", {}).get("owner", {}).get("login")),
+									"repo": str(data.get("repository", {}).get("name")),
+									"title": str(data.get("issue", {}).get("title")),
+									"createdby": str(data.get("issue", {}).get("user", {}).get("login")),
+									"when": str(data.get("issue", {}).get("created_at")),
+									"body": str(data.get("issue", {}).get("body"))
 								}
 							}
 						)
@@ -1160,13 +1160,13 @@ def webhook():
 								"bridge": bridge,
 								"userid": userid,
 								"ingredients": {
-									"id": quote(str(data.get("pull_request", {}).get("number"))),
-									"owner": quote(str(data.get("repository", {}).get("owner", {}).get("login"))),
-									"repo": quote(str(data.get("repository", {}).get("name"))),
-									"title": quote(str(data.get("pull_request", {}).get("title"))),
-									"createdby": quote(str(data.get("pull_request", {}).get("user", {}).get("login"))),
-									"when": quote(str(data.get("pull_request", {}).get("created_at"))),
-									"body": quote(str(data.get("pull_request", {}).get("body")))
+									"id": str(data.get("pull_request", {}).get("number")),
+									"owner": str(data.get("repository", {}).get("owner", {}).get("login")),
+									"repo": str(data.get("repository", {}).get("name")),
+									"title": str(data.get("pull_request", {}).get("title")),
+									"createdby": str(data.get("pull_request", {}).get("user", {}).get("login")),
+									"when": str(data.get("pull_request", {}).get("created_at")),
+									"body": str(data.get("pull_request", {}).get("body"))
 								}
 							}
 						)
@@ -1206,13 +1206,13 @@ def webhook():
 								"bridge": bridge,
 								"userid": userid,
 								"ingredients": {
-									"id": quote(str(data.get("issue", {}).get("number"))),
-									"owner": quote(str(data.get("repository", {}).get("owner", {}).get("login"))),
-									"repo": quote(str(data.get("repository", {}).get("name"))),
-									"title": quote(str(data.get("issue", {}).get("title"))),
-									"createdby": quote(str(data.get("issue", {}).get("user", {}).get("login"))),
-									"when": quote(str(data.get("issue", {}).get("created_at"))),
-									"body": quote(str(data.get("issue", {}).get("body")))
+									"id": str(data.get("issue", {}).get("number")),
+									"owner": str(data.get("repository", {}).get("owner", {}).get("login")),
+									"repo": str(data.get("repository", {}).get("name")),
+									"title": str(data.get("issue", {}).get("title")),
+									"createdby": str(data.get("issue", {}).get("user", {}).get("login")),
+									"when": str(data.get("issue", {}).get("created_at")),
+									"body": str(data.get("issue", {}).get("body"))
 								}
 							}
 						)
@@ -1253,13 +1253,13 @@ def webhook():
 								"bridge": bridge,
 								"userid": userid,
 								"ingredients": {
-									"id": quote(str(data.get("pull_request", {}).get("number"))),
-									"owner": quote(str(data.get("repository", {}).get("owner", {}).get("login"))),
-									"repo": quote(str(data.get("repository", {}).get("name"))),
-									"title": quote(str(data.get("pull_request", {}).get("title"))),
-									"createdby": quote(str(data.get("pull_request", {}).get("user", {}).get("login"))),
-									"when": quote(str(data.get("pull_request", {}).get("created_at"))),
-									"body": quote(str(data.get("pull_request", {}).get("body")))
+									"id": str(data.get("pull_request", {}).get("number")),
+									"owner": str(data.get("repository", {}).get("owner", {}).get("login")),
+									"repo": str(data.get("repository", {}).get("name")),
+									"title": str(data.get("pull_request", {}).get("title")),
+									"createdby": str(data.get("pull_request", {}).get("user", {}).get("login")),
+									"when": str(data.get("pull_request", {}).get("created_at")),
+									"body": str(data.get("pull_request", {}).get("body"))
 								}
 							}
 						)
@@ -1297,13 +1297,13 @@ def webhook():
 								"bridge": bridge,
 								"userid": userid,
 								"ingredients": {
-									"id": quote(str(data.get("issue", {}).get("number"))),
-									"owner": quote(str(data.get("repository", {}).get("owner", {}).get("login"))),
-									"repo": quote(str(data.get("repository", {}).get("name"))),
-									"title": quote(str(data.get("issue", {}).get("title"))),
-									"createdby": quote(str(data.get("issue", {}).get("user", {}).get("login"))),
-									"when": quote(str(data.get("issue", {}).get("created_at"))),
-									"body": quote(str(data.get("issue", {}).get("body")))
+									"id": str(data.get("issue", {}).get("number")),
+									"owner": str(data.get("repository", {}).get("owner", {}).get("login")),
+									"repo": str(data.get("repository", {}).get("name")),
+									"title": str(data.get("issue", {}).get("title")),
+									"createdby": str(data.get("issue", {}).get("user", {}).get("login")),
+									"when": str(data.get("issue", {}).get("created_at")),
+									"body": str(data.get("issue", {}).get("body"))
 								}
 							}
 						)
@@ -1344,13 +1344,13 @@ def webhook():
 								"bridge": bridge,
 								"userid": userid,
 								"ingredients": {
-									"id": quote(str(data.get("pull_requested", {}).get("number"))),
-									"owner": quote(str(data.get("repository", {}).get("owner", {}).get("login"))),
-									"repo": quote(str(data.get("repository", {}).get("name"))),
-									"title": quote(str(data.get("pull_requested", {}).get("title"))),
-									"createdby": quote(str(data.get("pull_requested", {}).get("user", {}).get("login"))),
-									"when": quote(str(data.get("pull_requested", {}).get("created_at"))),
-									"body": quote(str(data.get("pull_requested", {}).get("body")))
+									"id": str(data.get("pull_requested", {}).get("number")),
+									"owner": str(data.get("repository", {}).get("owner", {}).get("login")),
+									"repo": str(data.get("repository", {}).get("name")),
+									"title": str(data.get("pull_requested", {}).get("title")),
+									"createdby": str(data.get("pull_requested", {}).get("user", {}).get("login")),
+									"when": str(data.get("pull_requested", {}).get("created_at")),
+									"body": str(data.get("pull_requested", {}).get("body"))
 								}
 							}
 						)
@@ -1392,11 +1392,11 @@ def webhook():
 							"bridge": bridge,
 							"userid": userid,
 							"ingredients": {
-								"owner": quote(str(data.get("repository", {}).get("owner", {}).get("login"))),
-								"repo": quote(str(data.get("repository", {}).get("name"))),
-								"author": quote(str(data.get("check_suite", {}).get("head_commit", {}).get("author", {}).get("name"))),
-								"commitmsg": quote(str(data.get("check_suite", {}).get("head_commit", {}).get("message"))),
-								"createdate": quote(str(data.get("check_suite", {}).get("head_commit", {}).get("timestamp")))
+								"owner": str(data.get("repository", {}).get("owner", {}).get("login")),
+								"repo": str(data.get("repository", {}).get("name")),
+								"author": str(data.get("check_suite", {}).get("head_commit", {}).get("author", {}).get("name")),
+								"commitmsg": str(data.get("check_suite", {}).get("head_commit", {}).get("message")),
+								"createdate": str(data.get("check_suite", {}).get("head_commit", {}).get("timestamp"))
 							}
 						}
 					)
@@ -1437,11 +1437,11 @@ def webhook():
 							"bridge": bridge,
 							"userid": userid,
 							"ingredients": {
-								"owner": quote(str(data.get("repository", {}).get("owner", {}).get("login"))),
-								"repo": quote(str(data.get("repository", {}).get("name"))),
-								"createdby": quote(str(data.get("sender", {}).get("login"))),
-								"when": quote(str(data.get("repository", {}).get("created_at"))),
-								"description": quote(str(data.get("repository", {}).get("description")))
+								"owner": str(data.get("repository", {}).get("owner", {}).get("login")),
+								"repo": str(data.get("repository", {}).get("name")),
+								"createdby": str(data.get("sender", {}).get("login")),
+								"when": str(data.get("repository", {}).get("created_at")),
+								"description": str(data.get("repository", {}).get("description"))
 							}
 						}
 					)

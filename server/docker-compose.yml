@@ -119,8 +119,8 @@ services:
         - DB_USER=${DATABASE_USER}
         - DB_PASSWORD=${DATABASE_PASSWORD}
         - DB_NAME=${DATABASE_NAME}
-      networks:
-        - web
+    networks:
+      - web
 
   service-google:
     env_file:
