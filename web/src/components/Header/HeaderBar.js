@@ -39,8 +39,15 @@ export default function HeaderBar({ activeBackground = false }) {
                     className={`h-[50px] ${activeBackground ? "cursor-pointer" : ""}`}
                     src={Logo}
                     alt="logo"
-                    onClick={() => window.location.href = "/"}
+                    onClick={() => (window.location.href = "/")}
+                    onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                        window.location.href = "/";
+                        }
+                    }}
+                    tabIndex={0}
                 />
+
             </div>
             <div className="flex flex-wrap justify-end gap-7 items-center">
                 {dataRoutes.map((route, index) => (
@@ -48,14 +55,15 @@ export default function HeaderBar({ activeBackground = false }) {
                         key={index}
                         className="font-bold font-spartan text-white p-5 text-lg cursor-pointer hover:text-gray-200"
                         onClick={() => window.location.href = route.link}
+                        onKeyDown={(event) => {if (event.key === "Enter") window.location.href = route.link}}
+                        tabIndex={0}
                     >{route.title}</label>
                 ))}
                 {isLogged && (
                     <Button
                         text={"Create"}
                         redirect={false}
-                        onClick={() => isLogged ? window.location.href = "/create" : "/login"
-                        }
+                        onClick={() => isLogged ? window.location.href = "/create" : "/login"}
                         styleClolor={"bg-white text-chartgray-300 hover:bg-gray-200"}
                     />
                 )}

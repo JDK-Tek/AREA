@@ -13,6 +13,8 @@ export default function Button({ text, redirect, onClick, styleClolor, icon }) {
         <div
             className={`cursor-pointer inline-flex justify-center items-center rounded-3xl ${styleClolor} py-2 px-4 m-2`}
             onClick={onClick}
+            onKeyDown={(event) => { if (event.key === "Enter") onClick() }}
+            tabIndex={0}
         >
             {icon ?
                 icon :
@@ -37,6 +39,7 @@ export function LRButton( {text, handleClick, img, color} ) {
                  lg:w-[400px] md:w-[300px] sm:w-[200px]
                 `}
             onClick={(e) => handleClick(e)}
+            onKeyDown={(event) => { if (event.key === "Enter") handleClick(event) }}
             style={{ backgroundColor: color }}
             onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.05)";}}
             onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; }}

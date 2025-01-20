@@ -14,6 +14,7 @@ services:
       - backend
     volumes:
       - apk_volume:/app/src/apk
+      - ./web/src:/app/src
 
   # client_mobile:
   #   build:

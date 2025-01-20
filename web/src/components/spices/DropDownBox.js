@@ -46,6 +46,10 @@ export default function DropdownBox({ options, selected, onSelect }) {
                         <div
                             key={index}
                             onClick={() => handleSelect(option)}
+                            onKeyDown={(event) => {
+                                if (event.key === "Enter") handleSelect(option);
+                            }}
+                            tabIndex={0}
                             className="px-4 py-2 text-gray-700 hover:bg-blue-500 hover:text-white cursor-pointer"
                         >
                             {option}

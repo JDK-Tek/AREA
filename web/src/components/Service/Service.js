@@ -26,6 +26,8 @@ export default function Service({ service, rounded, setService }) {
         <div
             className={`select-none relative w-[200px] h-[150px] text-white ${rounded} shadow-md p-6 flex flex-col justify-between items-center cursor-pointer transition-transform duration-200`}
             onClick={() => setService(service)}
+            onKeyDown={(event) => { if (event.key === "Enter") setService(service) }}
+            tabIndex={0}
             style={{
                 backgroundColor: serviceColor
             }}

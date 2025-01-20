@@ -23,6 +23,8 @@ export default function Applet({
         <div
             className={`cursor-pointer relative w-[300px] h-[325px] text-white rounded-3xl shadow-md p-4 transition-transform duration-200`}
             onClick={() => onClick()}
+            onKeyDown={(event) => { if (event.key === "Enter") onClick() }}
+            tabIndex={0}
             style={{
                 backgroundColor: color
             }}

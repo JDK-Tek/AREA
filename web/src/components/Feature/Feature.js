@@ -9,6 +9,8 @@ export default function Feature({ feature, setFeature, color }) {
         <div
             className={`select-none relative text-white shadow-md p-3 cursor-pointer transition-transform duration-200`}
             onClick={() => setFeature(feature)}
+            onKeyDown={(event) => { if (event.key === "Enter") setFeature(feature) }}
+            tabIndex={0}
             style={{
                 backgroundColor: color
             }}

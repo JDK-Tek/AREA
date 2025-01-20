@@ -34,27 +34,13 @@ export default function Content({ setError }) {
     
     useEffect(() => {
         const getApplets = async () => {
-            axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/applets`, {headers: {"Content-Type": "application/json"}})
+            axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/area`, {headers: {"Content-Type": "application/json"}})
             .then((response) => {
-                const applets = response.data.res;
+                const applets = response.data;
             
                 let res = [];
                 for (let i = 0; i < Math.min(5, applets.length); i++) {
-                    res.push({
-                        id: applets[i].id,
-                        name: applets[i].name,
-                        action: {
-                            service: applets[i].service.name,
-                            image: applets[i].service.logo,
-                            color: applets[i].service.color.normal,
-                        },
-                        reaction: {
-                            service: "",
-                            image: applets[i].service.logopartner,
-                            color: applets[i].service.color.hover,
-                        },
-                        users: applets[i].users,
-                    });
+                    res.push(response.data[i]);
                 }
                 setApplets(res);
             })
@@ -71,12 +57,18 @@ export default function Content({ setError }) {
         }
     }, [service]);
     
+    useEffect(() => {
+        if (service) {
+            window.location.href = `/service/${service.name}`;
+        }
+    }, [service]);
+
     return (
         <div className="pb-14">
             <AppletKit
                 title={"Get started with any Applet"}
                 applets={applets}
-                onClick={() => console.log("clicked")}
+                onClick={() => window.location.href = "/create"}
             />
             <ServiceKit
                 title={"or choose from 900+ services"}
