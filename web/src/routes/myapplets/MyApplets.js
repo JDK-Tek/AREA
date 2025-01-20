@@ -57,8 +57,8 @@ export default function MyApplets() {
         <div>
             <HeaderBar activeBackground={true}/>
             {error && <Notification error={true} setError={setError} msg={error}/>}
-            <h1>MyApplets</h1>
-            <AppletKit applets={applets}/>
+            <h1 className="text-4xl font-spartan font-bold text-center mt-10 text-chartgray-300">My Area</h1>
+            <AppletKit applets={applets} onClick={() => console.log("ok")}/>
             <Footer/>
         </div>
     );
