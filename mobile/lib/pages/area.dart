@@ -217,7 +217,8 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
                   if (type == "actions") {
                     selectedTriggers.add({
                       "service": serviceName,
-                      "name": option['description'] ?? 'Unnamed Option',
+                      "name": option['name'] ?? 'Unnamed Option',
+                      "description": option['description'],
                       "image": services.firstWhere(
                               (s) => s['name'] == serviceName)['image'] ??
                           '',
@@ -229,7 +230,8 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
                   } else {
                     selectedReactions.add({
                       "service": serviceName,
-                      "name": option['description'] ?? 'Unnamed Option',
+                      "name": option['name'] ?? 'Unnamed Option',
+                      "description": option['description'],
                       "image": services.firstWhere(
                               (s) => s['name'] == serviceName)['image'] ??
                           '',
@@ -401,6 +403,7 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
   int currentPageIndex = 1;
   @override
   Widget build(BuildContext context) {
+    var ip = Provider.of<IPState>(context, listen: false).ip;
     final List<String> dest = ["/applets", "/create", "/services", "/plus"];
     return SafeArea(
       child: Scaffold(
@@ -459,11 +462,11 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
                     ),
                     ...selectedTriggers.map((trigger) => ListTile(
                           title: Text(
-                            trigger['name'] ?? 'Unnamed Trigger',
+                            trigger['description'] ?? 'Unnamed Trigger',
                             style: const TextStyle(color: Colors.white),
                           ),
                           leading: Image.network(
-                            trigger['image'] ?? '',
+                            "https://$ip" + trigger['image'],
                             loadingBuilder: (BuildContext context, Widget child,
                                 ImageChunkEvent? loadingProgress) {
                               if (loadingProgress == null) {
@@ -521,11 +524,11 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
                     ),
                     ...selectedReactions.map((reaction) => ListTile(
                           title: Text(
-                            reaction['name'] ?? 'Unnamed Reaction',
+                            reaction['description'] ?? 'Unnamed Reaction',
                             style: const TextStyle(color: Colors.white),
                           ),
                           leading: Image.network(
-                            reaction['image'] ?? '',
+                            "https://$ip" + reaction['image'],
                             loadingBuilder: (BuildContext context, Widget child,
                                 ImageChunkEvent? loadingProgress) {
                               if (loadingProgress == null) {
