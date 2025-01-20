@@ -17,6 +17,8 @@ export default function Download() {
                 src={AndroidDownload}
                 alt="Logo"
                 onClick={() => window.open("https://play.google.com/store/apps?hl=fr")}
+                onKeyDown={(event) => { if (event.key === "Enter") window.open("https://play.google.com/store/apps?hl=fr") }}
+                tabIndex={0}
             />
 
             <img
@@ -24,6 +26,8 @@ export default function Download() {
                 src={AppleDownload}
                 alt="Logo"
                 onClick={() => window.open("https://www.apple.com/fr/app-store/")}
+                onKeyDown={(event) => { if (event.key === "Enter") window.open("https://www.apple.com/fr/app-store/") }}
+                tabIndex={0}
             />
         </div>
     );

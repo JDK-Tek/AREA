@@ -53,6 +53,8 @@ function FooterLink()
                     key={index}
                     className="cursor-pointer block mb-4 hover:text-chartgray-100 text-white font-bold"
                     onClick={() => { window.location.href = link.url }}
+                    onKeyDown={(event) => { if (event.key === "Enter") window.location.href = link.url }}
+                    tabIndex={0}
                 >
                     {link.title}
                 </label>

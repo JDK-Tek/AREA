@@ -11,6 +11,7 @@ import React, { useState, useEffect } from "react";
 import Notification from "../../components/Notification";
 import HeaderBar from "../../components/Header/HeaderBar";
 import FindService from "../../components/Service/FindService";
+import Footer from "../home/Footer";
 
 export default function Explore() {
     const [service, setService] = useState(null);
@@ -51,6 +52,7 @@ export default function Explore() {
                     aboutjson={aboutjson}
                 />
             </div>
+            <Footer />
         </div>
     );
 }

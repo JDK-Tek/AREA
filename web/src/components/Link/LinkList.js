@@ -15,6 +15,8 @@ export default function LinkList({ title, links }) {
                     key={index}
                     className="cursor-pointer block mb-4 text-chartgray-100 hover:text-white"
                     onClick={() => { window.location.href = link.url }}
+                    onKeyDown={(event) => { if (event.key === "Enter") { window.location.href = link.url } }}
+                    tabIndex={0}
                 >
                     {link.title}
                 </label>
