@@ -103,7 +103,7 @@ class _DiscordAuthPageState extends State<DiscordAuthPage> {
         NavigationDelegate(
           onNavigationRequest: (NavigationRequest request) {
             if (request.url
-                .startsWith("https://area.jepgo.root.sx/connected")) {
+                .startsWith("https://dev.area.jepgo.root.sx/connected")) {
               final uri = Uri.parse(request.url);
               final code = uri.queryParameters['code'];
               if (code != null) {
