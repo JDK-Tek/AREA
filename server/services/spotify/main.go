@@ -2920,7 +2920,7 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 		{
 			Name: "playMusic",
 			Type: "reaction",
-			Desc: "Chose a music to play !",
+			Desc: "Play the current music.",
 			Spices: []InfoSpice{
 				{
 					Name:  "musique",
@@ -2932,73 +2932,73 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 		{
 			Name:   "pauseMusic",
 			Type:   "reaction",
-			Desc:   "Stop the current music !",
+			Desc:   "Stop the current music.",
 			Spices: []InfoSpice{},
 		},
 		{
 			Name:   "resumeMusic",
 			Type:   "reaction",
-			Desc:   "Resume the current music !",
+			Desc:   "Resume the current music.",
 			Spices: []InfoSpice{},
 		},
 		{
 			Name:   "checkDeviceConnection",
 			Type:   "action",
-			Desc:   "check if you have a current spotify running !",
+			Desc:   "If you have a current spotify running",
 			Spices: []InfoSpice{},
 		},
 		{
 			Name:   "checkSongRunning",
 			Type:   "action",
-			Desc:   "check if you have a song whose running and got id, type and current song !",
+			Desc:   "If you have a song whose running.",
 			Spices: []InfoSpice{},
 		},
 		{
 			Name:   "checkPodcastRunning",
 			Type:   "action",
-			Desc:   "check if you have a podcast whose running and got the podcast name and episode + follow him !",
+			Desc:   "If you have a podcast whose running.",
 			Spices: []InfoSpice{},
 		},
 		{
 			Name:   "likeCurrentMusic",
 			Type:   "reaction",
-			Desc:   "like the current music you listening",
+			Desc:   "Like the current music you listening.",
 			Spices: []InfoSpice{},
 		},
 		{
 			Name:   "unlikeCurrentMusic",
 			Type:   "reaction",
-			Desc:   "unlike the current music you listening",
+			Desc:   "Inlike the current music you listening",
 			Spices: []InfoSpice{},
 		},
 		{
 			Name:   "nextMusic",
 			Type:   "reaction",
-			Desc:   "next music",
+			Desc:   "Play next music",
 			Spices: []InfoSpice{},
 		},
 		{
 			Name:   "previousMusic",
 			Type:   "reaction",
-			Desc:   "previous music",
+			Desc:   "Play previous music",
 			Spices: []InfoSpice{},
 		},
 		{
 			Name:   "removeFromPlaylistIfPresent",
 			Type:   "reaction",
-			Desc:   "remove the current music if she are in a playlist",
+			Desc:   "Remove the current music on all your playlists",
 			Spices: []InfoSpice{},
 		},
 		{
 			Name:   "addToPlaylistIfNotPresent",
 			Type:   "reaction",
-			Desc:   "add the current music if she are in a playlist",
+			Desc:   "Add the current music to a random playlist",
 			Spices: []InfoSpice{},
 		},
 		{
 			Name: "createPlaylist",
 			Type: "reaction",
-			Desc: "creer une playlist",
+			Desc: "Create a playlist",
 			Spices: []InfoSpice{
 				{
 					Name:  "name",
@@ -3010,7 +3010,7 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 		{
 			Name: "clearPlaylist",
 			Type: "reaction",
-			Desc: "clear une playlist",
+			Desc: "Clear une playlist",
 			Spices: []InfoSpice{
 				{
 					Name:  "name",
@@ -3022,7 +3022,7 @@ func getRoutes(w http.ResponseWriter, req *http.Request) {
 		{
 			Name: "addToPlaylistByName",
 			Type: "reaction",
-			Desc: "add the current song listening to the playlist selected",
+			Desc: "Add the current song listening to a playlist selected",
 			Spices: []InfoSpice{
 				{
 					Name:  "name",
