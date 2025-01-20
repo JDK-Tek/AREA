@@ -209,8 +209,7 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
           itemBuilder: (context, index) {
             final option = options[index];
             return ListTile(
-              title: Text(option['name'] ?? 'Unnamed Option'),
-              subtitle: Text(option['description'] ?? 'No description'),
+              title: Text(option['description'] ?? 'Unnamed Option'),
               onTap: () async {
                 final config = _buildDynamicConfig(
                     selectedTriggers, option['spices'], index);
@@ -218,7 +217,7 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
                   if (type == "actions") {
                     selectedTriggers.add({
                       "service": serviceName,
-                      "name": option['name'] ?? 'Unnamed Option',
+                      "name": option['description'] ?? 'Unnamed Option',
                       "image": services.firstWhere(
                               (s) => s['name'] == serviceName)['image'] ??
                           '',
@@ -230,7 +229,7 @@ class CreateAutomationPageState extends State<CreateAutomationPage> {
                   } else {
                     selectedReactions.add({
                       "service": serviceName,
-                      "name": option['name'] ?? 'Unnamed Option',
+                      "name": option['description'] ?? 'Unnamed Option',
                       "image": services.firstWhere(
                               (s) => s['name'] == serviceName)['image'] ??
                           '',

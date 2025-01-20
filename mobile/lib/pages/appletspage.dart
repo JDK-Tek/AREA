@@ -191,8 +191,8 @@ class Applet extends StatelessWidget {
                         style: TextStyle(
                             fontSize: MediaQuery.of(context).size.width <
                                     MediaQuery.of(context).size.height
-                                ? MediaQuery.of(context).size.width * 0.05
-                                : MediaQuery.of(context).size.width * 0.03,
+                                ? MediaQuery.of(context).size.width * 0.035
+                                : MediaQuery.of(context).size.width * 0.02,
                             fontWeight: FontWeight.w900,
                             color: const Color.fromARGB(255, 255, 255, 255),
                             fontFamily: 'Nunito-Bold'),
