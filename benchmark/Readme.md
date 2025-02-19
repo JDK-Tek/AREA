@@ -1,4 +1,4 @@
-# Why MySQL is Better than SQLite and MongoDB
+# Why Postgres is Better than SQLite and MongoDB
 
 ## 1. Handling Complex Data
 MySQL, as a relational database management system, is ideal for managing databases with complex relationships between tables. Unlike SQLite, which is limited in large multi-user applications, MySQL excels in environments requiring advanced features like complex joins, subqueries, and robust transactions.
